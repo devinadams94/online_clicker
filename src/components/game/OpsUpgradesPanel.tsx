@@ -11,7 +11,7 @@ const opsUpgradeItems = [
   { id: 'neuralOptimization', name: 'Neural Optimization', cost: 50, description: 'Increase production multiplier by 25%', category: 'Computation', repeatable: true },
   
   // Memory management upgrades
-  { id: 'memoryCompression', name: 'Memory Compression', cost: 20, description: 'Increase memory capacity by 2 (adds 100 OPs capacity)', category: 'Memory', repeatable: true },
+  { id: 'memoryCompression', name: 'Memory Compression', cost: 5000, description: 'Increase memory capacity by 2 (adds 100 OPs capacity)', category: 'Memory', repeatable: true },
   { id: 'cacheOptimization', name: 'Cache Optimization', cost: 35, description: 'Increase memory regeneration rate by 50%', category: 'Memory', repeatable: true },
   { id: 'distributedStorage', name: 'Distributed Storage', cost: 60, description: 'Double memory capacity (doubles OPs capacity)', category: 'Memory', repeatable: false },
   

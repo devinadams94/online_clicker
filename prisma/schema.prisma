@@ -132,7 +132,7 @@ model GameState {
   creativityUnlocked         Boolean  @default(false)
   unlockedOpsUpgrades        String   @default("[]")
   unlockedCreativityUpgrades String   @default("[]")
-  upgradeCosts               String   @default("{\"parallelProcessing\":15,\"quantumAlgorithms\":30,\"neuralOptimization\":50,\"memoryCompression\":20,\"cacheOptimization\":35,\"distributedStorage\":60,\"marketPrediction\":25,\"trendAnalysis\":40,\"highFrequencyTrading\":75}")
+  upgradeCosts               String   @default("{\"parallelProcessing\":15,\"quantumAlgorithms\":30,\"neuralOptimization\":50,\"memoryCompression\":5000,\"cacheOptimization\":35,\"distributedStorage\":60,\"marketPrediction\":25,\"trendAnalysis\":40,\"highFrequencyTrading\":75}")
   metricsUnlocked            Boolean  @default(false)
   
   // Space Age fields
