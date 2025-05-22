@@ -311,10 +311,12 @@ export default function StockMarketPanel() {
     botTradingBudget,
     botTradingProfit,
     botTradingLosses,
+    botRiskThreshold,
     buyTradingBot,
     upgradeBotIntelligence,
     setBotTradingBudget,
     withdrawBotTradingBudget,
+    setBotRiskThreshold,
     getStocks,
     buyStock,
     sellStock,
@@ -368,10 +370,10 @@ export default function StockMarketPanel() {
     // Refresh stocks display every 500ms
     const displayInterval = setInterval(fetchStocks, 500);
     
-    // Force price updates every 3 seconds
+    // Force price updates every 8 seconds (increased from 3 seconds for more gradual changes)
     const priceUpdateInterval = setInterval(() => {
       updateStockPrices();
-    }, 3000);
+    }, 8000);
     
     return () => {
       clearInterval(displayInterval);
@@ -698,6 +700,32 @@ export default function StockMarketPanel() {
                 <div className="font-medium">Bot Trading Status: <span className="text-green-500">Active</span></div>
                 <div>Trading {tradingBots * 600} times per minute</div>
                 <div>Success rate: {Math.min(95, 40 + botIntelligence * 5).toFixed(1)}%</div>
+                
+                {/* Risk Threshold Controls */}
+                <div className="mt-2 border-t pt-2 dark:border-gray-600">
+                  <div className="font-medium mb-1">Risk Threshold: {(botRiskThreshold * 100).toFixed(0)}%</div>
+                  <div className="text-xs mb-1">Higher threshold = higher profits but longer hold times</div>
+                  <div className="flex space-x-2 mt-1">
+                    <button 
+                      className={`px-2 py-1 text-xs rounded ${botRiskThreshold === 0.1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
+                      onClick={() => setBotRiskThreshold(0.1)}
+                    >
+                      Low (10%)
+                    </button>
+                    <button 
+                      className={`px-2 py-1 text-xs rounded ${botRiskThreshold === 0.2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
+                      onClick={() => setBotRiskThreshold(0.2)}
+                    >
+                      Medium (20%)
+                    </button>
+                    <button 
+                      className={`px-2 py-1 text-xs rounded ${botRiskThreshold === 0.3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
+                      onClick={() => setBotRiskThreshold(0.3)}
+                    >
+                      High (30%)
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
               <div>

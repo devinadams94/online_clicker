@@ -151,7 +151,7 @@ const useGameStore = create<GameStore>(
       unlockedTrustAbilities: [], // Track unlocked trust abilities
       ops: 50, // Increased from 10 to 50 (50 OPs per memory)
       opsMax: 50, // Increased from 10 to 50 (50 OPs per memory)
-      opsProductionMultiplier: 1, // Production multiplier from OPs
+      opsProductionMultiplier: 0.5, // Production multiplier from OPs (halved)
       creativity: 0,
       
       // Space Age
@@ -258,6 +258,7 @@ const useGameStore = create<GameStore>(
       botLastTradeTime: new Date(), // Initialize to current time as a fallback
       botTradingProfit: 0, // Initialize total bot trading profit to zero
       botTradingLosses: 0, // Initialize total bot trading losses to zero
+      botRiskThreshold: 0.1, // Default to low risk (10% profit threshold)
       stockMarketReturns: 0,
       stockMarketInvestment: 0,
       stockMarketLastUpdate: new Date(),
@@ -376,8 +377,8 @@ const useGameStore = create<GameStore>(
         // Cost increases by 15% for each purchase
         const newCost = Math.floor(state.megaClipperCost * 1.15 * 100) / 100;
         
-        // Each mega clipper adds +1.0 to the production multiplier
-        const newProductionMultiplier = Math.max(0.1, state.productionMultiplier + 1.0);
+        // Each mega clipper adds +5.0 to the production multiplier (increased from 1.0)
+        const newProductionMultiplier = Math.max(0.1, state.productionMultiplier + 5.0);
         
         // Recalculate production rate, including OPs production multiplier
         const totalMultiplier = newProductionMultiplier + (state.opsProductionMultiplier || 0);
@@ -1301,6 +1302,19 @@ const useGameStore = create<GameStore>(
           };
         }),
         
+      // Set the risk threshold for trading bots (0.1=10%, 0.2=20%, 0.3=30%)
+      setBotRiskThreshold: (threshold: number) =>
+        set((state) => {
+          // Validate inputs - ensure threshold is between 0.1 and 0.3
+          const safeThreshold = Math.max(0.1, Math.min(0.3, Number(threshold) || 0.1));
+          
+          console.log(`Setting bot risk threshold: ${state.botRiskThreshold} -> ${safeThreshold}`);
+          
+          return {
+            botRiskThreshold: safeThreshold
+          };
+        }),
+        
       botAutoTrade: () =>
         set((state) => {
           // Log the current state for debugging
@@ -1312,8 +1326,8 @@ const useGameStore = create<GameStore>(
             return state;
           }
           
-          // Ensure we have at least $100 in the budget for meaningful trades
-          if (state.botTradingBudget < 100) {
+          // Reduce minimum budget requirement to $10 for more frequent trades
+          if (state.botTradingBudget < 10) {
             console.log(`Bot trading budget too low for meaningful trades: $${state.botTradingBudget.toFixed(2)}`);
             return state;
           }
@@ -1361,18 +1375,21 @@ const useGameStore = create<GameStore>(
             
             // Calculate how much budget to use per trade (scale with bot intelligence)
             // More intelligence = more efficient use of budget and larger trade sizes
-            // Increased from 10% to 25% max budget per trade and greatly increased intelligence scaling
-            const maxPercentPerTrade = 0.05 + (updatedState.botIntelligence * 0.02); // 5% base + 2% per intelligence level (up to 25%)
-            const intelligenceScaling = Math.pow(updatedState.botIntelligence, 2); // Squared intelligence factor for exponential growth
+            // Increased trade size to ensure bots can buy stocks
+            const maxPercentPerTrade = 0.2 + (updatedState.botIntelligence * 0.05); // 20% base + 5% per intelligence level (up to 70%)
+            const intelligenceScaling = Math.max(1, Math.pow(updatedState.botIntelligence, 1.5)); // Ensure minimum scaling of 1
             
+            // Use a higher percentage of the budget for trades to ensure bots can buy at least one share
             const baseTradeAmount = Math.min(
-              updatedState.botTradingBudget * maxPercentPerTrade, // Up to 25% of budget per trade with high intelligence
-              1000 * intelligenceScaling // Scale dramatically with intelligence - 1000 at level 1, 4000 at level 2, 9000 at level 3, etc.
+              updatedState.botTradingBudget * maxPercentPerTrade, // Up to 70% of budget per trade with high intelligence
+              Math.max(100, 1000 * intelligenceScaling) // Minimum $100, scaling with intelligence - at least 1000 at level 1
             );
             
-            // Add randomness to make it look more natural, but less randomness with higher intelligence
-            const randomFactor = 0.9 + (Math.random() * 0.2 / Math.sqrt(updatedState.botIntelligence));
-            const tradeAmount = baseTradeAmount * randomFactor;
+            // Reduce randomness to ensure more consistent trading
+            const randomFactor = 0.95 + (Math.random() * 0.1); // 95-105% of base amount
+            // Use at least 30% of available budget for trading to ensure enough for at least one share
+            const minTradeAmount = updatedState.botTradingBudget * 0.3;
+            const tradeAmount = Math.max(minTradeAmount, baseTradeAmount * randomFactor);
             
             // Debug log for trade amounts
             console.log(`Bot trading: Budget: $${updatedState.botTradingBudget.toFixed(2)}, Trade amount: $${tradeAmount.toFixed(2)}`);
@@ -1394,19 +1411,23 @@ const useGameStore = create<GameStore>(
             };
             
             // Calculate trade success probability based on intelligence
-            // Higher intelligence = MUCH higher chance of profitable trades (increased multiplier from 0.05 to 0.15)
-            const successProbability = 0.5 + (updatedState.botIntelligence * 0.15);
+            // Higher intelligence = MUCH higher chance of profitable trades (significantly improved from 0.15 to 0.5)
+            // Starting at 80% success rate even at intelligence level 1, scaling up to near 100%
+            const successProbability = 0.8 + (updatedState.botIntelligence * 0.2);
             
             // Determine if this is a buy or sell decision
             // Make bots more likely to sell when they have a portfolio (50/50 chance instead of favoring buying)
             // This helps capitalize on gains and reduces holding positions too long
             const hasPortfolio = updatedPortfolio.length > 0;
             
-            // If we have a portfolio, give a 50% chance to sell, otherwise 80% chance to buy
-            // Reduced from previous 40% + (intelligence * 5%) to make selling more frequent
-            const isBuyDecision = hasPortfolio 
-              ? Math.random() < 0.5 // 50/50 chance if we have stocks to sell
-              : Math.random() < 0.8; // 80% chance to buy if we have no stocks
+            // If we have a portfolio, give a 90% chance to buy, otherwise 99% chance to buy
+            // Further increased buy probability to ensure bots are actively buying stocks
+            const buyProbability = hasPortfolio ? 0.90 : 0.99; // Increased from 70%/95% to 90%/99%
+            const randomRoll = Math.random();
+            const isBuyDecision = randomRoll < buyProbability;
+            
+            // Debug log for buy decision
+            console.log(`Bot trade decision: ${isBuyDecision ? "BUY" : "SELL"} (roll: ${randomRoll.toFixed(2)}, threshold: ${buyProbability.toFixed(2)}, has portfolio: ${hasPortfolio})`)
           
             if (isBuyDecision) {
               // Buy operation
@@ -1447,19 +1468,40 @@ const useGameStore = create<GameStore>(
                   bTrendBonus *= Math.max(0.1, trendTimeRemaining);
                 }
               
+                // Enhanced scoring model that significantly improves profitability
+                // Strong emphasis on upward trends and price movements
+                
+                // Add a price factor that favors cheaper stocks
+                const aPriceFactor = 1.0 / (a.price + 0.1); // Add 0.1 to avoid division by zero
+                const bPriceFactor = 1.0 / (b.price + 0.1);
+                
+                // Add factor for buying low (recent price drops) - even better opportunity
+                const aRecentDropBonus = a.price < a.previousPrice ? 1.5 : 0;
+                const bRecentDropBonus = b.price < b.previousPrice ? 1.5 : 0;
+                
+                // Higher weight on positive trends (3x)
+                const aDirectionalTrendBonus = a.trendDirection > 0 ? 3.0 : 0;
+                const bDirectionalTrendBonus = b.trendDirection > 0 ? 3.0 : 0;
+                
                 // More sophisticated scoring model that better predicts future performance
-                // Now includes trend detection bonus
-                const aScore = (a.trend * baseTrendWeight) + 
+                // Now includes trend detection bonus and price factors
+                const aScore = (a.trend * baseTrendWeight * 2) + // 2x weight on trend 
                                ((a.price > a.previousPrice ? 1 : -1) * priceMovementWeight) + 
                                volatilityBonus + 
-                               aTrendBonus + // Add trend bonus for buying decisions
-                               (Math.random() * (1 - trendAwareness) * 0.2); // Less randomness with higher intelligence
+                               (aTrendBonus * 3) + // 3x weight on trend bonus
+                               (aPriceFactor * intelligenceFactor * 10) + // Price factor scales with intelligence
+                               aRecentDropBonus + // Bonus for price drops (buying opportunity)
+                               aDirectionalTrendBonus + // Bonus for upward trends
+                               (Math.random() * (1 - trendAwareness) * 0.1); // Reduced randomness
                 
-                const bScore = (b.trend * baseTrendWeight) + 
+                const bScore = (b.trend * baseTrendWeight * 2) + // 2x weight on trend
                                ((b.price > b.previousPrice ? 1 : -1) * priceMovementWeight) + 
                                volatilityBonus + 
-                               bTrendBonus + // Add trend bonus for buying decisions
-                               (Math.random() * (1 - trendAwareness) * 0.2);
+                               (bTrendBonus * 3) + // 3x weight on trend bonus
+                               (bPriceFactor * intelligenceFactor * 10) + // Price factor scales with intelligence
+                               bRecentDropBonus + // Bonus for price drops (buying opportunity)
+                               bDirectionalTrendBonus + // Bonus for upward trends
+                               (Math.random() * (1 - trendAwareness) * 0.1); // Reduced randomness
                 
                 // Debug logging for significant trends
                 if ((a.trendStrength > 0.7 || b.trendStrength > 0.7) && state.botIntelligence >= 5) {
@@ -1475,16 +1517,35 @@ const useGameStore = create<GameStore>(
                 return bScore - aScore; // Higher score first
               });
             
-              // Pick a stock - higher intelligence picks from top stocks much more consistently
+              // Find affordable stocks first - only consider stocks that we can afford at least one share of
+              const affordableStocks = rankedStocks.filter(stock => stock.price <= updatedBudget);
+              
+              // Debug log for affordable stocks
+              console.log(`Bot trading: Found ${affordableStocks.length} affordable stocks out of ${rankedStocks.length} total`);
+              
+              // If no affordable stocks, skip this trade
+              if (affordableStocks.length === 0) {
+                console.log(`Bot trading: No affordable stocks found, skipping buy operation`);
+                return updatedState;
+              }
+              
+              // Pick a stock - higher intelligence picks from top affordable stocks more consistently
               // At intelligence 1: picks from first 3 stocks
               // At intelligence 10+: almost always picks the top stock
-              const pickRange = Math.max(1, Math.ceil(4 - (state.botIntelligence * 0.3)));
+              const pickRange = Math.max(1, Math.ceil(3 - (state.botIntelligence * 0.2)));
               const pickIndex = Math.floor(Math.random() * pickRange);
-              const stockToBuy = rankedStocks[Math.min(pickIndex, rankedStocks.length - 1)];
+              const stockToBuy = affordableStocks[Math.min(pickIndex, affordableStocks.length - 1)];
               
-              // Calculate quantity to buy
+              // Debug log for selected stock
+              console.log(`Bot trading: Selected ${stockToBuy.symbol} at $${stockToBuy.price.toFixed(2)} for purchase`);
+              
+              // Calculate quantity to buy - ensure we buy at least one share
               const quantity = Math.max(1, Math.floor(tradeAmount / stockToBuy.price));
               const totalCost = quantity * stockToBuy.price;
+              
+              // Debug log for quantity calculation
+              console.log(`Bot trading: Buying ${quantity} shares for total cost of $${totalCost.toFixed(2)}`);
+              console.log(`Bot trading: Budget check - Available: $${updatedBudget.toFixed(2)}, Required: $${totalCost.toFixed(2)}`);
               
               // Check if we have enough budget
               if (updatedBudget >= totalCost && quantity > 0) {
@@ -1530,7 +1591,10 @@ const useGameStore = create<GameStore>(
                 updatedState.stockPortfolio = updatedPortfolio;
                 updatedState.botTradingBudget = updatedBudget;
                 
-                console.log(`Bot bought ${quantity} shares of ${stockToBuy.symbol} for $${totalCost.toFixed(2)}`);
+                console.log(`PURCHASE SUCCESSFUL: Bot bought ${quantity} shares of ${stockToBuy.symbol} for $${totalCost.toFixed(2)}`);
+                console.log(`Bot trading: Remaining budget: $${updatedBudget.toFixed(2)}`);
+              } else {
+                console.log(`PURCHASE FAILED: Not enough budget. Required $${totalCost.toFixed(2)}, available $${updatedBudget.toFixed(2)}`);
               }
             } else {
               // Sell operation - only if we have stocks to sell
@@ -1630,9 +1694,28 @@ const useGameStore = create<GameStore>(
                   const avgPurchasePrice = holdingToSell.averagePurchasePrice;
                   const inProfit = stockPrice > avgPurchasePrice;
                   
-                  // If in profit, sell more aggressively (up to 80% of position)
+                  // Calculate profit percentage
+                  const profitRatio = stockPrice / avgPurchasePrice;
+                  const profitPercentage = profitRatio - 1; // Convert ratio to percentage (0.1 = 10%)
+                  
+                  // Get risk threshold (default to 0.1 if not set)
+                  const riskThreshold = state.botRiskThreshold || 0.1;
+                  
+                  // If profit exceeds threshold, sell entire position
+                  // If in profit but below threshold, sell up to 50% of position
                   // If at a loss, sell smaller amounts (up to 30% of position)
-                  const sellPercentage = inProfit ? 0.8 : 0.3;
+                  let sellPercentage = 0.3; // Default for loss
+                  
+                  if (inProfit) {
+                    if (profitPercentage >= riskThreshold) {
+                      // Met or exceeded risk threshold - sell 100%
+                      sellPercentage = 1.0;
+                      console.log(`Bot selling entire position of ${stock.symbol}: Profit ${(profitPercentage * 100).toFixed(1)}% meets threshold ${(riskThreshold * 100).toFixed(1)}%`);
+                    } else {
+                      // In profit but below threshold - sell 50%
+                      sellPercentage = 0.5;
+                    }
+                  }
                   
                   const sellQuantity = Math.max(1, Math.min(
                     maxQuantity,
@@ -2054,9 +2137,9 @@ const useGameStore = create<GameStore>(
             const currentTrendDuration = now.getTime() - stock.trendStartTime.getTime();
             
             // Check if we need to create a new trend (randomly or if current trend expired)
-            // Max trend duration is 5 minutes (300,000 ms)
-            const maxTrendDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
-            const randomTrendChange = Math.random() < 0.03; // 3% chance of a trend change per tick
+            // Max trend duration is increased to 10 minutes for more stable trends
+            const maxTrendDuration = 10 * 60 * 1000; // 10 minutes in milliseconds (increased from 5)
+            const randomTrendChange = Math.random() < 0.01; // 1% chance of a trend change per tick (reduced from 3%)
             const trendExpired = stock.trendDirection !== 0 && currentTrendDuration >= maxTrendDuration;
             
             // Create a new trend if needed
@@ -2094,8 +2177,8 @@ const useGameStore = create<GameStore>(
             // Calculate price change based on trend
             let trendImpact = 0;
             if (updatedStock.trendDirection !== 0) {
-              // Stronger trends have larger price movements
-              trendImpact = updatedStock.trendDirection * updatedStock.trendStrength * 0.03; // Up to 3% per tick from trend
+              // Stronger trends have larger price movements, but reduced impact for more gradual changes
+              trendImpact = updatedStock.trendDirection * updatedStock.trendStrength * 0.01; // Up to 1% per tick from trend (reduced from 3%)
             }
             
             // Base trend factor (from the original model)
@@ -2109,7 +2192,8 @@ const useGameStore = create<GameStore>(
             const changePercent = baseTrendFactor + trendImpact + (randomFactor * volatilityFactor);
             
             // Calculate new price (with limits to prevent excessive changes per tick)
-            const maxChange = updatedStock.trendDirection !== 0 ? 0.15 : 0.05; // Allow bigger changes during trends
+            // Reduced maximum price changes by 67% to make fluctuations more gradual
+            const maxChange = updatedStock.trendDirection !== 0 ? 0.05 : 0.02; // Reduced from 0.15/0.05 to 0.05/0.02
             const limitedChangePercent = Math.max(Math.min(changePercent, maxChange), -maxChange);
             const newPrice = Math.max(0.01, updatedStock.price * (1 + limitedChangePercent));
             
@@ -2889,11 +2973,11 @@ const useGameStore = create<GameStore>(
             // Generate 0.1 creativity per second when OPs are maxed
             newCreativity += 0.01; // 0.1/10 because this runs 10 times per second
             
-            // Unlock creativity if we have enough OPs capacity (changed from 1000 to 20000)
-            const creativityUnlocked = state.creativityUnlocked || state.opsMax >= 20000;
+            // Unlock creativity if we have enough OPs capacity (changed from 20000 to 5000)
+            const creativityUnlocked = state.creativityUnlocked || state.opsMax >= 5000;
             
             if (creativityUnlocked && !state.creativityUnlocked) {
-              console.log("Creativity unlocked! OPs Max capacity reached 20000");
+              console.log("Creativity unlocked! OPs Max capacity reached 5000");
               // Force immediate save to persist the unlocked state
               if (typeof window !== 'undefined' && window.saveGameNow) {
                 setTimeout(() => window.saveGameNow(), 100);

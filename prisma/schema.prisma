@@ -109,6 +109,7 @@ model GameState {
   botLastTradeTime           DateTime @default(now())
   botTradingProfit           Float    @default(0)
   botTradingLosses           Float    @default(0)
+  botRiskThreshold           Float    @default(0.1)
   stockMarketReturns         Float    @default(0)
   stockMarketInvestment      Float    @default(0)
   stockMarketLastUpdate      DateTime @default(now())
@@ -132,7 +133,7 @@ model GameState {
   creativityUnlocked         Boolean  @default(false)
   unlockedOpsUpgrades        String   @default("[]")
   unlockedCreativityUpgrades String   @default("[]")
-  upgradeCosts               String   @default("{\"parallelProcessing\":15,\"quantumAlgorithms\":30,\"neuralOptimization\":50,\"memoryCompression\":5000,\"cacheOptimization\":35,\"distributedStorage\":60,\"marketPrediction\":25,\"trendAnalysis\":40,\"highFrequencyTrading\":75}")
+  upgradeCosts               String   @default("{\"parallelProcessing\":45,\"quantumAlgorithms\":90,\"neuralOptimization\":150,\"memoryCompression\":15000,\"cacheOptimization\":105,\"distributedStorage\":5000,\"marketPrediction\":75,\"trendAnalysis\":120,\"highFrequencyTrading\":225}")
   metricsUnlocked            Boolean  @default(false)
   
   // Space Age fields

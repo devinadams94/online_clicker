@@ -6,19 +6,19 @@ import useGameStore from "@/lib/gameStore";
 // Define the upgrade items
 const opsUpgradeItems = [
   // Computational efficiency upgrades
-  { id: 'parallelProcessing', name: 'Parallel Processing', cost: 15, description: 'Increase CPU level by 1 and OPs capacity by 50', category: 'Computation', repeatable: true },
-  { id: 'quantumAlgorithms', name: 'Quantum Algorithms', cost: 30, description: 'Increase research generation by 50%', category: 'Computation', repeatable: true },
-  { id: 'neuralOptimization', name: 'Neural Optimization', cost: 50, description: 'Increase production multiplier by 25%', category: 'Computation', repeatable: true },
+  { id: 'parallelProcessing', name: 'Parallel Processing', cost: 45, description: 'Increase CPU level by 1 and OPs capacity by 50', category: 'Computation', repeatable: true },
+  { id: 'quantumAlgorithms', name: 'Quantum Algorithms', cost: 90, description: 'Increase research generation by 50%', category: 'Computation', repeatable: true },
+  { id: 'neuralOptimization', name: 'Neural Optimization', cost: 150, description: 'Increase production multiplier by 25%', category: 'Computation', repeatable: true },
   
   // Memory management upgrades
-  { id: 'memoryCompression', name: 'Memory Compression', cost: 5000, description: 'Increase memory capacity by 2 (adds 100 OPs capacity)', category: 'Memory', repeatable: true },
-  { id: 'cacheOptimization', name: 'Cache Optimization', cost: 35, description: 'Increase memory regeneration rate by 50%', category: 'Memory', repeatable: true },
-  { id: 'distributedStorage', name: 'Distributed Storage', cost: 60, description: 'Double memory capacity (doubles OPs capacity)', category: 'Memory', repeatable: false },
+  { id: 'memoryCompression', name: 'Memory Compression', cost: 15000, description: 'Increase memory capacity by 2 (adds 100 OPs capacity)', category: 'Memory', repeatable: true },
+  { id: 'cacheOptimization', name: 'Cache Optimization', cost: 105, description: 'Increase memory regeneration rate by 50%', category: 'Memory', repeatable: true },
+  { id: 'distributedStorage', name: 'Distributed Storage', cost: 5000, description: 'Double memory capacity (doubles OPs capacity)', category: 'Memory', repeatable: false },
   
   // Market analysis upgrades
-  { id: 'marketPrediction', name: 'Market Prediction', cost: 25, description: 'Reduce stock market volatility by 20%', category: 'Market', repeatable: true },
-  { id: 'trendAnalysis', name: 'Trend Analysis', cost: 40, description: 'Increase bot intelligence by 1', category: 'Market', repeatable: true },
-  { id: 'highFrequencyTrading', name: 'High Frequency Trading', cost: 75, description: 'Make trading bots work faster', category: 'Market', repeatable: true }
+  { id: 'marketPrediction', name: 'Market Prediction', cost: 75, description: 'Reduce stock market volatility by 20%', category: 'Market', repeatable: true },
+  { id: 'trendAnalysis', name: 'Trend Analysis', cost: 120, description: 'Increase bot intelligence by 1', category: 'Market', repeatable: true },
+  { id: 'highFrequencyTrading', name: 'High Frequency Trading', cost: 225, description: 'Make trading bots work faster', category: 'Market', repeatable: true }
 ];
 
 export default function OpsUpgradesPanel() {
@@ -109,13 +109,13 @@ export default function OpsUpgradesPanel() {
             style={{ width: `${Math.min(100, (ops / opsMax) * 100)}%` }}
           ></div>
         </div>
-        {opsMax >= 20000 ? (
+        {opsMax >= 5000 ? (
           <div className="text-xs text-green-600 font-medium mb-2">
-            ✨ Creativity unlocked! (OPs capacity ≥ 20,000)
+            ✨ Creativity unlocked! (OPs capacity ≥ 5,000)
           </div>
         ) : (
           <div className="text-xs text-gray-500 mb-2">
-            Need {20000 - opsMax} more OPs capacity to unlock Creativity
+            Need {5000 - opsMax} more OPs capacity to unlock Creativity
             <div className="mt-1 italic">
               <span className="font-medium">Tip:</span> Purchase "Distributed Storage" multiple times to double memory capacity each time
             </div>

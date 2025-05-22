@@ -100,6 +100,7 @@ export interface GameState {
   botLastTradeTime: Date;
   botTradingProfit: number;
   botTradingLosses: number;
+  botRiskThreshold: number; // Risk threshold for bot trading (0.1=10%, 0.2=20%, 0.3=30%)
   stockMarketReturns: number;
   stockMarketInvestment: number;
   stockMarketLastUpdate: Date;
