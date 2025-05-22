@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String?    @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  accounts      Account[]
+  gameState     GameState?
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model GameState {
+  id                         String   @id @default(cuid())
+  userId                     String   @unique
+  paperclips                 Float    @default(0)
+  money                      Float    @default(0)
+  wire                       Float    @default(1000)
+  yomi                       Float    @default(0)
+  autoclippers               Int      @default(0)
+  autoclipper_cost           Float    @default(10)
+  clicks_per_second          Float    @default(0)
+  clickMultiplier            Int      @default(1)
+  totalClicks                Int      @default(0)
+  totalPaperclipsMade        Float    @default(0)
+  revenuePerSecond           Float    @default(0)
+  productionMultiplier       Float    @default(1)
+  megaClippers               Int      @default(0)
+  megaClipperCost            Float    @default(5000)
+  megaClippersUnlocked       Boolean  @default(false)
+  spoolCost                  Float    @default(5)
+  wirePerSpool               Float    @default(1000)
+  autoWireBuyer              Boolean  @default(false)
+  autoWireBuyerCost          Float    @default(100)
+  spoolSizeUpgradeCost       Float    @default(125)
+  spoolSizeLevel             Int      @default(1)
+  lastWirePurchaseTime       DateTime @default(now())
+  wirePurchaseCount          Int      @default(0)
+  paperclipPrice             Float    @default(0.25)
+  marketDemand               Float    @default(10)
+  paperclipsSold             Float    @default(0)
+  totalSales                 Float    @default(0)
+  basePaperclipPrice         Float    @default(0.25)
+  elasticity                 Float    @default(3)
+  marketTrend                Float    @default(0)
+  seasonalMultiplier         Float    @default(1)
+  volatility                 Float    @default(0.15)
+  maxDemand                  Float    @default(50)
+  minDemand                  Float    @default(1)
+  marketDemandLevel          Int      @default(1)
+  marketDemandUpgradeCost    Float    @default(200)
+  marketingLevel             Int      @default(0)
+  marketingCost              Float    @default(200)
+  demandMultiplier           Float    @default(1.0)
+  researchPoints             Float    @default(0)
+  researchPointsPerSecond    Float    @default(0.5)
+  unlockedResearch           String   @default("[]")
+  stockMarketUnlocked        Boolean  @default(false)
+  tradingBots                Int      @default(0)
+  tradingBotCost             Float    @default(1000)
+  botIntelligence            Int      @default(1)
+  botIntelligenceCost        Float    @default(1500)
+  botTradingBudget           Float    @default(0)
+  botLastTradeTime           DateTime @default(now())
+  botTradingProfit           Float    @default(0)
+  botTradingLosses           Float    @default(0)
+  stockMarketReturns         Float    @default(0)
+  stockMarketInvestment      Float    @default(0)
+  stockMarketLastUpdate      DateTime @default(now())
+  stockPortfolio             String   @default("[]")
+  stockPriceHistory          String   @default("{}")
+  portfolioValue             Float    @default(0)
+  cpuLevel                   Int      @default(1)
+  cpuCost                    Float    @default(100)
+  memory                     Float    @default(1)
+  memoryMax                  Float    @default(1)
+  memoryCost                 Float    @default(100)
+  memoryRegenRate            Float    @default(1)
+  trust                      Float    @default(0)
+  trustLevel                 Int      @default(0)
+  nextTrustAt                Float    @default(100000)
+  purchasedTrustLevels       String   @default("[]")
+  unlockedTrustAbilities     String   @default("[]")
+  ops                        Float    @default(10)
+  opsMax                     Float    @default(10)
+  creativity                 Float    @default(0)
+  creativityUnlocked         Boolean  @default(false)
+  unlockedOpsUpgrades        String   @default("[]")
+  unlockedCreativityUpgrades String   @default("[]")
+  upgradeCosts               String   @default("{\"parallelProcessing\":15,\"quantumAlgorithms\":30,\"neuralOptimization\":50,\"memoryCompression\":20,\"cacheOptimization\":35,\"distributedStorage\":60,\"marketPrediction\":25,\"trendAnalysis\":40,\"highFrequencyTrading\":75}")
+  metricsUnlocked            Boolean  @default(false)
+  
+  // Space Age fields
+  spaceAgeUnlocked           Boolean  @default(false)
+  probes                     Float    @default(0)
+  universeExplored           Float    @default(0)
+  wireHarvesters             Float    @default(0)
+  oreHarvesters              Float    @default(0)
+  factories                  Float    @default(0)
+  spaceWirePerSecond         Float    @default(0)
+  spaceOrePerSecond          Float    @default(0)
+  spacePaperclipsPerSecond   Float    @default(0)
+  spaceStats                 String   @default("{\"speed\":1,\"exploration\":1,\"selfReplication\":1,\"wireProduction\":1,\"miningProduction\":1,\"factoryProduction\":1}")
+  aerogradePaperclips        Float    @default(0)
+  honor                      Float    @default(0)
+  battlesWon                 Int      @default(0)
+  autoBattleEnabled          Boolean  @default(false)
+  autoBattleUnlocked         Boolean  @default(false)
+  battleDifficulty           Float    @default(1)
+  unlockedSpaceUpgrades      String   @default("[]")
+  
+  lastSaved                  DateTime @default(now())
+  lastPriceUpdate            DateTime @default(now())
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

@@ -1,0 +1,54 @@
+{
+  "name": "clicker_game_online",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/setup-env.js && next dev",
+    "build": "node scripts/setup-env.js && next build",
+    "start": "node scripts/setup-env.js && next start",
+    "lint": "next lint",
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "setup-env": "node scripts/setup-env.js",
+    "db:migrate": "node scripts/setup-env.js && prisma migrate dev",
+    "db:reset": "node scripts/setup-env.js && prisma migrate reset",
+    "db:deploy": "node scripts/setup-env.js && prisma migrate deploy",
+    "db:generate": "node scripts/setup-env.js && prisma generate",
+    "db:seed": "node scripts/setup-env.js && prisma db seed",
+    "db:studio": "node scripts/setup-env.js && prisma studio",
+    "db:direct-migrate": "node scripts/direct-migrate.js",
+    "test:auth": "node scripts/test-auth.js"
+  },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.12.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.5.0",
+    "next": "^15.3.2",
+    "next-auth": "^4.24.5",
+    "phaser": "^3.88.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@next-auth/prisma-adapter": "^1.0.7",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.0.4",
+    "jest": "^29.7.0",
+    "postcss": "^8.4.32",
+    "prisma": "^5.7.1",
+    "raw-loader": "^4.0.2",
+    "tailwindcss": "^3.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
