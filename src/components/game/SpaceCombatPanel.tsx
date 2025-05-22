@@ -116,38 +116,94 @@ export default function SpaceCombatPanel() {
     // Create new array for updated ships
     const updatedShips = [...ships];
     
-    // Find nearest enemy for each probe
+    // Get combat and hazard evasion stats
+    const combatStat = spaceStats?.combat || 1;
+    const hazardEvasionStat = spaceStats?.hazardEvasion || 1;
+    
+    // Update ship directions randomly with some influence from combat stat
     updatedShips.forEach((ship, index) => {
-      if (!ship.isEnemy) { // This is a player probe
-        // Find the nearest enemy
-        let nearestEnemy: Ship | null = null;
-        let minDistance = Infinity;
+      // Random movement behavior for all ships
+      const randomizeDirection = () => {
+        // Generate random direction change
+        const randX = (Math.random() - 0.5) * 0.2; // Small random adjustment
+        const randY = (Math.random() - 0.5) * 0.2;
         
-        updatedShips.forEach(otherShip => {
-          if (otherShip.isEnemy) {
-            const distance = Math.sqrt(
-              Math.pow(otherShip.x - ship.x, 2) + 
-              Math.pow(otherShip.y - ship.y, 2)
-            );
-            
-            if (distance < minDistance) {
-              minDistance = distance;
-              nearestEnemy = otherShip;
-            }
-          }
-        });
+        // Get current direction
+        let dx = ship.direction.x + randX;
+        let dy = ship.direction.y + randY;
         
-        // Set direction towards nearest enemy
-        if (nearestEnemy) {
-          const dx = nearestEnemy.x - ship.x;
-          const dy = nearestEnemy.y - ship.y;
-          const magnitude = Math.sqrt(dx * dx + dy * dy);
+        // Normalize
+        const magnitude = Math.sqrt(dx * dx + dy * dy) || 1;
+        dx = dx / magnitude;
+        dy = dy / magnitude;
+        
+        return { x: dx, y: dy };
+      };
+      
+      // Combat intelligence for player ships based on combat stat
+      // Higher combat stat means more likely to seek out enemies
+      if (!ship.isEnemy) {
+        // Roll to see if ship uses combat intelligence (based on combat stat)
+        // This makes higher combat stat give better ship targeting
+        const usesCombatIntelligence = Math.random() < (combatStat * 0.1);
+        
+        if (usesCombatIntelligence) {
+          // Find the nearest enemy
+          let nearestEnemy: Ship | null = null;
+          let minDistance = Infinity;
           
-          updatedShips[index].direction = {
-            x: dx / magnitude,
-            y: dy / magnitude
-          };
+          updatedShips.forEach(otherShip => {
+            if (otherShip.isEnemy) {
+              const distance = Math.sqrt(
+                Math.pow(otherShip.x - ship.x, 2) + 
+                Math.pow(otherShip.y - ship.y, 2)
+              );
+              
+              if (distance < minDistance) {
+                minDistance = distance;
+                nearestEnemy = otherShip;
+              }
+            }
+          });
+          
+          // If found an enemy, adjust direction towards it
+          if (nearestEnemy) {
+            const dx = nearestEnemy.x - ship.x;
+            const dy = nearestEnemy.y - ship.y;
+            const magnitude = Math.sqrt(dx * dx + dy * dy) || 1;
+            
+            // Update direction with some randomness
+            const targetDir = {
+              x: dx / magnitude,
+              y: dy / magnitude
+            };
+            
+            // Mix current direction with target direction based on combat stat
+            const combatInfluence = Math.min(0.8, combatStat * 0.1); // Cap at 80% influence
+            updatedShips[index].direction = {
+              x: ship.direction.x * (1 - combatInfluence) + targetDir.x * combatInfluence,
+              y: ship.direction.y * (1 - combatInfluence) + targetDir.y * combatInfluence
+            };
+            
+            // Normalize
+            const newMagnitude = Math.sqrt(
+              updatedShips[index].direction.x * updatedShips[index].direction.x + 
+              updatedShips[index].direction.y * updatedShips[index].direction.y
+            ) || 1;
+            
+            updatedShips[index].direction.x /= newMagnitude;
+            updatedShips[index].direction.y /= newMagnitude;
+          } else {
+            // No enemies found, move randomly
+            updatedShips[index].direction = randomizeDirection();
+          }
+        } else {
+          // Not using combat intelligence, move randomly
+          updatedShips[index].direction = randomizeDirection();
         }
+      } else {
+        // Enemy ships always move randomly
+        updatedShips[index].direction = randomizeDirection();
       }
     });
     
@@ -174,11 +230,30 @@ export default function SpaceCombatPanel() {
       }
     });
     
+    // Random crashes based on hazard evasion stat
+    // Higher hazard evasion means less crashes
+    const probeCrashChance = 0.01 / hazardEvasionStat; // Base 1% crash chance divided by hazard evasion
+    
+    // Check for random probe crashes
+    const crashIndices: number[] = [];
+    updatedShips.forEach((ship, index) => {
+      if (!ship.isEnemy && Math.random() < probeCrashChance) {
+        // Mark this probe for removal (crashed)
+        crashIndices.push(index);
+      }
+    });
+    
     // Check for collisions
     const collisions: number[] = []; // Indices to remove
     
     for (let i = 0; i < updatedShips.length; i++) {
+      // Skip if already crashed
+      if (crashIndices.includes(i)) continue;
+      
       for (let j = i + 1; j < updatedShips.length; j++) {
+        // Skip if already crashed
+        if (crashIndices.includes(j)) continue;
+        
         // Skip if both are same type (enemy vs enemy or probe vs probe)
         if (updatedShips[i].isEnemy === updatedShips[j].isEnemy) continue;
         
@@ -196,12 +271,13 @@ export default function SpaceCombatPanel() {
           // Mark both for removal
           collisions.push(i, j);
           
-          // 30% chance to randomly destroy another player probe to make battles harder
-          // Only if this was a player probe colliding with an enemy
-          if (Math.random() < 0.3) {
+          // Chance to randomly destroy another player probe to make battles harder
+          // Reduced based on hazard evasion
+          const extraDestructionChance = 0.3 / hazardEvasionStat;
+          if (Math.random() < extraDestructionChance) {
             // Find a random player probe to destroy
             const playerProbes = updatedShips.map((s, idx) => ({ index: idx, isEnemy: s.isEnemy }))
-              .filter(s => !s.isEnemy && !collisions.includes(s.index));
+              .filter(s => !s.isEnemy && !collisions.includes(s.index) && !crashIndices.includes(s.index));
             
             if (playerProbes.length > 0) {
               // Choose a random probe to destroy
@@ -218,15 +294,32 @@ export default function SpaceCombatPanel() {
       }
     }
     
-    // Remove collided ships (need to remove in reverse order to not mess up indices)
-    const uniqueCollisions = [...new Set(collisions)].sort((a, b) => b - a);
-    uniqueCollisions.forEach(index => {
+    // Combine crashed ships with collisions
+    const allCrashes = [...collisions, ...crashIndices];
+    
+    // Get count of probes before removing them
+    const initialProbeCount = updatedShips.filter(ship => !ship.isEnemy).length;
+    
+    // Remove crashed and collided ships (need to remove in reverse order to not mess up indices)
+    const uniqueRemoved = [...new Set(allCrashes)].sort((a, b) => b - a);
+    uniqueRemoved.forEach(index => {
       updatedShips.splice(index, 1);
     });
     
     // Count remaining ships
     const remainingProbes = updatedShips.filter(ship => !ship.isEnemy).length;
     const remainingEnemies = updatedShips.filter(ship => ship.isEnemy).length;
+    
+    // Calculate probes lost this update
+    const probesLostThisUpdate = initialProbeCount - remainingProbes;
+    
+    // If probes were lost, update the total probes in the game state
+    if (probesLostThisUpdate > 0) {
+      // This actually reduces the player's total probe count
+      useGameStore.setState(state => ({
+        probes: Math.max(0, state.probes - probesLostThisUpdate)
+      }));
+    }
     
     // Check if battle is over
     if (remainingProbes === 0 || remainingEnemies === 0) {
@@ -235,8 +328,7 @@ export default function SpaceCombatPanel() {
       // Calculate honor gained (based on number of enemies destroyed)
       const enemiesDestroyed = enemyCount - remainingEnemies;
       
-      // Calculate probes lost (only count the actual probes lost in the battle, not total probes)
-      // This fixes the issue where it shows all probes as lost
+      // Calculate total probes lost (only count the actual probes lost in the battle)
       const deployedProbes = Math.min(probes, 50); // Same number we deployed in startBattle
       const probesLost = deployedProbes - remainingProbes;
       
@@ -250,11 +342,14 @@ export default function SpaceCombatPanel() {
       // Show battle results
       const battleWon = remainingEnemies === 0;
       
-      // Increment battlesWon counter if victory
-      if (battleWon) {
-        // This value is managed by the store, we just need to pass it in the results
-        // for display purposes - the actual increment happens in addHonor
-      }
+      // Save game state after battle to ensure probe loss is saved
+      setTimeout(() => {
+        if (typeof window !== 'undefined' && window.saveGameNow) {
+          window.saveGameNow()
+            .then(() => console.log("Game saved after battle"))
+            .catch(err => console.error("Error saving after battle:", err));
+        }
+      }, 500);
       
       setBattleResults({
         won: battleWon,
@@ -383,6 +478,10 @@ export default function SpaceCombatPanel() {
           {battlesWon > 0 && (
             <span className="text-sm ml-3">Battles Won: <span className="font-bold text-green-400">{formatNumber(battlesWon)}</span></span>
           )}
+          <div className="mt-1 text-xs text-gray-400">
+            <span className="mr-3">Combat: <span className="font-medium text-blue-300">{spaceStats?.combat?.toFixed(1) || 1}</span></span>
+            <span>Hazard Evasion: <span className="font-medium text-green-300">{spaceStats?.hazardEvasion?.toFixed(1) || 1}</span></span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {autoBattleUnlocked && (
@@ -484,10 +583,10 @@ export default function SpaceCombatPanel() {
       </div>
       
       <div className="text-xs text-gray-400">
-        <p>Your probes (blue) will automatically target and pursue enemy ships (red).</p>
-        <p>If a probe collides with an enemy ship, the enemy is destroyed. If an enemy collides with a probe, both are destroyed.</p>
-        <p>Win battles to earn Honor, which can be used for powerful upgrades.</p>
-        <p className="mt-2">As you win more battles, enemies will become stronger and more numerous, but you'll earn more Honor!</p>
+        <p>Your probes (blue) move randomly with some guidance from the Combat stat, while enemy ships (red) move randomly.</p>
+        <p>When ships collide, both are destroyed. Probes may also randomly crash based on your Hazard Evasion stat.</p>
+        <p>Probes lost in battle are permanently lost from your total probes. Win battles to earn Honor for upgrades.</p>
+        <p className="mt-2">Higher Combat stat helps ships find enemies. Higher Hazard Evasion reduces crashes and battle losses.</p>
         {autoBattleUnlocked && (
           <div className="mt-2 p-2 border border-gray-700 rounded">
             <div className="flex justify-between items-center">

@@ -46,13 +46,10 @@ export default function SpaceLaunchPanel() {
     try {
       // Attempt to save the game state if the save function is available
       if (typeof window !== 'undefined' && window.saveGameNow) {
-        console.log("Triggering game save after bulk purchase");
-        window.saveGameNow()
-          .then(() => console.log("Game save completed after bulk purchase"))
-          .catch(err => console.error("Error saving game after bulk purchase:", err));
+        window.saveGameNow().catch(() => {});
       }
     } catch (error) {
-      console.error("Failed to trigger game save:", error);
+      // Silently fail
     }
   };
   
@@ -63,11 +60,8 @@ export default function SpaceLaunchPanel() {
     const totalCost = calculateBulkCost(baseCost, wireHarvesters, amount);
     
     if (paperclips < totalCost) {
-      console.log(`Not enough paperclips for bulk wire harvester purchase. Need ${totalCost}, have ${paperclips}`);
       return;
     }
-    
-    console.log(`Bulk purchasing ${amount} wire harvesters for ${totalCost} paperclips`);
     
     // Update state directly with the new count and reduced paperclips
     useGameStore.setState({
@@ -85,11 +79,8 @@ export default function SpaceLaunchPanel() {
     const totalCost = calculateBulkCost(baseCost, oreHarvesters, amount);
     
     if (paperclips < totalCost) {
-      console.log(`Not enough paperclips for bulk ore harvester purchase. Need ${totalCost}, have ${paperclips}`);
       return;
     }
-    
-    console.log(`Bulk purchasing ${amount} ore harvesters for ${totalCost} paperclips`);
     
     // Update state directly with the new count and reduced paperclips
     useGameStore.setState({
@@ -107,11 +98,8 @@ export default function SpaceLaunchPanel() {
     const totalCost = calculateBulkCost(baseCost, factories, amount);
     
     if (paperclips < totalCost) {
-      console.log(`Not enough paperclips for bulk factory purchase. Need ${totalCost}, have ${paperclips}`);
       return;
     }
-    
-    console.log(`Bulk purchasing ${amount} factories for ${totalCost} paperclips`);
     
     // Update state directly with the new count and reduced paperclips
     useGameStore.setState({

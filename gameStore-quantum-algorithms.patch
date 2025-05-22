@@ -1,0 +1,11 @@
+// Apply these changes to gameStore.ts
+
+// Find the nonRepeatableUpgrades array definition in the buyOpsUpgrade function
+// Original line:
+const nonRepeatableUpgrades = ['distributedStorage'];
+
+// Change to:
+const nonRepeatableUpgrades = ['distributedStorage', 'quantumAlgorithms'];
+
+// This will make quantumAlgorithms a non-repeatable upgrade
+// In the OpsUpgradesPanel.tsx file, we've already updated the repeatable flag to false

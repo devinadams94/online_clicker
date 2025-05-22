@@ -39,6 +39,11 @@ interface GameStore extends GameState {
   userId: string | null;
   visualFX: VisualFX;
   
+  // Prestige actions
+  calculatePrestigePoints: () => number;
+  prestigeReset: () => void;
+  applyPrestigeRewards: () => void;
+  
   // Production actions
   clickPaperclip: () => void;
   buyAutoclipper: () => void;
@@ -137,6 +142,19 @@ const useGameStore = create<GameStore>(
     (set, get) => ({
       // Add space functions from spaceExtension.ts
       ...addSpaceFunctions(set, get),
+      
+      // Prestige System
+      prestigeLevel: 0,
+      prestigePoints: 0,
+      lifetimePaperclips: 0,
+      prestigeRewards: {
+        productionMultiplier: 1,
+        researchMultiplier: 1,
+        wireEfficiency: 1,
+        startingMoney: 0,
+        clickMultiplier: 1
+      },
+      
       // Resources
       paperclips: 0,
       money: 0, // Start with $0 (changed from $50)
@@ -302,11 +320,19 @@ const useGameStore = create<GameStore>(
           return state; // Not enough wire
         }
         
-        const clipsMade = 1 * state.clickMultiplier;
+        // Apply prestige rewards to click production
+        const prestigeClickMultiplier = state.prestigeRewards?.clickMultiplier || 1;
+        const wireEfficiency = state.prestigeRewards?.wireEfficiency || 1;
+        
+        // Calculate clips made with all multipliers applied
+        const clipsMade = 1 * state.clickMultiplier * prestigeClickMultiplier;
+        
+        // Calculate wire used (improved efficiency from prestige)
+        const wireUsed = Math.max(0.1, 1 / wireEfficiency); // Minimum 0.1 wire per click
         
         return { 
           paperclips: state.paperclips + clipsMade,
-          wire: state.wire - 1, // Consume 1 wire per paperclip
+          wire: state.wire - wireUsed, // Consume wire with efficiency bonus
           totalClicks: state.totalClicks + 1,
           totalPaperclipsMade: state.totalPaperclipsMade + clipsMade
         };
@@ -332,19 +358,6 @@ const useGameStore = create<GameStore>(
           
           // Check if we should unlock Mega-Clippers at 100 autoclippers
           const megaClippersUnlocked = newAutoclippers >= 100 ? true : state.megaClippersUnlocked;
-          
-          console.log("Buying autoclipper:");
-          console.log("- Current money:", state.money);
-          console.log("- Cost:", state.autoclipper_cost);
-          console.log("- New money:", newMoney);
-          console.log("- Base multiplier:", state.productionMultiplier.toFixed(1));
-          console.log("- OPs bonus:", (state.opsProductionMultiplier || 0).toFixed(1));
-          console.log("- Total multiplier:", totalMultiplier.toFixed(1));
-          console.log("- New production rate:", newClicksPerSecond.toFixed(1));
-          
-          if (newAutoclippers === 100) {
-            console.log("Mega-Clippers UNLOCKED at 100 autoclippers!");
-          }
 
           // Return the updated state
           return {
@@ -361,12 +374,10 @@ const useGameStore = create<GameStore>(
         // First check if we have enough money before any side effects
         const state = get();
         if (!state.megaClippersUnlocked) {
-          console.log(`Cannot buy Mega-Clipper: Not unlocked yet`);
           return;
         }
         
         if (state.money < state.megaClipperCost) {
-          console.log(`Cannot buy Mega-Clipper: Not enough money. Have $${state.money.toFixed(2)}, need $${state.megaClipperCost.toFixed(2)}`);
           return;
         }
         
@@ -384,11 +395,6 @@ const useGameStore = create<GameStore>(
         const totalMultiplier = newProductionMultiplier + (state.opsProductionMultiplier || 0);
         const newClicksPerSecond = state.autoclippers * 1 * totalMultiplier;
         
-        console.log("Buying Mega-Clipper:");
-        console.log("- New base production multiplier:", newProductionMultiplier.toFixed(1));
-        console.log("- Total multiplier with OPs bonus:", totalMultiplier.toFixed(1));
-        console.log("- New production rate:", newClicksPerSecond.toFixed(1));
-        
         // Update state with new values
         set({
           money: newMoney,
@@ -398,49 +404,30 @@ const useGameStore = create<GameStore>(
           clicks_per_second: newClicksPerSecond
         });
         
-        // Verify state was updated correctly
-        const updatedState = get();
-        console.log(`Mega-Clipper purchase verified: Count ${updatedState.megaClippers}, Cost: $${updatedState.megaClipperCost}, Production Multiplier: ${updatedState.productionMultiplier}`);
-        
         // Force an immediate save to the database after buying Mega-Clipper
         // Wait a bit to ensure state is fully updated
         setTimeout(() => {
           try {
-            console.log('Attempting to save after Mega-Clipper purchase');
-            
-            // Detailed diagnostic info for window.saveGameNow
             if (typeof window === 'undefined') {
-              console.error('Cannot save game: window is undefined (server-side context)');
               return;
             }
             
-            console.log('window exists:', !!window);
-            console.log('window.saveGameNow exists:', !!window.saveGameNow);
-            console.log('window.saveGameNow type:', typeof window.saveGameNow);
-            
             if (typeof window.saveGameNow === 'function') {
-              console.log('Forcing game save after Mega-Clipper purchase');
-              window.saveGameNow()
-                .then(() => console.log('Mega-Clipper purchase save completed successfully'))
-                .catch(saveErr => console.error('Error during Mega-Clipper purchase save operation:', saveErr));
+              window.saveGameNow().catch(() => {});
             } else {
-              console.error('Cannot save game: window.saveGameNow is not a function');
-              
               // Attempt to save using the save interval as a fallback
-              console.log('Attempting to trigger a manual save event');
               const saveEvent = new CustomEvent('manual-save-trigger');
               window.dispatchEvent(saveEvent);
               
               // Set a flag in localStorage as a last resort
               try {
                 localStorage.setItem('pendingMegaClipperSave', 'true');
-                console.log('Set pendingMegaClipperSave flag in localStorage');
               } catch (e) {
-                console.error('Could not set localStorage flag:', e);
+                // Silently fail
               }
             }
           } catch (err) {
-            console.error('Error saving game after Mega-Clipper purchase:', err);
+            // Silently fail
           }
         }, 250); // Increased timeout to 250ms for more reliability
       },
@@ -619,8 +606,9 @@ const useGameStore = create<GameStore>(
           }
 
           // Calculate how many paperclips could be produced in this tick
-          // Apply production multiplier (base + OPs bonus) to the base rate
-          const totalMultiplier = state.productionMultiplier + (state.opsProductionMultiplier || 0);
+          // Apply production multiplier (base + OPs bonus + prestige bonus) to the base rate
+          const prestigeProductionMultiplier = state.prestigeRewards?.productionMultiplier || 1;
+          const totalMultiplier = (state.productionMultiplier + (state.opsProductionMultiplier || 0)) * prestigeProductionMultiplier;
           const potentialProduction = (state.clicks_per_second * totalMultiplier) / 10;
           
           // Check if there's enough wire
@@ -628,14 +616,18 @@ const useGameStore = create<GameStore>(
             return updatedState; // No wire available
           }
           
-          // Calculate actual production based on available wire
-          const actualProduction = Math.min(potentialProduction, updatedState.wire);
+          // Apply wire efficiency from prestige rewards
+          const wireEfficiency = state.prestigeRewards?.wireEfficiency || 1;
+          
+          // Calculate actual production based on available wire (with efficiency bonus)
+          const wireNeeded = potentialProduction / wireEfficiency;
+          const actualProduction = Math.min(potentialProduction, updatedState.wire * wireEfficiency);
           
           // Update resources
           return { 
             ...updatedState,
             paperclips: updatedState.paperclips + actualProduction,
-            wire: updatedState.wire - actualProduction,
+            wire: updatedState.wire - (actualProduction / wireEfficiency),
             totalPaperclipsMade: updatedState.totalPaperclipsMade + actualProduction
           };
         }),
@@ -782,17 +774,9 @@ const useGameStore = create<GameStore>(
           purchasedTrustLevels: newPurchasedLevels
         });
         
-        // Verify state was updated correctly
-        const updatedState = get();
-        console.log(`State after update - purchasedTrustLevels:`, updatedState.purchasedTrustLevels);
-        console.log(`Verifying level ${level} was added:`, updatedState.purchasedTrustLevels.includes(level));
-        
         // Force an immediate save after updating state
-        console.log("Forcing immediate save after trust purchase");
         if (typeof window !== 'undefined' && window.saveGameNow) {
           window.saveGameNow();
-        } else {
-          console.warn("window.saveGameNow is not available!");
         }
       },
         
@@ -801,29 +785,18 @@ const useGameStore = create<GameStore>(
         // First check if we can buy before making any state changes
         const state = get();
         
-        // Extra debug information
-        console.log(`==== TRUST ABILITY PURCHASE ATTEMPT ====`);
-        console.log(`Ability ID: ${id}, Cost: ${cost} trust points`);
-        console.log(`Current trust: ${state.trust}`);
-        console.log(`Current unlockedTrustAbilities:`, state.unlockedTrustAbilities);
-        
         // Check if already unlocked
         if (state.unlockedTrustAbilities.includes(id)) {
-          console.log(`Trust ability ${id} already unlocked - ABORTING PURCHASE`);
           return;
         }
         
         // Check if player has enough trust
         if (state.trust < cost) {
-          console.log(`Not enough trust to buy ability ${id}. Have: ${state.trust}, Need: ${cost}`);
           return;
         }
         
-        console.log(`Buying trust ability ${id} for ${cost} trust points`);
-        
         // Create a new array to ensure the reference changes
         const newUnlockedAbilities = [...state.unlockedTrustAbilities, id];
-        console.log(`New unlockedTrustAbilities:`, newUnlockedAbilities);
         
         // Apply ability effects
         let updatedState: Partial<GameState> = {
@@ -1010,10 +983,17 @@ const useGameStore = create<GameStore>(
         
       // Research methods
       generateResearchPoints: () => 
-        set((state) => ({
-          // Divide by 10 since this runs 10 times per second
-          researchPoints: state.researchPoints + (state.researchPointsPerSecond / 10)
-        })),
+        set((state) => {
+          // Apply prestige research multiplier
+          const researchMultiplier = state.prestigeRewards?.researchMultiplier || 1;
+          
+          // Divide by 10 since this runs 10 times per second, apply multiplier
+          const researchGain = (state.researchPointsPerSecond * researchMultiplier) / 10;
+          
+          return {
+            researchPoints: state.researchPoints + researchGain
+          };
+        }),
         
       buyResearch: (id: string) => 
         set((state) => {
@@ -1031,33 +1011,44 @@ const useGameStore = create<GameStore>(
             'wireProduction': 400,
             'advancedClippers': 500,
             'stockMarket': 1000,
+            'hyperProduction': 12000,
             
             // Advanced market research
             'demandAnalytics': 1500,
             'globalMarketing': 2000,
             'marketPsychology': 3000,
             'viralCampaign': 4000,
+            'globalMonopoly': 15000,
+            'marketManipulation': 20000,
             
             // Advanced production research
             'nanotechnology': 2500,
             'quantumEfficiency': 3500,
             'selfOptimization': 5000,
             'swarmProduction': 6000,
+            'molecularAssembly': 18000,
+            'quantumFabrication': 25000,
             
             // Advanced resource research
             'materialScience': 2000,
             'microAlloys': 3000,
             'wireRecycling': 4000,
+            'quantumMaterials': 16000,
+            'matterTransmutation': 22000,
             
             // Advanced intelligence research
             'enhancedLearning': 1500,
             'deepThinking': 3000,
             'computerVision': 4500,
             'creativityEngine': 5500,
+            'neuralAcceleration': 14000,
+            'quantumConsciousness': 23000,
             
             // Special projects
             'trustProject': 10000,
-            'quantumComputing': 15000
+            'quantumComputing': 15000,
+            'cosmicExpansion': 20000,
+            'multidimensionalResearch': 25000
           };
           
           const cost = researchCosts[id] || 0;
@@ -1067,7 +1058,7 @@ const useGameStore = create<GameStore>(
             return state;
           }
           
-          // Apply research effects
+          // Apply research effects and deduct cost
           let updatedState: Partial<GameState> = {
             researchPoints: state.researchPoints - cost,
             unlockedResearch: [...state.unlockedResearch, id]
@@ -3392,16 +3383,118 @@ const useGameStore = create<GameStore>(
           
           return state; // No change
         }),
+        
+      // Prestige System Functions
+      calculatePrestigePoints: () => {
+        const state = get();
+        // Formula: Square root of (total paperclips / 1 million)
+        // This provides a reasonable growth curve where early resets give fewer points
+        const basePaperclips = state.paperclips + (state.lifetimePaperclips || 0);
+        
+        // Base formula - can be adjusted for balance
+        let prestigePoints = Math.floor(Math.sqrt(basePaperclips / 1000000));
+        
+        // Min 1 point if they have at least 1 million paperclips
+        if (basePaperclips >= 1000000 && prestigePoints < 1) {
+          prestigePoints = 1;
+        }
+        
+        console.log(`Calculating prestige points: ${prestigePoints} from ${basePaperclips} paperclips`);
+        return prestigePoints;
+      },
+      
+      prestigeReset: () => {
+        const state = get();
+        const currentPoints = state.calculatePrestigePoints();
+        
+        if (currentPoints <= 0) {
+          console.log("Not enough progress to prestige yet");
+          return false;
+        }
+        
+        // Calculate total lifetime paperclips
+        const lifetimePaperclips = (state.lifetimePaperclips || 0) + state.paperclips;
+        
+        // Calculate total prestige points
+        const totalPrestigePoints = (state.prestigePoints || 0) + currentPoints;
+        
+        // Increment prestige level
+        const newPrestigeLevel = (state.prestigeLevel || 0) + 1;
+        
+        // Save prestige data before reset
+        set({
+          prestigeLevel: newPrestigeLevel,
+          prestigePoints: totalPrestigePoints,
+          lifetimePaperclips: lifetimePaperclips
+        });
+        
+        // Calculate new rewards based on total prestige points
+        get().applyPrestigeRewards();
+        
+        // Save the game immediately before resetting
+        if (typeof window !== 'undefined' && window.saveGameNow) {
+          console.log("Saving game before prestige reset");
+          window.saveGameNow()
+            .then(() => {
+              console.log("Game saved, now performing reset");
+              // Now reset the game state
+              get().resetGame();
+            })
+            .catch(err => {
+              console.error("Error saving before prestige:", err);
+              // Still reset the game even if save fails
+              get().resetGame();
+            });
+        } else {
+          // No save function available, just reset
+          get().resetGame();
+        }
+        
+        return true;
+      },
+      
+      applyPrestigeRewards: () => {
+        const state = get();
+        const points = state.prestigePoints || 0;
+        
+        // Calculate rewards based on total prestige points
+        // These formulas can be adjusted for game balance
+        const newRewards = {
+          productionMultiplier: 1 + (points * 0.2),  // Each point gives +20% production
+          researchMultiplier: 1 + (points * 0.1),    // Each point gives +10% research
+          wireEfficiency: 1 + (points * 0.05),       // Each point gives +5% wire efficiency
+          startingMoney: points * 50,                // $50 starting money per point
+          clickMultiplier: 1 + (points * 0.1)        // Each point gives +10% click production
+        };
+        
+        console.log(`Applying prestige rewards for ${points} points:`, newRewards);
+        
+        // Update the rewards
+        set({ prestigeRewards: newRewards });
+      },
 
       // Reset game state
       resetGame: () => 
         set((state) => ({
-          // Preserve authentication and user data
+          // Preserve authentication, user data, and prestige info
           userId: state.userId,
           isAuthenticated: state.isAuthenticated,
-          // Resources
+          
+          // Preserve prestige information
+          prestigeLevel: state.prestigeLevel || 0,
+          prestigePoints: state.prestigePoints || 0,
+          lifetimePaperclips: state.lifetimePaperclips || 0,
+          prestigeRewards: state.prestigeRewards || {
+            productionMultiplier: 1,
+            researchMultiplier: 1,
+            wireEfficiency: 1,
+            startingMoney: 0,
+            clickMultiplier: 1
+          },
+          
+          // Resources - apply prestige bonuses
           paperclips: 0,
-          money: 0, // Start with $0
+          money: (state.prestigeRewards?.startingMoney || 0), // Apply starting money from prestige
           wire: 1000, // Start with 1000 wire
           yomi: 0, // Reset yomi
           
@@ -3527,6 +3620,13 @@ const useGameStore = create<GameStore>(
         // User identification (included so userId is part of persisted state)
         userId: state.userId,
         isAuthenticated: state.isAuthenticated,
+        
+        // Prestige system
+        prestigeLevel: state.prestigeLevel,
+        prestigePoints: state.prestigePoints,
+        lifetimePaperclips: state.lifetimePaperclips,
+        prestigeRewards: state.prestigeRewards,
+        
         // Resources
         paperclips: state.paperclips,
         money: state.money,

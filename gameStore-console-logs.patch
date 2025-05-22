@@ -1,0 +1,75 @@
+// This is a patch for removing all console.log statements from gameStore.ts
+// Apply these changes manually to the file
+
+// In the botAutoTrade function:
+// Remove all console.log statements such as:
+console.log(`Bot trading triggered...`);
+console.log(`Bot selling entire position of...`);
+console.log(`Added $${profitLoss.toFixed(2)} to trading profit...`);
+// etc.
+
+// In the generateStockReturns function:
+// Remove all console.log statements such as:
+console.log(`Stock market returns: $${returns.toFixed(2)}...`);
+console.log(`Base rate: ${(returnRate * 100).toFixed(2)}%...`);
+// etc.
+
+// In the getStocks function:
+// Remove all console.log statements such as:
+console.log(`Restored ${direction} trend for ${updatedStock.symbol}...`);
+// etc.
+
+// In the buyStock and sellStock functions:
+// Remove all console.log statements such as:
+console.log(`Stock ${stockId} not found`);
+console.log(`Not enough money to buy ${quantity} shares of ${stock.symbol}`);
+console.log(`Bought ${quantity} shares of ${stock.symbol}...`);
+console.log(`Sold ${quantity} shares of ${stock.symbol}...`);
+console.log(`Profit/Loss: $${profitLoss.toFixed(2)}`);
+// etc.
+
+// In the updateStockPrices function:
+// Remove all console.log statements such as:
+console.log(`${updatedStock.symbol}: New ${direction} trend starting...`);
+// etc.
+
+// In the upgradeCPU function:
+// Remove all console.log statements such as:
+console.log(`Cannot upgrade CPU: Not enough money...`);
+console.log(`CPU upgraded to level ${newLevel}...`);
+console.log(`CPU upgrade verified...`);
+console.log('Attempting to save after CPU upgrade');
+console.log('CRITICAL CPU COST TO BE SAVED:', newCost);
+console.log('window exists:', !!window);
+// etc.
+
+// In the upgradeMemory function:
+// Remove all console.log statements such as:
+console.log(`Cannot upgrade Memory: Not enough money...`);
+console.log(`Upgrading memory: ${state.memoryMax} -> ${newMemoryMax}`);
+console.log(`Memory cost: $${state.memoryCost.toFixed(2)} -> $${newCost.toFixed(2)}...`);
+// etc.
+
+// In the useOps function:
+// Remove all console.log statements such as:
+console.log(`Attempting to use ${amount} OPs. Current OPs: ${state.ops}`);
+console.log(`Not enough OPs: have ${state.ops}, need ${amount}`);
+console.log(`Used ${amount} OPs. New OPs: ${updatedState.ops}/${updatedState.opsMax}`);
+// etc.
+
+// In the buyOpsUpgrade function:
+// Remove all console.log statements such as:
+console.log(`Buying Ops upgrade ${id} with cost ${cost}`);
+console.log(`Current ops: ${state.ops}`);
+console.log(`Current unlockedOpsUpgrades:`, state.unlockedOpsUpgrades);
+console.log(`Cannot buy upgrade: ${id} is not repeatable...`);
+console.log(`Not enough OPs: have ${state.ops}, need ${cost}`);
+console.log(`Failed to use ${cost} OPs for upgrade ${id}`);
+console.log(`Updating cost for ${id}: ${cost} -> ${newCost}`);
+// etc.
+
+// General strategy:
+// 1. Search for all console.log statements in the file
+// 2. Remove them or replace with empty strings
+// 3. When console.log is part of a larger error handling block that you want to keep,
+//    just remove the console.log line while preserving the rest of the logic

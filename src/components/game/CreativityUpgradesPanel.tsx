@@ -28,9 +28,7 @@ export default function CreativityUpgradesPanel() {
     buyCreativityUpgrade 
   } = useGameStore();
   
-  // Add logging to debug the unlockedCreativityUpgrades
-  console.log("CreativityUpgradesPanel - unlockedCreativityUpgrades:", unlockedCreativityUpgrades);
-  console.log("CreativityUpgradesPanel - unlockedCreativityUpgrades type:", typeof unlockedCreativityUpgrades);
+  // Track unlockedCreativityUpgrades
   
   // Group upgrades by category
   const categories = [...new Set(creativityUpgradeItems.map(item => item.category))];
@@ -111,14 +109,12 @@ export default function CreativityUpgradesPanel() {
                           }`}
                           onClick={() => {
                             if (canAfford) {
-                              console.log(`Purchasing creativity upgrade: ${upgrade.id} (${upgrade.cost})`);
                               buyCreativityUpgrade(upgrade.id, upgrade.cost);
                               
                               // Trigger a save to ensure the upgrade is persisted immediately
                               setTimeout(() => {
                                 if (window.saveGameNow) {
-                                  console.log("Triggering immediate save after creativity upgrade purchase");
-                                  window.saveGameNow();
+                                  window.saveGameNow().catch(() => {});
                                 }
                               }, 500);
                             }

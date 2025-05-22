@@ -231,11 +231,6 @@ export default function ResourcesPanel() {
             fetch('/api/game/load')
               .then(r => r.json())
               .then(data => {
-                console.log("Loaded data:", data);
-                if (data.money !== undefined) {
-                  console.log("LOADED MONEY VALUE:", data.money);
-                }
-                
                 // Apply money and paperclip price values from database to game state
                 const state = useGameStore.getState();
                 let updates: Record<string, number> = {};
@@ -243,16 +238,12 @@ export default function ResourcesPanel() {
                 
                 if (data && typeof data.money === 'number') {
                   const origMoney = state.money;
-                  console.log("Current money in store:", origMoney);
-                  console.log("Setting money to database value:", data.money);
                   updates.money = data.money;
                   updateMessage.push(`Money: ${origMoney} → ${data.money}`);
                 }
                 
                 if (data && typeof data.paperclipPrice === 'number') {
                   const origPrice = state.paperclipPrice;
-                  console.log("Current paperclip price in store:", origPrice);
-                  console.log("Setting paperclip price to database value:", data.paperclipPrice);
                   updates.paperclipPrice = data.paperclipPrice;
                   updateMessage.push(`Price: ${origPrice} → ${data.paperclipPrice}`);
                 }

@@ -344,25 +344,15 @@ export default function StockMarketPanel() {
   
   // Verify portfolio data on mount
   useEffect(() => {
-    console.log("StockMarketPanel mounted with portfolio:", JSON.stringify(stockPortfolio));
     if (stockPortfolio.length > 0) {
-      console.log("Initial holdings:", stockPortfolio);
-      
       // Calculate initial portfolio value
       const initialValue = calculatePortfolioValue();
-      console.log("Initial portfolio value:", initialValue);
       
       // Set the initial value as both current and last value
       // This prevents performance metrics from showing large changes
       // the first time they're calculated
       setLastPortfolioValue(initialValue);
-    } else {
-      console.log("No initial stock holdings found");
     }
-    
-    return () => {
-      console.log("StockMarketPanel unmounting with portfolio:", JSON.stringify(useGameStore.getState().stockPortfolio));
-    };
   }, [stockPortfolio, calculatePortfolioValue]);
   
   // Refresh stock data more frequently
@@ -412,8 +402,7 @@ export default function StockMarketPanel() {
     // Update portfolio value every 3 seconds
     const portfolioUpdateInterval = setInterval(() => {
       // Force portfolio value recalculation
-      const currentValue = calculatePortfolioValue();
-      console.log("[Portfolio] Recalculated value:", currentValue, "Previous:", portfolioValue);
+      calculatePortfolioValue();
       
       // We don't need to set state here as the portfolioValue will update
       // and trigger the effect above
@@ -448,18 +437,7 @@ export default function StockMarketPanel() {
       return;
     }
     
-    // Log portfolio before purchase
-    console.log("Portfolio before purchase:", JSON.stringify(stockPortfolio));
-    
     buyStock(stockId, quantity);
-    
-    // Log portfolio after purchase using setTimeout to allow state update to complete
-    setTimeout(() => {
-      const currentPortfolio = useGameStore.getState().stockPortfolio;
-      console.log("Portfolio after purchase:", JSON.stringify(currentPortfolio));
-      const holding = currentPortfolio.find(h => h.stockId === stockId);
-      console.log(`Holding for ${stockId} after purchase:`, holding);
-    }, 100);
   };
   
   const handleSell = (stockId: string) => {
@@ -469,18 +447,7 @@ export default function StockMarketPanel() {
       return;
     }
     
-    // Log portfolio before selling
-    console.log("Portfolio before selling:", JSON.stringify(stockPortfolio));
-    
     sellStock(stockId, quantity);
-    
-    // Log portfolio after selling using setTimeout to allow state update to complete
-    setTimeout(() => {
-      const currentPortfolio = useGameStore.getState().stockPortfolio;
-      console.log("Portfolio after selling:", JSON.stringify(currentPortfolio));
-      const updatedHolding = currentPortfolio.find(h => h.stockId === stockId);
-      console.log(`Holding for ${stockId} after selling:`, updatedHolding);
-    }, 100);
   };
   
   // Format portfolio performance text/color
@@ -499,7 +466,6 @@ export default function StockMarketPanel() {
   // Direct database update for bot intelligence
   const forceUpdateBotIntelligence = async (intelligence: number, cost: number) => {
     try {
-      console.log(`Forcing update of bot intelligence to ${intelligence} with cost ${cost}`);
       const response = await fetch('/api/game/force-update-bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -513,23 +479,17 @@ export default function StockMarketPanel() {
         throw new Error(`Failed to update bot intelligence: ${response.status}`);
       }
       
-      const data = await response.json();
-      console.log('Force update response:', data);
+      await response.json();
       return true;
     } catch (error) {
-      console.error('Failed to force update bot intelligence:', error);
       return false;
     }
   };
 
   // Handle bot intelligence upgrade
   const handleUpgradeBotIntelligence = async () => {
-    console.log(`Upgrading bot intelligence from ${botIntelligence} to ${botIntelligence + 1}`);
-    console.log(`Current botIntelligence type: ${typeof botIntelligence}`);
-    
     // Force immediate save before upgrading
     if (window.saveGameNow) {
-      console.log('Triggering save before upgrade');
       await window.saveGameNow();
     }
     
@@ -542,12 +502,8 @@ export default function StockMarketPanel() {
       const currentIntelligence = gameState.botIntelligence;
       const currentCost = gameState.botIntelligenceCost;
       
-      console.log(`Bot intelligence after upgrade: ${currentIntelligence} (type: ${typeof currentIntelligence})`);
-      console.log(`Bot intelligence cost after upgrade: ${currentCost} (type: ${typeof currentCost})`);
-      
       // Force save after upgrade
       if (window.saveGameNow) {
-        console.log('Triggering save after upgrade');
         await window.saveGameNow();
       }
       
@@ -561,7 +517,6 @@ export default function StockMarketPanel() {
     const budgetAmount = Math.max(0, parseInt(botBudgetInput) || 0);
     if (budgetAmount <= 0 || budgetAmount > money) return;
     
-    console.log(`Setting bot trading budget: Adding $${budgetAmount}`);
     setBotTradingBudget(budgetAmount);
     setBotBudgetInput(''); // Clear input after setting budget
   };
@@ -571,7 +526,6 @@ export default function StockMarketPanel() {
     const withdrawAmount = Math.max(0, parseInt(withdrawAmountInput) || 0);
     if (withdrawAmount <= 0 || withdrawAmount > botTradingBudget) return;
     
-    console.log(`Withdrawing from bot trading budget: $${withdrawAmount}`);
     withdrawBotTradingBudget(withdrawAmount);
     setWithdrawAmountInput(''); // Clear input after withdrawal
   };

@@ -23,7 +23,8 @@ export default function SpaceUpgradesPanel() {
       cost: 10000,
       effect: 'autoBattle',
       effectValue: true,
-      icon: '⚔️'
+      icon: '⚔️',
+      repeatable: false
     },
     {
       id: 'improvedFactories',
@@ -32,7 +33,10 @@ export default function SpaceUpgradesPanel() {
       cost: 100000,
       effect: 'factoryEfficiency',
       effectValue: 1.5,
-      icon: '🏭'
+      icon: '🏭',
+      repeatable: true, // Made repeatable
+      repeatCountDisplay: (count) => `Lvl ${count}`,
+      costMultiplier: 2.5 // Cost increases by 2.5x each purchase
     },
     {
       id: 'advancedDrones',
@@ -41,7 +45,10 @@ export default function SpaceUpgradesPanel() {
       cost: 250000,
       effect: 'droneEfficiency',
       effectValue: 1.25,
-      icon: '🤖'
+      icon: '🤖',
+      repeatable: true, // Made repeatable
+      repeatCountDisplay: (count) => `Lvl ${count}`,
+      costMultiplier: 2.0 // Cost increases by 2x each purchase
     },
     {
       id: 'quantumMining',
@@ -50,7 +57,8 @@ export default function SpaceUpgradesPanel() {
       cost: 500000,
       effect: 'miningEfficiency',
       effectValue: 2.0,
-      icon: '⚛️'
+      icon: '⚛️',
+      repeatable: false
     },
     {
       id: 'hyperspaceEngines',
@@ -59,7 +67,8 @@ export default function SpaceUpgradesPanel() {
       cost: 1000000,
       effect: 'explorationSpeed',
       effectValue: 3.0,
-      icon: '🌠'
+      icon: '🌠',
+      repeatable: false
     },
     {
       id: 'droneReplication',
@@ -68,7 +77,8 @@ export default function SpaceUpgradesPanel() {
       cost: 5000000,
       effect: 'droneReplication',
       effectValue: true,
-      icon: '🧬'
+      icon: '🧬',
+      repeatable: false
     },
     {
       id: 'celestialScanner',
@@ -77,7 +87,8 @@ export default function SpaceUpgradesPanel() {
       cost: 3000000,
       effect: 'celestialScanner',
       effectValue: true,
-      icon: '🔭'
+      icon: '🔭',
+      repeatable: false
     },
     {
       id: 'resourceExtractor',
@@ -86,7 +97,42 @@ export default function SpaceUpgradesPanel() {
       cost: 7500000,
       effect: 'resourceExtraction',
       effectValue: 3.0,
-      icon: '⛏️'
+      icon: '⛏️',
+      repeatable: false
+    },
+    {
+      id: 'hazardShielding',
+      name: 'Hazard Shielding',
+      description: 'Reduces probe crash rate and improves survivability in space combat',
+      cost: 2000000,
+      effect: 'hazardShielding',
+      effectValue: 1.5,
+      icon: '🛡️',
+      repeatable: true,
+      repeatCountDisplay: (count) => `Lvl ${count}`,
+      costMultiplier: 2.0 // Cost increases by 2x each purchase
+    },
+    {
+      id: 'nanobotRepair',
+      name: 'Nanobot Repair Systems',
+      description: 'Self-repairing probes have a chance to avoid destruction in combat',
+      cost: 4000000,
+      effect: 'nanobotRepair',
+      effectValue: true,
+      icon: '🔧',
+      repeatable: false
+    },
+    {
+      id: 'swarmIntelligence',
+      name: 'Swarm Intelligence',
+      description: 'Improves probe coordination in combat, increasing effectiveness',
+      cost: 6000000,
+      effect: 'swarmIntelligence',
+      effectValue: 2.0,
+      icon: '🧠',
+      repeatable: true,
+      repeatCountDisplay: (count) => `Lvl ${count}`,
+      costMultiplier: 2.2 // Cost increases by 2.2x each purchase
     }
   ];
   
@@ -121,14 +167,24 @@ export default function SpaceUpgradesPanel() {
       
       <div className="space-y-2">
         {upgradeDefinitions.map(upgrade => {
-          const isUnlocked = unlockedSpaceUpgrades?.includes(upgrade.id);
-          const canAfford = (aerogradePaperclips || 0) >= upgrade.cost;
+          // Count how many times this upgrade has been purchased (for repeatable upgrades)
+          const purchaseCount = unlockedSpaceUpgrades?.filter(id => id === upgrade.id).length || 0;
+          const isUnlocked = purchaseCount > 0;
+          const isRepeatable = upgrade.repeatable === true;
+          
+          // Calculate current cost with multiplier for repeatable upgrades
+          let currentCost = upgrade.cost;
+          if (isRepeatable && purchaseCount > 0) {
+            currentCost = Math.floor(upgrade.cost * Math.pow(upgrade.costMultiplier || 2, purchaseCount));
+          }
+          
+          const canAfford = (aerogradePaperclips || 0) >= currentCost;
           const isExpanded = expandedSection === upgrade.id;
           
           return (
             <div 
               key={upgrade.id} 
-              className={`bg-gray-700 p-3 rounded relative ${isUnlocked ? 'opacity-50' : ''}`}
+              className={`bg-gray-700 p-3 rounded relative ${isUnlocked && !isRepeatable ? 'opacity-50' : ''}`}
             >
               <div 
                 className="flex justify-between items-center cursor-pointer" 
@@ -138,33 +194,48 @@ export default function SpaceUpgradesPanel() {
                   <span className="text-lg mr-2">{upgrade.icon}</span>
                   <span className="font-medium">{upgrade.name}</span>
                   {isUnlocked && (
-                    <span className="ml-2 text-xs px-2 py-0.5 bg-green-900 text-green-100 rounded-full">Purchased</span>
+                    <span className={`ml-2 text-xs px-2 py-0.5 ${
+                      isRepeatable 
+                        ? 'bg-blue-900 text-blue-100' 
+                        : 'bg-green-900 text-green-100'
+                    } rounded-full`}>
+                      {isRepeatable 
+                        ? (upgrade.repeatCountDisplay ? upgrade.repeatCountDisplay(purchaseCount) : `x${purchaseCount}`) 
+                        : 'Purchased'}
+                    </span>
                   )}
                 </div>
                 <button
                   className={`py-1 px-2 rounded text-xs ${
-                    !isUnlocked && canAfford 
+                    ((!isUnlocked || isRepeatable) && canAfford)
                       ? 'bg-purple-600 text-white hover:bg-purple-700' 
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (!isUnlocked && canAfford) {
-                      buySpaceUpgrade(upgrade.id, upgrade.cost);
+                    if ((!isUnlocked || isRepeatable) && canAfford) {
+                      buySpaceUpgrade(upgrade.id, currentCost);
                     }
                   }}
-                  disabled={isUnlocked || !canAfford}
+                  disabled={(isUnlocked && !isRepeatable) || !canAfford}
                 >
-                  {isUnlocked ? 'Purchased' : `${formatLargeNumber(upgrade.cost)} Aerograde`}
+                  {isUnlocked && !isRepeatable 
+                    ? 'Purchased' 
+                    : `${formatLargeNumber(currentCost)} Aerograde`}
                 </button>
               </div>
               
               {isExpanded && (
                 <div className="mt-2 text-xs text-gray-300 bg-gray-800 p-2 rounded">
                   <p>{upgrade.description}</p>
-                  {!isUnlocked && !canAfford && (
+                  {isRepeatable && isUnlocked && (
+                    <p className="text-blue-300 mt-1">
+                      Level {purchaseCount}{purchaseCount > 1 ? ` (${(upgrade.effectValue - 1) * 100 * purchaseCount}% total bonus)` : ''}
+                    </p>
+                  )}
+                  {(!isUnlocked || isRepeatable) && !canAfford && (
                     <p className="text-red-400 mt-1">
-                      Need {formatLargeNumber(upgrade.cost - (aerogradePaperclips || 0))} more Aerograde paperclips
+                      Need {formatLargeNumber(currentCost - (aerogradePaperclips || 0))} more Aerograde paperclips
                     </p>
                   )}
                 </div>

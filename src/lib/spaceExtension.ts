@@ -99,22 +99,17 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     
     // Check if space age is unlocked
     if (!state.spaceAgeUnlocked) {
-      console.log("Space age not unlocked yet");
       return;
     }
     
     // Ensure we have planets and index is valid
     if (!state.discoveredPlanets || state.discoveredPlanets.length === 0) {
-      console.log("No planets discovered yet");
       return;
     }
     
     if (planetIndex < 0 || planetIndex >= state.discoveredPlanets.length) {
-      console.log(`Invalid planet index: ${planetIndex}. Valid range: 0-${state.discoveredPlanets.length - 1}`);
       return;
     }
-    
-    console.log(`Switching to planet: ${state.discoveredPlanets[planetIndex].name}`);
     
     // Update current planet index
     set({
@@ -128,7 +123,6 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     
     // Check if space age is unlocked
     if (!state.spaceAgeUnlocked) {
-      console.log("Space age not unlocked yet");
       return;
     }
     
@@ -136,11 +130,8 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     const probeCost = 50000;
     
     if (state.paperclips < probeCost) {
-      console.log(`Not enough paperclips to launch a probe (need ${probeCost})`);
       return;
     }
-    
-    console.log(`Launching new probe (${state.probes + 1}) for ${probeCost} paperclips`);
     
     // Create new probe and deduct paperclips
     set({
@@ -181,7 +172,6 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     
     // Initialize space stats if not already done
     if (!state.spaceStats.miningProduction) {
-      console.log("Initializing space stats for the first time");
       set({
         spaceStats: {
           ...state.spaceStats,
@@ -236,7 +226,21 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     const wireConsumed = actualPaperclipsProduced;
     
     // Probe self-replication - create new probes based on self-replication stat
-    const newProbes = Math.floor(state.probes * state.spaceStats.selfReplication * 0.001);
+    // Add randomness to probe self-replication - each probe has a chance to replicate based on the stat
+    // This is separate from the exponential growth
+    let newProbes = 0;
+    const replicationChance = Math.min(0.05, state.spaceStats.selfReplication * 0.005); // Cap at 5% per tick
+    
+    // Each probe has a chance to replicate each tick
+    for (let i = 0; i < state.probes; i++) {
+      if (Math.random() < replicationChance) {
+        newProbes++;
+      }
+    }
+    
+    // Add a small base rate of probe replication based on self-replication stat
+    // This provides a small but steady growth rate
+    newProbes += Math.floor(state.probes * state.spaceStats.selfReplication * 0.0005);
     
     // Calculate exploration rate based on probes, speed and exploration stats, with exploration speed multiplier
     const explorationRate = 
@@ -308,15 +312,12 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
         
         // Add the new celestial body to the list
         updatedCelestialBodies.push(newBody);
-        console.log(`Discovered new ${bodyType}: ${newBody.name} at ${halfPercentage}% exploration!`);
       }
     });
     
     // If we've reached a new percentage point, discover a new planet
     let updatedPlanets = [...discoveredPlanets];
     if (newPercentage > previousPercentage && newPercentage > 0) {
-      console.log(`Discovered new planet at ${newPercentage}% universe exploration!`);
-      
       // Generate random matter amount between 1 and 100 nonillion
       const matterAmount = (1 + Math.random() * 99) * 1e30;
       
@@ -333,7 +334,6 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
       
       // Add the new planet to the list
       updatedPlanets.push(newPlanet);
-      console.log(`Discovered new planet: ${newPlanet.name} with ${matterAmount / 1e30} nonillion matter!`);
     }
     
     // Update current planet's matter
@@ -386,13 +386,11 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
             // 20% chance to replicate a wire harvester
             if (Math.random() < 0.2) {
               newWireHarvesters++;
-              console.log(`Drone self-replication: Created new wire harvester drone (${newWireHarvesters})`);
             }
             
             // 20% chance to replicate an ore harvester
             if (Math.random() < 0.2) {
               newOreHarvesters++;
-              console.log(`Drone self-replication: Created new ore harvester drone (${newOreHarvesters})`);
             }
           }
         }
@@ -448,27 +446,15 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
   upgradeStat: (stat: string, cost: number) => {
     const state = get();
     
-    // Add debug logging
-    console.log(`Attempting to upgrade ${stat} with current state:`, {
-      currentYomi: state.yomi,
-      cost,
-      currentStats: state.spaceStats,
-      currentStatValue: state.spaceStats[stat]
-    });
-    
     // Check if player has enough yomi
     if (state.yomi < cost) {
-      console.log(`Not enough yomi (${state.yomi}) to upgrade ${stat} (cost: ${cost})`);
       return;
     }
     
     // Check if stat exists
     if (state.spaceStats[stat] === undefined) {
-      console.log(`Stat ${stat} doesn't exist`);
       return;
     }
-    
-    console.log(`Upgrading ${stat} from ${state.spaceStats[stat]} to ${state.spaceStats[stat] + 1} for ${cost} yomi`);
     
     // Make a new copy of spaceStats to ensure the update triggers correctly
     const updatedSpaceStats = {...state.spaceStats};
@@ -478,12 +464,6 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     set({
       spaceStats: updatedSpaceStats,
       yomi: state.yomi - cost
-    });
-    
-    // Log after update
-    console.log(`Upgrade complete. New state:`, {
-      newYomi: state.yomi - cost,
-      newStatValue: updatedSpaceStats[stat]
     });
   },
   
@@ -575,24 +555,17 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     
     // Check if space age is unlocked
     if (!state.spaceAgeUnlocked) {
-      console.log("Space age not unlocked yet");
       return;
     }
     
     // Check if player has enough Aerograde paperclips
     if ((state.aerogradePaperclips || 0) < cost) {
-      console.log(`Not enough Aerograde paperclips to buy upgrade ${id} (need ${cost})`);
       return;
     }
     
-    // Check if upgrade is already unlocked
+    // Get the count of this upgrade already purchased (for repeatable upgrades)
     const unlockedSpaceUpgrades = state.unlockedSpaceUpgrades || [];
-    if (unlockedSpaceUpgrades.includes(id)) {
-      console.log(`Upgrade ${id} already purchased`);
-      return;
-    }
-    
-    console.log(`Purchasing space upgrade ${id} for ${cost} Aerograde paperclips`);
+    const purchaseCount = unlockedSpaceUpgrades.filter(upgradeId => upgradeId === id).length;
     
     // Deduct Aerograde paperclips and add upgrade to unlocked list
     set({
@@ -603,13 +576,13 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     // Apply upgrade effects
     switch (id) {
       case 'improvedFactories':
-        // 50% increase in factory production
+        // 50% increase in factory production per level
         set({
           factoryEfficiency: (state.factoryEfficiency || 1) * 1.5
         });
         break;
       case 'advancedDrones':
-        // 25% increase in mining and wire production
+        // 25% increase in mining and wire production per level
         set({
           droneEfficiency: (state.droneEfficiency || 1) * 1.25
         });
@@ -630,27 +603,46 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
         // Call the unlockAutoBattle function directly
         get().unlockAutoBattle();
         break;
+      case 'hazardShielding':
+        // Increase hazard evasion stat
+        const updatedSpaceStats = {...state.spaceStats};
+        const currentHazardEvasion = updatedSpaceStats.hazardEvasion || 1;
+        updatedSpaceStats.hazardEvasion = currentHazardEvasion * 1.5;
+        
+        set({
+          spaceStats: updatedSpaceStats
+        });
+        break;
+      case 'nanobotRepair':
+        // Set nanobot repair flag
+        set({
+          nanobotRepairEnabled: true
+        });
+        break;
+      case 'swarmIntelligence':
+        // Increase combat effectiveness
+        const newSpaceStats = {...state.spaceStats};
+        if (newSpaceStats.combat) {
+          newSpaceStats.combat = newSpaceStats.combat * 1.5;
+        }
+        
+        set({
+          spaceStats: newSpaceStats
+        });
+        break;
       default:
-        console.log(`Unknown upgrade ID: ${id}`);
+        // No default action for unknown upgrade
     }
     
     // Save the game state after purchasing an upgrade
     try {
       // Check if we're in a browser environment
       if (typeof window !== 'undefined') {
-        console.log("Triggering save after space upgrade purchase");
-        
         // Try using the saveGameNow function if available
         if (typeof window.saveGameNow === 'function') {
-          console.log("Using window.saveGameNow to save after space upgrade purchase");
-          window.saveGameNow()
-            .then(() => console.log("Successfully saved game after space upgrade purchase"))
-            .catch(saveErr => console.error('Error during space upgrade save operation:', saveErr));
+          window.saveGameNow();
         } else {
-          console.error('Cannot save game: window.saveGameNow is not a function');
-          
           // Attempt to save using the save interval as a fallback
-          console.log('Attempting to trigger a manual save event');
           const saveEvent = new CustomEvent('manual-save-trigger');
           window.dispatchEvent(saveEvent);
           
@@ -658,14 +650,13 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
           try {
             localStorage.setItem('pendingSpaceUpgradeSave', 'true');
             localStorage.setItem('pendingSpaceUpgradeId', id);
-            console.log('Set pendingSpaceUpgradeSave flag in localStorage');
           } catch (e) {
-            console.error('Could not set localStorage flag:', e);
+            // Silent fail
           }
         }
       }
     } catch (err) {
-      console.error('Error saving game after space upgrade purchase:', err);
+      // Silent fail
     }
   },
 
@@ -675,7 +666,6 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     
     // Check if space age is unlocked
     if (!state.spaceAgeUnlocked) {
-      console.log("Space age not unlocked yet");
       return;
     }
     
@@ -685,11 +675,8 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     const currentCost = Math.floor(baseCost * scaleFactor);
     
     if (state.paperclips < currentCost) {
-      console.log(`Not enough paperclips to launch wire harvester (need ${currentCost})`);
       return;
     }
-    
-    console.log(`Launching new wire harvester drone (${state.wireHarvesters + 1}) for ${currentCost} paperclips`);
     
     // Create new harvester and deduct paperclips
     set({
@@ -704,7 +691,6 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     
     // Check if space age is unlocked
     if (!state.spaceAgeUnlocked) {
-      console.log("Space age not unlocked yet");
       return;
     }
     
@@ -714,11 +700,8 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     const currentCost = Math.floor(baseCost * scaleFactor);
     
     if (state.paperclips < currentCost) {
-      console.log(`Not enough paperclips to launch ore harvester (need ${currentCost})`);
       return;
     }
-    
-    console.log(`Launching new ore harvester drone (${state.oreHarvesters + 1}) for ${currentCost} paperclips`);
     
     // Create new harvester and deduct paperclips
     set({
@@ -733,7 +716,6 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     
     // Check if space age is unlocked
     if (!state.spaceAgeUnlocked) {
-      console.log("Space age not unlocked yet");
       return;
     }
     
@@ -743,11 +725,8 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     const currentCost = Math.floor(baseCost * scaleFactor);
     
     if (state.paperclips < currentCost) {
-      console.log(`Not enough paperclips to build factory (need ${currentCost})`);
       return;
     }
-    
-    console.log(`Building new space factory (${state.factories + 1}) for ${currentCost} paperclips`);
     
     // Create new factory and deduct paperclips
     set({
@@ -762,17 +741,13 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     
     // Check if space age is unlocked
     if (!state.spaceAgeUnlocked) {
-      console.log("Space age not unlocked yet");
       return;
     }
     
     // Check if drone replication upgrade is unlocked
     if (!state.unlockedSpaceUpgrades?.includes('droneReplication')) {
-      console.log("Drone self-replication upgrade not unlocked");
       return;
     }
-    
-    console.log(`${state.droneReplicationEnabled ? 'Disabling' : 'Enabling'} drone self-replication`);
     
     // Toggle the state
     set({
@@ -786,13 +761,11 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     
     // Check if space age is unlocked
     if (!state.spaceAgeUnlocked) {
-      console.log("Space age not unlocked yet");
       return;
     }
     
     // Check if celestial scanner is unlocked
     if (!state.unlockedSpaceUpgrades?.includes('celestialScanner')) {
-      console.log("Celestial scanner upgrade not unlocked");
       return;
     }
     
@@ -801,14 +774,11 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     const bodyIndex = discoveredCelestialBodies.findIndex(body => body.id === bodyId);
     
     if (bodyIndex < 0) {
-      console.log(`Celestial body with ID ${bodyId} not found`);
       return;
     }
     
     const body = discoveredCelestialBodies[bodyIndex];
     const newStatus = !body.isBeingHarvested;
-    
-    console.log(`${newStatus ? 'Starting' : 'Stopping'} harvesting of ${body.name}`);
     
     // Update the body's harvesting status
     const updatedBodies = [...discoveredCelestialBodies];
@@ -828,24 +798,19 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     
     // Check if space age is unlocked
     if (!state.spaceAgeUnlocked) {
-      console.log("Space age not unlocked yet");
       return;
     }
     
     // Check if combat is already unlocked
     if (state.spaceStats.combat !== undefined) {
-      console.log("Combat already unlocked");
       return;
     }
     
     // Check if player has enough OPs (50,000)
     const unlockCost = 50000;
     if (state.ops < unlockCost) {
-      console.log(`Not enough OPs to unlock combat (need ${unlockCost})`);
       return;
     }
-    
-    console.log(`Unlocking combat capability for ${unlockCost} OPs`);
     
     // Unlock combat and deduct OPs
     set({

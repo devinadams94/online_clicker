@@ -1,0 +1,25 @@
+// Apply these changes to gameStore.ts
+
+// 1. Find the calculatePrestigePoints function and modify the formula:
+calculatePrestigePoints: () => {
+  const { paperclips, lifetimePaperclips } = get();
+  // Calculate total paperclips (current + lifetime)
+  const totalPaperclips = (lifetimePaperclips || 0) + paperclips;
+  
+  // Points = sqrt(totalPaperclips / 1,000,000,000) - Changed from 1,000,000
+  // This means 1 point at 1B, 2 points at 4B, 3 points at 9B, etc.
+  const points = Math.floor(Math.sqrt(totalPaperclips / 1000000000));
+  
+  return Math.max(0, points);
+},
+
+// 2. Find the prestigeReset function and modify these parts:
+// Change from accumulating points to resetting them
+// From: const newPrestigePoints = (state.prestigePoints || 0) + points;
+// To:
+const newPrestigePoints = points;
+
+// 3. In the same prestigeReset function, find the market demand line and change:
+// From: marketDemand: state.marketDemand || 0.05,
+// To:
+marketDemand: Math.max(0.05, state.marketDemand || 0.05) * (1 + (newPrestigePoints * 0.1)),

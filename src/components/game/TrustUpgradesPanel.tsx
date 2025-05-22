@@ -28,22 +28,16 @@ export default function TrustUpgradesPanel() {
     { level: 5, cost: 625000000, trustGain: 25 }
   ];
   
-  // Log current purchased levels on component mount for debugging
+  // Validate purchased levels on component mount
   useEffect(() => {
-    console.log("TrustUpgradesPanel loaded, current purchasedTrustLevels:", purchasedTrustLevels);
-    
     // Extra validation to force consistent type
     if (purchasedTrustLevels && purchasedTrustLevels.length > 0) {
       // Ensure all levels are stored as numbers
       const numericLevels = purchasedTrustLevels.map(level => Number(level));
       const hasNonNumeric = numericLevels.some(level => isNaN(level));
       
-      console.log("purchasedTrustLevels as numbers:", numericLevels);
-      console.log("Has non-numeric values:", hasNonNumeric);
-      
       // If we find any inconsistencies, force an update to normalize
       if (hasNonNumeric || numericLevels.some((num, i) => num !== purchasedTrustLevels[i])) {
-        console.log("Found inconsistent types in purchasedTrustLevels, normalizing...");
         const validLevels = numericLevels.filter(level => !isNaN(level));
         useGameStore.setState({ purchasedTrustLevels: validLevels });
       }
@@ -158,10 +152,6 @@ export default function TrustUpgradesPanel() {
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
                       onClick={() => {
-                        // Enhanced check for level already purchased
-                        console.log(`Attempting to buy trust level ${upgrade.level} for ${upgrade.cost}`);
-                        console.log(`Current purchasedTrustLevels:`, purchasedTrustLevels);
-                        
                         // Check if the level is already purchased using multiple methods
                         const levelAsNumber = Number(upgrade.level);
                         const levelAsString = String(upgrade.level);
@@ -172,7 +162,6 @@ export default function TrustUpgradesPanel() {
                           purchasedTrustLevels.some(l => String(l) === levelAsString);
                         
                         if (isAlreadyPurchased) {
-                          console.log(`Trust level ${upgrade.level} already purchased, skipping purchase`);
                           // Force refresh the UI to show the purchase status
                           useGameStore.setState({
                             purchasedTrustLevels: [...purchasedTrustLevels]

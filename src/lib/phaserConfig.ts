@@ -6,7 +6,6 @@ if (typeof window !== 'undefined') {
   try {
     Phaser = require('phaser');
   } catch (error) {
-    console.error("Failed to load Phaser in phaserConfig:", error);
     // Provide fallback values for the constants we need
     Phaser = {
       CANVAS: 'canvas',

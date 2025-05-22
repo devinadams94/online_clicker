@@ -7,8 +7,7 @@ import useGameStore from "@/lib/gameStore";
 // Note: Space functions are now imported directly from spaceExtension.ts in the gameStore
 // This function is now just a placeholder for backward compatibility
 function initializeSpaceFunctions() {
-  console.log("Space functions are now initialized directly in the gameStore");
-  // No need to add functions here anymore
+  // No need to add functions here anymore - they're initialized in gameStore
 }
 import ResourcesPanel from "./ResourcesPanel";
 import UpgradesPanel from "./UpgradesPanel";
@@ -29,6 +28,7 @@ import SpaceResourcesPanel from "./SpaceResourcesPanel";
 import SpaceUpgradesPanel from "./SpaceUpgradesPanel";
 import SpaceCombatPanel from "./SpaceCombatPanel";
 import SpaceControlPanel from "./SpaceControlPanel";
+import PrestigePanel from "./PrestigePanel";
 import dynamic from 'next/dynamic';
 import FallbackClicker from "./FallbackClicker";
 
@@ -56,8 +56,7 @@ declare global {
 
 // Dynamically import the Phaser component to prevent SSR issues
 const PhaserGame = dynamic(
-  () => import('./PhaserGame').catch(err => {
-    console.error("Failed to load PhaserGame:", err);
+  () => import('./PhaserGame').catch(() => {
     // Return a fallback component on error
     return () => (
       <div className="flex flex-col h-full items-center justify-center">
@@ -243,12 +242,8 @@ const ResearchPanel = () => {
                       // Purchase the research
                       buyResearch(item.id);
                       
-                      console.log(`Research purchased: ${item.id} (cost: ${item.cost})`);
-                      
                       // For expensive research (>10000 points), ensure it's saved immediately
                       if (item.cost >= 10000) {
-                        console.log(`High-value research purchased (${item.cost} RP), forcing immediate save...`);
-                        
                         // Track the purchase in localStorage
                         const researchKey = `research_${item.id}_purchased`;
                         localStorage.setItem(researchKey, 'true');
@@ -259,9 +254,7 @@ const ResearchPanel = () => {
                         
                         // Force immediate save if available
                         if (typeof window !== 'undefined' && window.saveGameNow) {
-                          window.saveGameNow()
-                            .then(() => console.log(`Research ${item.id} saved successfully!`))
-                            .catch(err => console.error(`Error saving research ${item.id}:`, err));
+                          window.saveGameNow();
                         }
                         
                         // Trigger manual save event as fallback
@@ -322,14 +315,12 @@ export default function GameInterface() {
   
   // Initialize space functions when component mounts
   useEffect(() => {
-    console.log("Initializing space functions...");
     initializeSpaceFunctions();
   }, []);
   
   // Handle Phaser loading errors
   useEffect(() => {
     const handlePhaserError = () => {
-      console.warn("Phaser failed to load, switching to fallback mode");
       setPhaserFailed(true);
     };
     
@@ -1634,7 +1625,8 @@ export default function GameInterface() {
     { id: 'research', name: 'Research', always: true },
     { id: 'metrics', name: 'Metrics', requireMetricsUnlock: true },
     { id: 'stock', name: 'Stock Market', requireStockUnlock: true },
-    { id: 'space', name: 'Space Age', requireSpaceUnlock: true }
+    { id: 'space', name: 'Space Age', requireSpaceUnlock: true },
+    { id: 'prestige', name: 'Prestige', always: true }
   ];
   
   // Debug log for unlockable features
@@ -1692,6 +1684,50 @@ export default function GameInterface() {
               <div>
                 <SpaceStatsPanel />
                 <SpaceUpgradesPanel />
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'prestige':
+        return (
+          <div className="min-h-screen p-4">
+            <h1 className="text-2xl font-bold mb-6">Prestige System</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-4xl">
+              Reset your progress to gain powerful permanent bonuses. The more paperclips you've produced, the more prestige points you'll earn.
+            </p>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main prestige panel - takes 2/3 of the width */}
+              <div className="lg:col-span-2">
+                <PrestigePanel />
+              </div>
+              
+              {/* Stats panel - takes 1/3 of the width */}
+              <div>
+                <StatsPanel />
+                <div className="card bg-white dark:bg-gray-800 p-4 mt-4">
+                  <h2 className="text-lg font-bold mb-3">Prestige Information</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Prestige points are calculated based on your total paperclips produced (current + lifetime).
+                    You need at least 1 million paperclips to earn your first prestige point.
+                  </p>
+                  <h3 className="font-medium mt-4 mb-2">Formula</h3>
+                  <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded text-sm font-mono">
+                    Points = sqrt(totalPaperclips / 1,000,000)
+                  </div>
+                  <div className="mt-4 text-sm">
+                    <span className="font-medium">Examples:</span>
+                    <ul className="list-disc list-inside mt-1 space-y-1">
+                      <li>1M paperclips = 1 point</li>
+                      <li>4M paperclips = 2 points</li>
+                      <li>9M paperclips = 3 points</li>
+                      <li>16M paperclips = 4 points</li>
+                      <li>100M paperclips = 10 points</li>
+                      <li>1B paperclips = 31.6 points</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1785,6 +1821,7 @@ export default function GameInterface() {
                 >
                   {item.name}
                   {item.id === 'space' && <span className="ml-1 text-blue-300">🚀</span>}
+                  {item.id === 'prestige' && <span className="ml-1 text-yellow-300">⭐</span>}
                 </button>
               );
             })}

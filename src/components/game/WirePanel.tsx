@@ -25,35 +25,18 @@ export default function WirePanel() {
   const canBuyAutoWire = money >= autoWireBuyerCost && !autoWireBuyer;
   const canUpgradeSpoolSize = money >= spoolSizeUpgradeCost;
   
-  // Verify spool size data on mount
+  // Track spool size data
   useEffect(() => {
-    console.log("WirePanel mounted with spool data:");
-    console.log("- Spool size level:", spoolSizeLevel);
-    console.log("- Wire per spool:", wirePerSpool);
-    console.log("- Spool upgrade cost:", spoolSizeUpgradeCost);
-    
-    // Return cleanup function to log values when component unmounts
-    return () => {
-      const state = useGameStore.getState();
-      console.log("WirePanel unmounting with spool data:");
-      console.log("- Final spool size level:", state.spoolSizeLevel);
-      console.log("- Final wire per spool:", state.wirePerSpool);
-      console.log("- Final spool upgrade cost:", state.spoolSizeUpgradeCost);
-    };
+    // No operations needed, just dependency tracking
   }, [spoolSizeLevel, wirePerSpool, spoolSizeUpgradeCost]);
   
-  // Function to handle spool upgrade with UI verification
+  // Function to handle spool upgrade
   const handleUpgradeSpoolSize = () => {
-    console.log("Before upgrade - Level:", spoolSizeLevel, "Cost:", spoolSizeUpgradeCost, "Wire per spool:", wirePerSpool);
     upgradeSpoolSize();
-    // Use setTimeout to log the values after the state update is applied
+    // Use setTimeout to ensure state is updated before saving
     setTimeout(() => {
-      const state = useGameStore.getState();
-      console.log("After upgrade - Level:", state.spoolSizeLevel, "Cost:", state.spoolSizeUpgradeCost, "Wire per spool:", state.wirePerSpool);
-      
-      // Force a save to test database persistence
+      // Force a save to ensure database persistence
       if (window.saveGameNow) {
-        console.log("Forcing save after spool upgrade");
         window.saveGameNow();
       }
     }, 100);

@@ -18,20 +18,16 @@ export default function SpaceStatsPanel() {
   
   // Alternative implementation that directly modifies the store state
   const manualUpgradeStat = useCallback((statId: string, cost: number) => {
-    console.log(`Manual upgrade: Upgrading ${statId} for ${cost} yomi`);
-    
     // Get current state
     const state = useGameStore.getState();
     
     // Check if we can afford it
     if (state.yomi < cost) {
-      console.log(`Cannot afford upgrade. Need ${cost} yomi, have ${state.yomi}`);
       return;
     }
     
     // Check if stat exists
     if (state.spaceStats[statId] === undefined) {
-      console.log(`Stat ${statId} doesn't exist`);
       return;
     }
     
@@ -46,32 +42,26 @@ export default function SpaceStatsPanel() {
         yomi: state.yomi - cost
       });
       
-      console.log(`Manual upgrade complete for ${statId}. New level: ${updatedSpaceStats[statId]}`);
-      
       // Force component to re-render
       setForceUpdate(prev => prev + 1);
     } catch (error) {
-      console.error(`Error manually upgrading stat ${statId}:`, error);
+      // Silently fail
     }
   }, []);
   
   // Alternative implementation for unlocking combat
   const manualUnlockCombat = useCallback(() => {
-    console.log("Manual unlock: Unlocking combat capability");
-    
     // Get current state
     const state = useGameStore.getState();
     
     // Check if combat is already unlocked
     if (state.spaceStats.combat !== undefined) {
-      console.log("Combat already unlocked");
       return;
     }
     
     // Check if we can afford it (50,000 OPs)
     const unlockCost = 50000;
     if (state.ops < unlockCost) {
-      console.log(`Not enough OPs to unlock combat (need ${unlockCost})`);
       return;
     }
     
@@ -86,18 +76,16 @@ export default function SpaceStatsPanel() {
         honor: 0 // Initialize honor resource
       });
       
-      console.log("Manual combat unlock complete");
-      
       // Force component to re-render
       setForceUpdate(prev => prev + 1);
     } catch (error) {
-      console.error("Error manually unlocking combat:", error);
+      // Silently fail
     }
   }, []);
   
-  // Log space stats on each render to help debug
+  // Monitor space stats changes
   useEffect(() => {
-    console.log("SpaceStatsPanel render, current stats:", spaceStats);
+    // No logging, just track changes
   }, [spaceStats, forceUpdate]);
   
   // Try to trigger a game save after state changes
@@ -108,13 +96,10 @@ export default function SpaceStatsPanel() {
         try {
           // Attempt to save the game state if the save function is available
           if (typeof window !== 'undefined' && window.saveGameNow) {
-            console.log("Triggering game save after stat upgrade");
-            window.saveGameNow()
-              .then(() => console.log("Game save completed after stat upgrade"))
-              .catch(err => console.error("Error saving game after stat upgrade:", err));
+            window.saveGameNow().catch(() => {});
           }
         } catch (error) {
-          console.error("Failed to trigger game save:", error);
+          // Silently fail
         }
       }, 500);
       
@@ -165,6 +150,13 @@ export default function SpaceStatsPanel() {
       description: 'Enhances manufacturing capability on colonized planets',
       costMultiplier: 2.0,
       icon: '🏭'
+    },
+    {
+      id: 'hazardEvasion',
+      name: 'Hazard Evasion',
+      description: 'Reduces probe crash rate and improves evasion in combat',
+      costMultiplier: 2.2,
+      icon: '🛡️'
     },
     {
       id: 'combat',

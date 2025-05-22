@@ -8,10 +8,24 @@ export interface OfflineProgress {
   offlineTime: number;
 }
 
+export interface PrestigeRewards {
+  productionMultiplier: number;  // Multiplier for paperclip production
+  researchMultiplier: number;    // Multiplier for research point generation
+  wireEfficiency: number;        // Wire efficiency (less wire used per clip)
+  startingMoney: number;         // Starting money on reset
+  clickMultiplier: number;       // Multiplier for click production
+}
+
 export interface GameState {
   // Allow string indexing for dynamic access
   [key: string]: any;
 
+  // Prestige System
+  prestigeLevel: number;         // Number of times prestiged
+  prestigePoints: number;        // Current prestige points
+  lifetimePaperclips: number;    // Total paperclips made across all resets
+  prestigeRewards: PrestigeRewards; // Current prestige rewards
+  
   // Resources
   paperclips: number;
   money: number;
@@ -231,5 +245,6 @@ export interface SpaceStats {
   miningProduction: number;
   factoryProduction: number;
   combat?: number;
+  hazardEvasion?: number; // New stat for hazard evasion - reduces probe crashes and combat losses
   [key: string]: number | undefined; // Allow string indexing
 }

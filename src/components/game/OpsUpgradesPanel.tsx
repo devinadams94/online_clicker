@@ -7,7 +7,7 @@ import useGameStore from "@/lib/gameStore";
 const opsUpgradeItems = [
   // Computational efficiency upgrades
   { id: 'parallelProcessing', name: 'Parallel Processing', cost: 45, description: 'Increase CPU level by 1 and OPs capacity by 50', category: 'Computation', repeatable: true },
-  { id: 'quantumAlgorithms', name: 'Quantum Algorithms', cost: 90, description: 'Increase research generation by 50%', category: 'Computation', repeatable: true },
+  { id: 'quantumAlgorithms', name: 'Quantum Algorithms', cost: 90, description: 'Increase research generation by 50%', category: 'Computation', repeatable: false },
   { id: 'neuralOptimization', name: 'Neural Optimization', cost: 150, description: 'Increase production multiplier by 25%', category: 'Computation', repeatable: true },
   
   // Memory management upgrades
@@ -34,17 +34,12 @@ export default function OpsUpgradesPanel() {
   // Use useEffect to get costs from game state or calculate them if not available
   const [upgradeCosts, setUpgradeCosts] = useState({});
   
-  // Check localStorage for Distributed Storage purchase on component mount
+  // Check localStorage for non-repeatable upgrades purchase on component mount
   useEffect(() => {
-    // Check if Distributed Storage has been purchased (from localStorage)
+    // Check for Distributed Storage
     if (localStorage.getItem('distributedStoragePurchased') === 'true') {
-      console.log('Distributed Storage purchase detected in localStorage');
-      
       // Verify if it's also marked as purchased in the game state
       if (Array.isArray(unlockedOpsUpgrades) && !unlockedOpsUpgrades.includes('distributedStorage')) {
-        console.warn('Distributed Storage marked as purchased in localStorage but not in game state!');
-        console.log('This could indicate a sync issue - checking if we need to force a save...');
-        
         // Set pending save flag to ensure it gets saved properly
         localStorage.setItem('pendingOpsUpgradeSave', 'true');
         localStorage.setItem('pendingOpsUpgradeId', 'distributedStorage');
@@ -57,17 +52,37 @@ export default function OpsUpgradesPanel() {
       }
     }
     
-    // For Distributed Storage specifically, check the game state to set localStorage
-    if (Array.isArray(unlockedOpsUpgrades) && unlockedOpsUpgrades.includes('distributedStorage')) {
-      localStorage.setItem('distributedStoragePurchased', 'true');
-      console.log('Distributed Storage is purchased in game state, updated localStorage to match');
+    // Check for Quantum Algorithms
+    if (localStorage.getItem('quantumAlgorithmsPurchased') === 'true') {
+      // Verify if it's also marked as purchased in the game state
+      if (Array.isArray(unlockedOpsUpgrades) && !unlockedOpsUpgrades.includes('quantumAlgorithms')) {
+        // Set pending save flag to ensure it gets saved properly
+        localStorage.setItem('pendingOpsUpgradeSave', 'true');
+        localStorage.setItem('pendingOpsUpgradeId', 'quantumAlgorithms');
+        
+        // Trigger manual save event
+        if (typeof window !== 'undefined') {
+          const saveEvent = new CustomEvent('manual-save-trigger');
+          window.dispatchEvent(saveEvent);
+        }
+      }
+    }
+    
+    // Update localStorage based on game state
+    if (Array.isArray(unlockedOpsUpgrades)) {
+      // For Distributed Storage
+      if (unlockedOpsUpgrades.includes('distributedStorage')) {
+        localStorage.setItem('distributedStoragePurchased', 'true');
+      }
+      
+      // For Quantum Algorithms
+      if (unlockedOpsUpgrades.includes('quantumAlgorithms')) {
+        localStorage.setItem('quantumAlgorithmsPurchased', 'true');
+      }
     }
   }, [unlockedOpsUpgrades]);
 
   useEffect(() => {
-    console.log("Getting upgrade costs from store or calculating defaults");
-    console.log("storedUpgradeCosts from game store:", storedUpgradeCosts);
-    
     // Initialize with default costs
     const newCosts = {};
     
@@ -75,9 +90,6 @@ export default function OpsUpgradesPanel() {
     opsUpgradeItems.forEach(upgrade => {
       newCosts[upgrade.id] = upgrade.cost;
     });
-    
-    // Log stored costs type for debugging
-    console.log("storedUpgradeCosts type:", typeof storedUpgradeCosts);
     
     // For each upgrade item, check if we have a stored cost in the game state
     if (storedUpgradeCosts && typeof storedUpgradeCosts === 'object' && !Array.isArray(storedUpgradeCosts)) {
@@ -89,36 +101,12 @@ export default function OpsUpgradesPanel() {
           const numCost = Number(storedCost);
           if (!isNaN(numCost) && numCost > 0) {
             newCosts[upgrade.id] = numCost;
-            console.log(`Using stored cost for ${upgrade.id}: ${numCost}`);
-          } else {
-            console.warn(`Invalid stored cost for ${upgrade.id}: ${storedCost}, using default: ${upgrade.cost}`);
           }
-        } else {
-          console.log(`No stored cost for ${upgrade.id}, using default: ${upgrade.cost}`);
         }
       });
-    } else {
-      console.warn("Invalid or missing storedUpgradeCosts, using all default costs");
     }
-    
-    // Log all costs for debugging
-    console.log("FINAL COSTS TO DISPLAY:");
-    Object.entries(newCosts).forEach(([key, value]) => {
-      console.log(`- ${key}: ${value}`);
-    });
     
     setUpgradeCosts(newCosts);
-    
-    // Debug log for purchased upgrades and their costs
-    if (unlockedOpsUpgrades && unlockedOpsUpgrades.length > 0) {
-      console.log("Currently unlocked OPs upgrades:", unlockedOpsUpgrades);
-      // Count how many times each upgrade has been purchased
-      const upgradeCounts = {};
-      unlockedOpsUpgrades.forEach(id => {
-        upgradeCounts[id] = (upgradeCounts[id] || 0) + 1;
-      });
-      console.log("Upgrade purchase counts:", upgradeCounts);
-    }
   }, [unlockedOpsUpgrades, storedUpgradeCosts]);
   
   // Group upgrades by category
@@ -166,8 +154,7 @@ export default function OpsUpgradesPanel() {
                   const actualCost = upgradeCosts[upgrade.id];
                   const canAfford = ops >= actualCost;
                   
-                  // Debug display info
-                  console.log(`Upgrade ${upgrade.id}: cost=${actualCost}, ops=${ops}, canAfford=${canAfford}`);
+                  // No debug info needed
                 
                   return (
                     <div 
@@ -194,36 +181,31 @@ export default function OpsUpgradesPanel() {
                           }`}
                           onClick={() => {
                             if (ops >= upgradeCosts[upgrade.id]) {
-                              console.log(`Clicking buy button for ${upgrade.id} with cost ${upgradeCosts[upgrade.id]}`);
-                              
-                              // For Distributed Storage, add extra validation to ensure it can only be purchased once
-                              if (upgrade.id === 'distributedStorage') {
+                              // For non-repeatable upgrades, add extra validation to ensure they can only be purchased once
+                              if (upgrade.id === 'distributedStorage' || upgrade.id === 'quantumAlgorithms') {
                                 // Double-check it's not already purchased
-                                if (Array.isArray(unlockedOpsUpgrades) && unlockedOpsUpgrades.includes('distributedStorage')) {
-                                  console.log('Distributed Storage already purchased! Preventing duplicate purchase.');
-                                  alert('You have already purchased Distributed Storage!');
+                                if (Array.isArray(unlockedOpsUpgrades) && unlockedOpsUpgrades.includes(upgrade.id)) {
+                                  alert(`You have already purchased ${upgrade.name}!`);
                                   return;
                                 }
                                 
                                 // Set flag in localStorage to track the purchase
-                                localStorage.setItem('distributedStoragePurchased', 'true');
+                                localStorage.setItem(`${upgrade.id}Purchased`, 'true');
                                 
                                 // Force immediate save after purchase
                                 const purchaseAndSave = async () => {
                                   buyOpsUpgrade(upgrade.id, upgradeCosts[upgrade.id]);
-                                  console.log('Distributed Storage purchased, forcing immediate save...');
                                   
                                   // Set a pending upgrade flag
                                   localStorage.setItem('pendingOpsUpgradeSave', 'true');
-                                  localStorage.setItem('pendingOpsUpgradeId', 'distributedStorage');
+                                  localStorage.setItem('pendingOpsUpgradeId', upgrade.id);
                                   
                                   // Force immediate save if available
                                   if (typeof window !== 'undefined' && window.saveGameNow) {
                                     try {
                                       await window.saveGameNow();
-                                      console.log('Distributed Storage purchase saved successfully!');
                                     } catch (err) {
-                                      console.error('Error saving Distributed Storage purchase:', err);
+                                      // Silently fail
                                     }
                                   }
                                 };

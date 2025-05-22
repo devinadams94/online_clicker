@@ -6,7 +6,6 @@ if (typeof window !== 'undefined') {
   try {
     Phaser = require('phaser');
   } catch (error) {
-    console.error("Failed to load Phaser:", error);
     // Provide a fallback to prevent crashes
     Phaser = {
       Scene: class DummyScene {
@@ -119,7 +118,6 @@ export default class PaperclipScene extends Phaser.Scene {
         this.particleEmitter = emitter;
       }
     } catch (err) {
-      console.warn("Particle system initialization failed:", err);
       // Create a dummy emitter object to prevent application crashes
       this.particleEmitter = {
         explode: () => {} // No-op function
@@ -174,7 +172,7 @@ export default class PaperclipScene extends Phaser.Scene {
               }
             }
           } catch (err) {
-            console.warn("Particle emission failed:", err);
+            // Silently fail on particle emission errors
           }
         }
       }
@@ -245,7 +243,7 @@ export default class PaperclipScene extends Phaser.Scene {
         this.statsText.setText(`Multiplier: ${this.clickMultiplier}x | Autoclippers: ${autoclipperCount}`);
       } */
     } catch (error) {
-      console.error('Failed to update from game store:', error);
+      // Silent failure for game store updates
     }
   }
   
