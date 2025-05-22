@@ -94,3 +94,19 @@ body {
 .animate-ping {
   animation: ping 0.3s cubic-bezier(0, 0, 0.2, 1);
 }
+
+/* Ping animation that only plays once */
+@keyframes ping-once {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.5;
+  }
+  75%, 100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-ping-once {
+  animation: ping-once 0.8s cubic-bezier(0, 0, 0.2, 1) forwards;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import useGameStore from "@/lib/gameStore";
 
 export default function SpaceStatsPanel() {
@@ -8,12 +8,119 @@ export default function SpaceStatsPanel() {
     yomi,
     ops,
     spaceStats,
-    upgradeStat,
-    unlockCombat,
+    upgradeStat: originalUpgradeStat,
+    unlockCombat: originalUnlockCombat,
     spaceAgeUnlocked
   } = useGameStore();
   
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [forceUpdate, setForceUpdate] = useState(0);
+  
+  // Alternative implementation that directly modifies the store state
+  const manualUpgradeStat = useCallback((statId: string, cost: number) => {
+    console.log(`Manual upgrade: Upgrading ${statId} for ${cost} yomi`);
+    
+    // Get current state
+    const state = useGameStore.getState();
+    
+    // Check if we can afford it
+    if (state.yomi < cost) {
+      console.log(`Cannot afford upgrade. Need ${cost} yomi, have ${state.yomi}`);
+      return;
+    }
+    
+    // Check if stat exists
+    if (state.spaceStats[statId] === undefined) {
+      console.log(`Stat ${statId} doesn't exist`);
+      return;
+    }
+    
+    try {
+      // Create updated space stats object
+      const updatedSpaceStats = {...state.spaceStats};
+      updatedSpaceStats[statId] = (updatedSpaceStats[statId] || 0) + 1;
+      
+      // Update the store directly
+      useGameStore.setState({
+        spaceStats: updatedSpaceStats,
+        yomi: state.yomi - cost
+      });
+      
+      console.log(`Manual upgrade complete for ${statId}. New level: ${updatedSpaceStats[statId]}`);
+      
+      // Force component to re-render
+      setForceUpdate(prev => prev + 1);
+    } catch (error) {
+      console.error(`Error manually upgrading stat ${statId}:`, error);
+    }
+  }, []);
+  
+  // Alternative implementation for unlocking combat
+  const manualUnlockCombat = useCallback(() => {
+    console.log("Manual unlock: Unlocking combat capability");
+    
+    // Get current state
+    const state = useGameStore.getState();
+    
+    // Check if combat is already unlocked
+    if (state.spaceStats.combat !== undefined) {
+      console.log("Combat already unlocked");
+      return;
+    }
+    
+    // Check if we can afford it (50,000 OPs)
+    const unlockCost = 50000;
+    if (state.ops < unlockCost) {
+      console.log(`Not enough OPs to unlock combat (need ${unlockCost})`);
+      return;
+    }
+    
+    try {
+      // Update the store directly
+      useGameStore.setState({
+        ops: state.ops - unlockCost,
+        spaceStats: {
+          ...state.spaceStats,
+          combat: 1
+        },
+        honor: 0 // Initialize honor resource
+      });
+      
+      console.log("Manual combat unlock complete");
+      
+      // Force component to re-render
+      setForceUpdate(prev => prev + 1);
+    } catch (error) {
+      console.error("Error manually unlocking combat:", error);
+    }
+  }, []);
+  
+  // Log space stats on each render to help debug
+  useEffect(() => {
+    console.log("SpaceStatsPanel render, current stats:", spaceStats);
+  }, [spaceStats, forceUpdate]);
+  
+  // Try to trigger a game save after state changes
+  useEffect(() => {
+    if (forceUpdate > 0) {
+      // Wait a moment for state to settle
+      const saveTimer = setTimeout(() => {
+        try {
+          // Attempt to save the game state if the save function is available
+          if (typeof window !== 'undefined' && window.saveGameNow) {
+            console.log("Triggering game save after stat upgrade");
+            window.saveGameNow()
+              .then(() => console.log("Game save completed after stat upgrade"))
+              .catch(err => console.error("Error saving game after stat upgrade:", err));
+          }
+        } catch (error) {
+          console.error("Failed to trigger game save:", error);
+        }
+      }, 500);
+      
+      return () => clearTimeout(saveTimer);
+    }
+  }, [forceUpdate]);
   
   // Space stats definitions
   const statDefinitions = [
@@ -132,7 +239,9 @@ export default function SpaceStatsPanel() {
                     }`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (ops >= 50000) unlockCombat();
+                      if (ops >= 50000) {
+                        manualUnlockCombat();
+                      }
                     }}
                     disabled={ops < 50000}
                   >
@@ -170,13 +279,8 @@ export default function SpaceStatsPanel() {
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log(`Attempting to upgrade ${stat.id} for ${upgradeCost} yomi. Current yomi: ${yomi}`);
                     if (canAfford) {
-                      console.log(`Calling upgradeStat function with stat: ${stat.id}, cost: ${upgradeCost}`);
-                      upgradeStat(stat.id, upgradeCost);
-                      console.log(`Upgrade complete. New stat level should be: ${statValue + 1}`);
-                    } else {
-                      console.log(`Cannot afford upgrade. Need ${upgradeCost} yomi, have ${yomi}`);
+                      manualUpgradeStat(stat.id, upgradeCost);
                     }
                   }}
                   disabled={!canAfford}

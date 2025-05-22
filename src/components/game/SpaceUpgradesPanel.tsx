@@ -62,15 +62,6 @@ export default function SpaceUpgradesPanel() {
       icon: '🌠'
     },
     {
-      id: 'autoDrones',
-      name: 'Automated Drone Production',
-      description: 'Probes automatically produce a small number of drones over time',
-      cost: 2000000,
-      effect: 'autoDrones',
-      effectValue: true,
-      icon: '🛠️'
-    },
-    {
       id: 'droneReplication',
       name: 'Drone Self-Replication',
       description: 'Harvester drones can self-replicate using Aerograde Paperclips when resources are found on celestial bodies',

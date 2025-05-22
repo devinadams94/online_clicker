@@ -132,20 +132,20 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
       return;
     }
     
-    // Probe cost in Aerograde paperclips (updated from regular paperclips)
-    const probeCost = 10000;
+    // Changed to use regular paperclips instead of Aerograde paperclips
+    const probeCost = 50000;
     
-    if ((state.aerogradePaperclips || 0) < probeCost) {
-      console.log(`Not enough Aerograde paperclips to launch a probe (need ${probeCost})`);
+    if (state.paperclips < probeCost) {
+      console.log(`Not enough paperclips to launch a probe (need ${probeCost})`);
       return;
     }
     
-    console.log(`Launching new probe (${state.probes + 1}) for ${probeCost} Aerograde paperclips`);
+    console.log(`Launching new probe (${state.probes + 1}) for ${probeCost} paperclips`);
     
-    // Create new probe and deduct Aerograde paperclips
+    // Create new probe and deduct paperclips
     set({
       probes: state.probes + 1,
-      aerogradePaperclips: (state.aerogradePaperclips || 0) - probeCost
+      paperclips: state.paperclips - probeCost
     });
   },
   
@@ -179,46 +179,61 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     const currentPlanet = discoveredPlanets[currentPlanetIndex];
     const currentSpaceMatter = currentPlanet?.matter || 6e30;
     
+    // Initialize space stats if not already done
+    if (!state.spaceStats.miningProduction) {
+      console.log("Initializing space stats for the first time");
+      set({
+        spaceStats: {
+          ...state.spaceStats,
+          miningProduction: 1,
+          wireProduction: 1,
+          factoryProduction: 1,
+          exploration: 1,
+          speed: 1,
+          selfReplication: 1
+        }
+      });
+    }
+    
     // Apply efficiency multipliers from upgrades
     const miningEfficiency = state.miningEfficiency || 1;
     const droneEfficiency = state.droneEfficiency || 1;
     const factoryEfficiency = state.factoryEfficiency || 1;
     const explorationSpeed = state.explorationSpeed || 1;
     
-    // Generate drones automatically if autoDrones upgrade is purchased
+    // Initialize variables for resources
     let wireHarvestersNew = state.wireHarvesters;
     let oreHarvestersNew = state.oreHarvesters;
     let factoriesNew = state.factories;
     
-    if (state.autoDrones && state.probes > 0) {
-      // Add a small amount of drones based on probes and self-replication stat
-      const autoProduction = state.probes * state.spaceStats.selfReplication * 0.0001;
-      wireHarvestersNew += Math.random() < autoProduction ? 1 : 0;
-      oreHarvestersNew += Math.random() < autoProduction ? 1 : 0;
-      factoriesNew += Math.random() < autoProduction * 0.1 ? 1 : 0; // Factories are rarer
-    }
-    
     // Calculate how much ore can be mined (limited by available matter)
-    // 10 ore per drone per second, multiplied by mining production stat and efficiency
-    const potentialOreMined = state.oreHarvesters * state.spaceStats.miningProduction * 10.0 * miningEfficiency * droneEfficiency;
+    // Base value is 1 ore per drone per second, multiplied by mining production stat and efficiency
+    // Ore harvesters were not producing enough ore - increased base production significantly
+    const potentialOreMined = state.oreHarvesters * state.spaceStats.miningProduction * 1.0 * miningEfficiency * droneEfficiency;
     const actualOreMined = Math.min(potentialOreMined, currentSpaceMatter);
     
-    // Convert ore to wire (10 wire per 1 ore)
-    // 10 wire per drone per second, multiplied by wire production stat and efficiency
-    const potentialWireProduced = state.wireHarvesters * state.spaceStats.wireProduction * 10.0 * droneEfficiency;
-    const availableOre = (state.spaceOre || 0) + actualOreMined;
-    const actualWireProduced = Math.min(potentialWireProduced, availableOre * 10);
-    const oreConsumed = actualWireProduced / 10;
+    // Convert ore to wire (1 wire per 1 ore)
+    // Base value is 1 wire per drone per second, multiplied by wire production stat and efficiency
+    // Wire harvesters were not producing enough wire - increased base production
+    const potentialWireProduced = state.wireHarvesters * state.spaceStats.wireProduction * 1.0 * droneEfficiency;
+    // Initialize spaceOre if it doesn't exist
+    const currentOre = typeof state.spaceOre === 'number' ? state.spaceOre : 0;
+    const availableOre = currentOre + actualOreMined;
+    const actualWireProduced = Math.min(potentialWireProduced, availableOre);
+    const oreConsumed = actualWireProduced;
     
-    // Produce Aerograde paperclips from wire (100 per factory per second, 10 paperclips per wire)
-    const availableWire = (state.spaceWire || 0) + actualWireProduced;
-    // 100 paperclips per factory per second, modified by factory production stat and efficiency
-    const potentialPaperclipsProduced = state.factories * state.spaceStats.factoryProduction * 10.0 * factoryEfficiency;
-    // Each wire makes 10 paperclips, so we need wire / 10 for the production
-    const maxPaperclipsFromWire = availableWire * 10;
+    // Produce Aerograde paperclips from wire (1 paperclip per wire)
+    // Initialize spaceWire if it doesn't exist
+    const currentWire = typeof state.spaceWire === 'number' ? state.spaceWire : 0;
+    const availableWire = currentWire + actualWireProduced;
+    
+    // Base value is 1 paperclip per factory per second, modified by factory production stat and efficiency
+    const potentialPaperclipsProduced = state.factories * state.spaceStats.factoryProduction * 1.0 * factoryEfficiency;
+    // Each wire makes 1 paperclip
+    const maxPaperclipsFromWire = availableWire;
     const actualPaperclipsProduced = Math.min(potentialPaperclipsProduced, maxPaperclipsFromWire);
-    // Wire consumed is paperclips / 10 since each wire makes 10 paperclips
-    const wireConsumed = actualPaperclipsProduced / 10;
+    // Wire consumed equals paperclips produced (1:1 ratio)
+    const wireConsumed = actualPaperclipsProduced;
     
     // Probe self-replication - create new probes based on self-replication stat
     const newProbes = Math.floor(state.probes * state.spaceStats.selfReplication * 0.001);
@@ -400,10 +415,10 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
       droneReplicationCostPerDrone: state.droneReplicationCostPerDrone || 1000,
       droneReplicationEnabled: state.droneReplicationEnabled || false,
       
-      // Update space resource values
+      // Update space resource values - ensure values are initialized properly
       spaceMatter: currentSpaceMatter - actualOreMined,
-      spaceOre: availableOre - oreConsumed,
-      spaceWire: availableWire - wireConsumed,
+      spaceOre: Math.max(0, availableOre - oreConsumed),
+      spaceWire: Math.max(0, availableWire - wireConsumed),
       
       // Update planets and celestial bodies
       discoveredPlanets: updatedPlanets,
@@ -411,9 +426,11 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
       discoveredCelestialBodies: updatedCelestialBodies,
       
       // Update resource productions (per second values)
-      spaceWirePerSecond: actualWireProduced * 10,
-      spaceOrePerSecond: actualOreMined * 10,
-      spacePaperclipsPerSecond: actualPaperclipsProduced * 10,
+      // These were being multiplied by 10 but not actually being used as per-second values
+      // Fixed to correctly represent the per-second production
+      spaceWirePerSecond: actualWireProduced,
+      spaceOrePerSecond: actualOreMined,
+      spacePaperclipsPerSecond: actualPaperclipsProduced,
       
       // Add produced paperclips to global total and track Aerograde paperclips
       paperclips: state.paperclips + actualPaperclipsProduced,
@@ -607,12 +624,6 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
         // 3x probe exploration speed
         set({
           explorationSpeed: (state.explorationSpeed || 1) * 3
-        });
-        break;
-      case 'autoDrones':
-        // Enable auto drone production
-        set({
-          autoDrones: true
         });
         break;
       case 'autoBattle':

@@ -30,6 +30,98 @@ export default function SpaceLaunchPanel() {
     if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
     return num.toFixed(2);
   };
+  
+  // Helper function to calculate total cost for bulk purchases with exponential scaling
+  const calculateBulkCost = (baseCost: number, currentCount: number, amount: number) => {
+    let totalCost = 0;
+    for (let i = 0; i < amount; i++) {
+      const scaleFactor = Math.pow(1.05, currentCount + i);
+      totalCost += Math.floor(baseCost * scaleFactor);
+    }
+    return totalCost;
+  };
+  
+  // Trigger a game save after state changes
+  const triggerGameSave = () => {
+    try {
+      // Attempt to save the game state if the save function is available
+      if (typeof window !== 'undefined' && window.saveGameNow) {
+        console.log("Triggering game save after bulk purchase");
+        window.saveGameNow()
+          .then(() => console.log("Game save completed after bulk purchase"))
+          .catch(err => console.error("Error saving game after bulk purchase:", err));
+      }
+    } catch (error) {
+      console.error("Failed to trigger game save:", error);
+    }
+  };
+  
+  // Bulk purchase functions
+  const bulkLaunchWireHarvesters = (amount: number) => {
+    // Check if player can afford the bulk purchase
+    const baseCost = 100000; // Base cost for wire harvesters
+    const totalCost = calculateBulkCost(baseCost, wireHarvesters, amount);
+    
+    if (paperclips < totalCost) {
+      console.log(`Not enough paperclips for bulk wire harvester purchase. Need ${totalCost}, have ${paperclips}`);
+      return;
+    }
+    
+    console.log(`Bulk purchasing ${amount} wire harvesters for ${totalCost} paperclips`);
+    
+    // Update state directly with the new count and reduced paperclips
+    useGameStore.setState({
+      wireHarvesters: wireHarvesters + amount,
+      paperclips: paperclips - totalCost
+    });
+    
+    // Save the game state
+    setTimeout(triggerGameSave, 200);
+  };
+  
+  const bulkLaunchOreHarvesters = (amount: number) => {
+    // Check if player can afford the bulk purchase
+    const baseCost = 100000; // Base cost for ore harvesters
+    const totalCost = calculateBulkCost(baseCost, oreHarvesters, amount);
+    
+    if (paperclips < totalCost) {
+      console.log(`Not enough paperclips for bulk ore harvester purchase. Need ${totalCost}, have ${paperclips}`);
+      return;
+    }
+    
+    console.log(`Bulk purchasing ${amount} ore harvesters for ${totalCost} paperclips`);
+    
+    // Update state directly with the new count and reduced paperclips
+    useGameStore.setState({
+      oreHarvesters: oreHarvesters + amount,
+      paperclips: paperclips - totalCost
+    });
+    
+    // Save the game state
+    setTimeout(triggerGameSave, 200);
+  };
+  
+  const bulkBuildFactories = (amount: number) => {
+    // Check if player can afford the bulk purchase
+    const baseCost = 1000000; // Base cost for factories
+    const totalCost = calculateBulkCost(baseCost, factories, amount);
+    
+    if (paperclips < totalCost) {
+      console.log(`Not enough paperclips for bulk factory purchase. Need ${totalCost}, have ${paperclips}`);
+      return;
+    }
+    
+    console.log(`Bulk purchasing ${amount} factories for ${totalCost} paperclips`);
+    
+    // Update state directly with the new count and reduced paperclips
+    useGameStore.setState({
+      factories: factories + amount,
+      paperclips: paperclips - totalCost
+    });
+    
+    // Save the game state
+    setTimeout(triggerGameSave, 200);
+  };
 
   // Format percentage showing all decimal places
   const formatPercentage = (percentage: number) => {
@@ -145,17 +237,41 @@ export default function SpaceLaunchPanel() {
             <span className="text-sm">Space Wire Production Drone</span>
             <span className="text-xs text-blue-300">Cost: {formatNumber(getWireHarvesterCost())} paperclips</span>
           </div>
-          <button
-            className={`w-full py-2 px-3 rounded text-sm ${
-              paperclips >= getWireHarvesterCost() 
-                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                : 'bg-gray-600 text-gray-300 cursor-not-allowed'
-            }`}
-            onClick={() => launchWireHarvester()}
-            disabled={paperclips < getWireHarvesterCost()}
-          >
-            Launch Wire Production Drone
-          </button>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              className={`py-2 px-3 rounded text-sm ${
+                paperclips >= getWireHarvesterCost() 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
+              onClick={() => launchWireHarvester()}
+              disabled={paperclips < getWireHarvesterCost()}
+            >
+              Launch 1
+            </button>
+            <button
+              className={`py-2 px-3 rounded text-sm ${
+                paperclips >= calculateBulkCost(100000, wireHarvesters, 100)
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
+              onClick={() => bulkLaunchWireHarvesters(100)}
+              disabled={paperclips < calculateBulkCost(100000, wireHarvesters, 100)}
+            >
+              Launch 100
+            </button>
+            <button
+              className={`py-2 px-3 rounded text-sm ${
+                paperclips >= calculateBulkCost(100000, wireHarvesters, 1000)
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
+              onClick={() => bulkLaunchWireHarvesters(1000)}
+              disabled={paperclips < calculateBulkCost(100000, wireHarvesters, 1000)}
+            >
+              Launch 1000
+            </button>
+          </div>
           {paperclips < getWireHarvesterCost() && (
             <p className="text-xs text-red-400 mt-1 text-center">
               Need {formatNumber(getWireHarvesterCost() - paperclips)} more paperclips
@@ -169,17 +285,41 @@ export default function SpaceLaunchPanel() {
             <span className="text-sm">Ore Harvester Drone</span>
             <span className="text-xs text-amber-300">Cost: {formatNumber(getOreHarvesterCost())} paperclips</span>
           </div>
-          <button
-            className={`w-full py-2 px-3 rounded text-sm ${
-              paperclips >= getOreHarvesterCost() 
-                ? 'bg-amber-600 hover:bg-amber-700 text-white' 
-                : 'bg-gray-600 text-gray-300 cursor-not-allowed'
-            }`}
-            onClick={() => launchOreHarvester()}
-            disabled={paperclips < getOreHarvesterCost()}
-          >
-            Launch Ore Harvester Drone
-          </button>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              className={`py-2 px-3 rounded text-sm ${
+                paperclips >= getOreHarvesterCost() 
+                  ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
+              onClick={() => launchOreHarvester()}
+              disabled={paperclips < getOreHarvesterCost()}
+            >
+              Launch 1
+            </button>
+            <button
+              className={`py-2 px-3 rounded text-sm ${
+                paperclips >= calculateBulkCost(100000, oreHarvesters, 100)
+                  ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
+              onClick={() => bulkLaunchOreHarvesters(100)}
+              disabled={paperclips < calculateBulkCost(100000, oreHarvesters, 100)}
+            >
+              Launch 100
+            </button>
+            <button
+              className={`py-2 px-3 rounded text-sm ${
+                paperclips >= calculateBulkCost(100000, oreHarvesters, 1000)
+                  ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
+              onClick={() => bulkLaunchOreHarvesters(1000)}
+              disabled={paperclips < calculateBulkCost(100000, oreHarvesters, 1000)}
+            >
+              Launch 1000
+            </button>
+          </div>
           {paperclips < getOreHarvesterCost() && (
             <p className="text-xs text-red-400 mt-1 text-center">
               Need {formatNumber(getOreHarvesterCost() - paperclips)} more paperclips
@@ -193,17 +333,41 @@ export default function SpaceLaunchPanel() {
             <span className="text-sm">Space Factory</span>
             <span className="text-xs text-purple-300">Cost: {formatNumber(getFactoryCost())} paperclips</span>
           </div>
-          <button
-            className={`w-full py-2 px-3 rounded text-sm ${
-              paperclips >= getFactoryCost() 
-                ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                : 'bg-gray-600 text-gray-300 cursor-not-allowed'
-            }`}
-            onClick={() => buildFactory()}
-            disabled={paperclips < getFactoryCost()}
-          >
-            Build Space Factory
-          </button>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              className={`py-2 px-3 rounded text-sm ${
+                paperclips >= getFactoryCost() 
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
+              onClick={() => buildFactory()}
+              disabled={paperclips < getFactoryCost()}
+            >
+              Build 1
+            </button>
+            <button
+              className={`py-2 px-3 rounded text-sm ${
+                paperclips >= calculateBulkCost(1000000, factories, 100)
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
+              onClick={() => bulkBuildFactories(100)}
+              disabled={paperclips < calculateBulkCost(1000000, factories, 100)}
+            >
+              Build 100
+            </button>
+            <button
+              className={`py-2 px-3 rounded text-sm ${
+                paperclips >= calculateBulkCost(1000000, factories, 1000)
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
+              onClick={() => bulkBuildFactories(1000)}
+              disabled={paperclips < calculateBulkCost(1000000, factories, 1000)}
+            >
+              Build 1000
+            </button>
+          </div>
           {paperclips < getFactoryCost() && (
             <p className="text-xs text-red-400 mt-1 text-center">
               Need {formatNumber(getFactoryCost() - paperclips)} more paperclips

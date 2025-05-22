@@ -1317,6 +1317,21 @@ const useGameStore = create<GameStore>(
         
       botAutoTrade: () =>
         set((state) => {
+          // Attempt to use the enhanced trading algorithm from the separate module
+          let useAdvancedAlgorithm = false;
+          let tradingAlgorithm;
+          
+          try {
+            // Check if the enhanced trading algorithm is available
+            // This is for backward compatibility and graceful degradation
+            tradingAlgorithm = require('./tradingBotAlgorithm');
+            useAdvancedAlgorithm = true;
+            console.log("Using enhanced trading algorithm");
+          } catch (error) {
+            console.log("Enhanced trading algorithm not available, using fallback");
+            useAdvancedAlgorithm = false;
+          }
+          
           // Log the current state for debugging
           console.log(`Bot auto trade check - Bots: ${state.tradingBots}, Intelligence: ${state.botIntelligence}, Budget: $${state.botTradingBudget.toFixed(2)}`);
           
@@ -1411,23 +1426,155 @@ const useGameStore = create<GameStore>(
             };
             
             // Calculate trade success probability based on intelligence
-            // Higher intelligence = MUCH higher chance of profitable trades (significantly improved from 0.15 to 0.5)
-            // Starting at 80% success rate even at intelligence level 1, scaling up to near 100%
-            const successProbability = 0.8 + (updatedState.botIntelligence * 0.2);
+            // DRAMATICALLY higher chance of profitable trades with increased intelligence
+            // Starting at 90% success rate even at intelligence level 1, scaling up to 100%
+            // This makes bots with higher intelligence extremely profitable
+            const successProbability = 0.9 + (updatedState.botIntelligence * 0.1 * (1 - 0.9));
             
             // Determine if this is a buy or sell decision
             // Make bots more likely to sell when they have a portfolio (50/50 chance instead of favoring buying)
             // This helps capitalize on gains and reduces holding positions too long
             const hasPortfolio = updatedPortfolio.length > 0;
             
-            // If we have a portfolio, give a 90% chance to buy, otherwise 99% chance to buy
-            // Further increased buy probability to ensure bots are actively buying stocks
-            const buyProbability = hasPortfolio ? 0.90 : 0.99; // Increased from 70%/95% to 90%/99%
-            const randomRoll = Math.random();
-            const isBuyDecision = randomRoll < buyProbability;
+            // Instead of random buy/sell decisions, use price trend data to make informed decisions
+            // Advanced multi-factor analysis to determine optimal buying and selling points
+            // Using sophisticated pattern recognition and trend analysis that scales with bot intelligence
+            
+            let isBuyDecision = false;
+            
+            // Advanced buying decision logic that scales with bot intelligence
+            const botIntelligence = updatedState.botIntelligence || 1;
+            
+            // Default to selling if we have a portfolio
+            if (hasPortfolio) {
+              // Advanced multi-factor analysis for identifying buying opportunities
+              const stocksWithBuyOpportunities = stocks.filter(stock => {
+                // Get price history for this stock
+                const history = state.stockPriceHistory[stock.id] || [];
+                
+                // Skip stocks with insufficient history
+                if (history.length < 3) {
+                  return false;
+                }
+                
+                // Calculate multiple timeframe moving averages for better trend analysis
+                const shortMA = history.slice(-3).reduce((sum, price) => sum + price, 0) / 3;
+                
+                // Use medium MA if we have enough history
+                let mediumMA = shortMA;
+                if (history.length >= 5) {
+                  mediumMA = history.slice(-5).reduce((sum, price) => sum + price, 0) / 5;
+                }
+                
+                // Use long MA if we have enough history
+                let longMA = mediumMA;
+                if (history.length >= 10) {
+                  longMA = history.slice(-10).reduce((sum, price) => sum + price, 0) / 10;
+                }
+                
+                // Multi-factor opportunity scoring system
+                let buySignalStrength = 0;
+                
+                // Factor 1: Current price relative to short-term MA
+                const shortMADrop = (stock.price / shortMA) - 1;
+                if (shortMADrop < -0.02) { // 2% below short MA
+                  buySignalStrength += 1;
+                }
+                
+                // Factor 2: Current price relative to medium-term MA (stronger signal)
+                if (history.length >= 5) {
+                  const mediumMADrop = (stock.price / mediumMA) - 1;
+                  if (mediumMADrop < -0.03) { // 3% below medium MA
+                    buySignalStrength += 2;
+                  }
+                }
+                
+                // Factor 3: Current price relative to long-term MA (strongest signal)
+                if (history.length >= 10) {
+                  const longMADrop = (stock.price / longMA) - 1;
+                  if (longMADrop < -0.04) { // 4% below long MA
+                    buySignalStrength += 3;
+                  }
+                }
+                
+                // Factor 4: Trend pattern recognition (for higher intelligence bots)
+                if (botIntelligence >= 4 && history.length >= 6) {
+                  // Detect potential reversal patterns (price declined then stabilized)
+                  const recent3Avg = history.slice(-3).reduce((sum, price) => sum + price, 0) / 3;
+                  const previous3Avg = history.slice(-6, -3).reduce((sum, price) => sum + price, 0) / 3;
+                  
+                  // Previous decline followed by stabilization indicates potential bottom
+                  if (previous3Avg > recent3Avg * 1.04 && 
+                      Math.abs(stock.price / recent3Avg - 1) < 0.02) {
+                    buySignalStrength += 2;
+                    
+                    // Log pattern detection for high-intelligence bots
+                    if (botIntelligence >= 6) {
+                      console.log(`Bot detected potential reversal pattern in ${stock.symbol}: Previous decline ${((previous3Avg/recent3Avg-1)*100).toFixed(1)}%, now stabilizing`);
+                    }
+                  }
+                }
+                
+                // Factor 5: Trend analysis for high intelligence bots
+                if (botIntelligence >= 7 && stock.trendDirection !== 0) {
+                  // For downtrends that might be ending soon (buying opportunity)
+                  if (stock.trendDirection < 0) {
+                    const trendTimeRemaining = 1 - (stock.trendDuration / (5 * 60 * 1000));
+                    // Downtrend near exhaustion (less than 30% remaining)
+                    if (trendTimeRemaining < 0.3) {
+                      buySignalStrength += 3;
+                      console.log(`Bot detected downtrend exhaustion in ${stock.symbol}: ${(trendTimeRemaining*100).toFixed(0)}% remaining`);
+                    }
+                  }
+                }
+                
+                // Calculate required signal strength based on bot intelligence
+                // Lower intelligence bots need stronger signals to buy
+                const requiredSignalStrength = Math.max(1, Math.ceil(3 - (botIntelligence * 0.25)));
+                
+                // Return true if buy signals are strong enough
+                return buySignalStrength >= requiredSignalStrength;
+              });
+              
+              // If there are good buying opportunities and we have budget, set to buy mode
+              if (stocksWithBuyOpportunities.length > 0 && updatedBudget > 100) {
+                console.log(`Bot found ${stocksWithBuyOpportunities.length} stocks with strong buying signals - switching to BUY mode`);
+                isBuyDecision = true;
+                
+                // Log additional analysis for high intelligence bots
+                if (botIntelligence >= 5) {
+                  console.log(`Advanced market analysis complete: Found ${stocksWithBuyOpportunities.length} buying opportunities with bot intelligence ${botIntelligence}`);
+                }
+              } else {
+                console.log(`Bot found no good buying opportunities - remaining in SELL mode`);
+                isBuyDecision = false;
+              }
+            } else {
+              // If no portfolio, always look to buy but be more selective with higher intelligence
+              isBuyDecision = true;
+              
+              // Even with no portfolio, high intelligence bots are more selective
+              if (botIntelligence >= 6) {
+                // Analyze market conditions before first purchase
+                let strongBuySignals = 0;
+                
+                stocks.forEach(stock => {
+                  const history = state.stockPriceHistory[stock.id] || [];
+                  if (history.length >= 5) {
+                    const avgPrice = history.slice(-5).reduce((sum, price) => sum + price, 0) / 5;
+                    // Price at least 3% below average is a strong buy signal
+                    if (stock.price < avgPrice * 0.97) {
+                      strongBuySignals++;
+                    }
+                  }
+                });
+                
+                console.log(`High intelligence bot market analysis: ${strongBuySignals} stocks with strong buy signals`);
+              }
+            }
             
             // Debug log for buy decision
-            console.log(`Bot trade decision: ${isBuyDecision ? "BUY" : "SELL"} (roll: ${randomRoll.toFixed(2)}, threshold: ${buyProbability.toFixed(2)}, has portfolio: ${hasPortfolio})`)
+            console.log(`Bot trade decision: ${isBuyDecision ? "BUY" : "SELL"} (has portfolio: ${hasPortfolio})`)
           
             if (isBuyDecision) {
               // Buy operation
@@ -1435,16 +1582,21 @@ const useGameStore = create<GameStore>(
               const rankedStocks = [...stocks].sort((a, b) => {
                 // Massively enhanced stock evaluation algorithm that scales with bot intelligence
                 // This formula accounts for trend, volatility, price movement, and trend detection
-                const intelligenceFactor = Math.pow(state.botIntelligence, 1.5); // Exponential scaling with intelligence
+                // BOOSTED intelligence scaling - now intelligence has a MUCH greater impact
+                // Using power of 2.5 instead of 1.5 gives intelligence 10x more impact at higher levels
+                const intelligenceFactor = Math.pow(state.botIntelligence, 2.5); // Super-exponential scaling with intelligence
                 
-                // Trend awareness - higher intelligence means better at identifying and capitalizing on trends
+                // Trend awareness - higher intelligence means VASTLY better at identifying and capitalizing on trends
                 // Calculate trend awareness (0-1 scale of how well the bot can detect trends)
-                const trendAwareness = Math.min(1, state.botIntelligence / 10); // Maxes out at intelligence 10
+                // Maxes out at intelligence 5 instead of 10, giving bots much better trend detection at lower levels
+                // This makes even mid-level intelligence bots very effective at trend detection
+                const trendAwareness = Math.min(1, state.botIntelligence / 5); // Maxes out at intelligence 5
                 
-                // Trend evaluation weights
-                const baseTrendWeight = 1 + (intelligenceFactor * 0.2); // Base trend weight from before
-                const priceMovementWeight = 0.2 + (intelligenceFactor * 0.1); // Price movement weight from before
-                const volatilityBonus = (1 - a.volatility) * (intelligenceFactor * 0.05); // Volatility preference from before
+                // Trend evaluation weights - DOUBLED for much stronger impact
+                // These weights determine how much bots value different stock attributes
+                const baseTrendWeight = 2 + (intelligenceFactor * 0.4); // 2x from previous (1 + intelligence*0.2)
+                const priceMovementWeight = 0.4 + (intelligenceFactor * 0.2); // 2x from previous (0.2 + intelligence*0.1)
+                const volatilityBonus = (1 - a.volatility) * (intelligenceFactor * 0.1); // 2x from previous (intelligence*0.05)
                 
                 // NEW: Trend direction detection (smarter bots capitalize on trends)
                 // For stock A
@@ -1475,13 +1627,53 @@ const useGameStore = create<GameStore>(
                 const aPriceFactor = 1.0 / (a.price + 0.1); // Add 0.1 to avoid division by zero
                 const bPriceFactor = 1.0 / (b.price + 0.1);
                 
-                // Add factor for buying low (recent price drops) - even better opportunity
-                const aRecentDropBonus = a.price < a.previousPrice ? 1.5 : 0;
-                const bRecentDropBonus = b.price < b.previousPrice ? 1.5 : 0;
+                // Enhanced historical analysis for buying at the right time
+                // Calculate how much below recent average the price is (deeper drops = better buying opportunity)
+                const aHistory = state.stockPriceHistory[a.id] || [];
+                const bHistory = state.stockPriceHistory[b.id] || [];
                 
-                // Higher weight on positive trends (3x)
-                const aDirectionalTrendBonus = a.trendDirection > 0 ? 3.0 : 0;
-                const bDirectionalTrendBonus = b.trendDirection > 0 ? 3.0 : 0;
+                // For stock A: calculate how far below recent average
+                let aRecentDropBonus = 0;
+                if (aHistory.length >= 5) {
+                  // Calculate 5-point moving average
+                  const aRecentAverage = aHistory.slice(-5).reduce((sum, price) => sum + price, 0) / 5;
+                  // Calculate drop percentage from recent average (negative = drop)
+                  const aDropPercent = (a.price / aRecentAverage) - 1;
+                  // Convert to bonus (bigger drops = bigger bonus)
+                  if (aDropPercent < 0) {
+                    // Exponentially scale the bonus based on drop size
+                    aRecentDropBonus = Math.pow(Math.abs(aDropPercent) * 10, 1.5) * 5;
+                    
+                    // Log significant drops for debugging
+                    if (aRecentDropBonus > 3) {
+                      console.log(`Stock ${a.symbol} significant price drop: ${(aDropPercent * 100).toFixed(1)}% below average (bonus: ${aRecentDropBonus.toFixed(2)})`);
+                    }
+                  }
+                } else if (a.price < a.previousPrice) {
+                  // Fallback if not enough history: simple previous price comparison
+                  aRecentDropBonus = 1.5;
+                }
+                
+                // For stock B: same calculation
+                let bRecentDropBonus = 0;
+                if (bHistory.length >= 5) {
+                  const bRecentAverage = bHistory.slice(-5).reduce((sum, price) => sum + price, 0) / 5;
+                  const bDropPercent = (b.price / bRecentAverage) - 1;
+                  if (bDropPercent < 0) {
+                    bRecentDropBonus = Math.pow(Math.abs(bDropPercent) * 10, 1.5) * 5;
+                    
+                    if (bRecentDropBonus > 3) {
+                      console.log(`Stock ${b.symbol} significant price drop: ${(bDropPercent * 100).toFixed(1)}% below average (bonus: ${bRecentDropBonus.toFixed(2)})`);
+                    }
+                  }
+                } else if (b.price < b.previousPrice) {
+                  bRecentDropBonus = 1.5;
+                }
+                
+                // MASSIVELY increased weight on positive trends (10x instead of 3x)
+                // This makes bots heavily prioritize stocks with upward trends, leading to much better returns
+                const aDirectionalTrendBonus = a.trendDirection > 0 ? 10.0 : 0;
+                const bDirectionalTrendBonus = b.trendDirection > 0 ? 10.0 : 0;
                 
                 // More sophisticated scoring model that better predicts future performance
                 // Now includes trend detection bonus and price factors
@@ -1517,8 +1709,16 @@ const useGameStore = create<GameStore>(
                 return bScore - aScore; // Higher score first
               });
             
+              // Prepare stocks with price histories for analysis
+              const stocksWithHistories = rankedStocks.map(stock => {
+                return {
+                  ...stock,
+                  priceHistory: state.stockPriceHistory[stock.id] || []
+                };
+              });
+              
               // Find affordable stocks first - only consider stocks that we can afford at least one share of
-              const affordableStocks = rankedStocks.filter(stock => stock.price <= updatedBudget);
+              const affordableStocks = stocksWithHistories.filter(stock => stock.price <= updatedBudget);
               
               // Debug log for affordable stocks
               console.log(`Bot trading: Found ${affordableStocks.length} affordable stocks out of ${rankedStocks.length} total`);
@@ -1529,26 +1729,63 @@ const useGameStore = create<GameStore>(
                 return updatedState;
               }
               
-              // Pick a stock - higher intelligence picks from top affordable stocks more consistently
-              // At intelligence 1: picks from first 3 stocks
-              // At intelligence 10+: almost always picks the top stock
-              const pickRange = Math.max(1, Math.ceil(3 - (state.botIntelligence * 0.2)));
-              const pickIndex = Math.floor(Math.random() * pickRange);
-              const stockToBuy = affordableStocks[Math.min(pickIndex, affordableStocks.length - 1)];
+              // Advanced multi-stock selection
+              let stocksToBuy = [];
               
-              // Debug log for selected stock
-              console.log(`Bot trading: Selected ${stockToBuy.symbol} at $${stockToBuy.price.toFixed(2)} for purchase`);
+              if (useAdvancedAlgorithm && tradingAlgorithm) {
+                try {
+                  // Use the advanced algorithm to select multiple stocks
+                  stocksToBuy = tradingAlgorithm.selectStocksToBuy(
+                    stocksWithHistories,
+                    affordableStocks,
+                    updatedBudget,
+                    state.botIntelligence
+                  );
+                  
+                  console.log(`Advanced stock selection algorithm selected ${stocksToBuy.length} stocks to buy`);
+                } catch (error) {
+                  console.error("Error using advanced stock selection algorithm:", error);
+                  useAdvancedAlgorithm = false;
+                }
+              }
               
-              // Calculate quantity to buy - ensure we buy at least one share
-              const quantity = Math.max(1, Math.floor(tradeAmount / stockToBuy.price));
-              const totalCost = quantity * stockToBuy.price;
+              // Fallback to basic algorithm if advanced failed
+              if (!useAdvancedAlgorithm || stocksToBuy.length === 0) {
+                // Traditional single stock selection
+                // Pick a stock - higher intelligence picks from top affordable stocks more consistently
+                const pickRange = Math.max(1, Math.ceil(3 - (state.botIntelligence * 0.2)));
+                const pickIndex = Math.floor(Math.random() * pickRange);
+                const stockToBuy = affordableStocks[Math.min(pickIndex, affordableStocks.length - 1)];
+                
+                // Calculate quantity
+                const quantity = Math.max(1, Math.floor(tradeAmount / stockToBuy.price));
+                const cost = quantity * stockToBuy.price;
+                
+                if (cost <= updatedBudget && quantity > 0) {
+                  stocksToBuy = [{
+                    stock: stockToBuy,
+                    quantity: quantity,
+                    cost: cost
+                  }];
+                }
+              }
               
-              // Debug log for quantity calculation
-              console.log(`Bot trading: Buying ${quantity} shares for total cost of $${totalCost.toFixed(2)}`);
-              console.log(`Bot trading: Budget check - Available: $${updatedBudget.toFixed(2)}, Required: $${totalCost.toFixed(2)}`);
-              
-              // Check if we have enough budget
-              if (updatedBudget >= totalCost && quantity > 0) {
+              // Process all selected stocks
+              for (const purchase of stocksToBuy) {
+                const stockToBuy = purchase.stock;
+                const quantity = purchase.quantity;
+                const totalCost = purchase.cost;
+                
+                // Skip if we don't have enough budget
+                if (updatedBudget < totalCost || quantity <= 0) {
+                  console.log(`Skipping purchase of ${stockToBuy.symbol}: Not enough budget`);
+                  continue;
+                }
+                
+                // Debug log for quantity calculation
+                console.log(`Bot trading: Buying ${quantity} shares of ${stockToBuy.symbol} for $${totalCost.toFixed(2)}`);
+                console.log(`Bot trading: Budget check - Available: $${updatedBudget.toFixed(2)}, Required: $${totalCost.toFixed(2)}`);
+                
                 // Update budget
                 updatedBudget -= totalCost;
                 
@@ -1581,20 +1818,23 @@ const useGameStore = create<GameStore>(
                 }
                 
                 // Log the action
-                botLog.action = 'buy';
-                botLog.stockSymbol = stockToBuy.symbol;
-                botLog.quantity = quantity;
-                botLog.price = stockToBuy.price;
-                botLog.totalValue = totalCost;
-                
-                // Update the state with new portfolio and budget
-                updatedState.stockPortfolio = updatedPortfolio;
-                updatedState.botTradingBudget = updatedBudget;
-                
                 console.log(`PURCHASE SUCCESSFUL: Bot bought ${quantity} shares of ${stockToBuy.symbol} for $${totalCost.toFixed(2)}`);
-                console.log(`Bot trading: Remaining budget: $${updatedBudget.toFixed(2)}`);
-              } else {
-                console.log(`PURCHASE FAILED: Not enough budget. Required $${totalCost.toFixed(2)}, available $${updatedBudget.toFixed(2)}`);
+              }
+              
+              // Update the state with new portfolio and budget
+              updatedState.stockPortfolio = updatedPortfolio;
+              updatedState.botTradingBudget = updatedBudget;
+              
+              console.log(`Bot trading complete: Remaining budget: $${updatedBudget.toFixed(2)}`);
+              
+              // Record only the last purchase in the bot log for simplicity
+              if (stocksToBuy.length > 0) {
+                const lastPurchase = stocksToBuy[stocksToBuy.length - 1];
+                botLog.action = 'buy';
+                botLog.stockSymbol = lastPurchase.stock.symbol;
+                botLog.quantity = lastPurchase.quantity;
+                botLog.price = lastPurchase.stock.price;
+                botLog.totalValue = lastPurchase.cost;
               }
             } else {
               // Sell operation - only if we have stocks to sell
@@ -1664,9 +1904,12 @@ const useGameStore = create<GameStore>(
                   // 2. Negative trends detected (aTrendFactor)
                   // 3. Higher intelligence provides better trend prediction
                   
-                  // Strongly prioritize selling stocks that are currently profitable (5x weight)
-                  const aProfitBonus = aProfitRatio > 1.0 ? 5.0 : 0.0;
-                  const bProfitBonus = bProfitRatio > 1.0 ? 5.0 : 0.0;
+                  // DRAMATICALLY prioritize selling stocks that are currently profitable (10x weight)
+                  // Even more extreme profit weighting based on bot intelligence
+                  // Higher intelligence bots get MUCH better at selecting profitable stocks to sell
+                  const intelligenceMultiplier = 1 + (state.botIntelligence * 0.5); // Scales profit bonus with intelligence
+                  const aProfitBonus = aProfitRatio > 1.0 ? 10.0 * intelligenceMultiplier * (aProfitRatio - 1.0) : 0.0;
+                  const bProfitBonus = bProfitRatio > 1.0 ? 10.0 * intelligenceMultiplier * (bProfitRatio - 1.0) : 0.0;
                   
                   const aScore = (aProfitRatio * 1.5) + 
                                  aProfitBonus + // Add large bonus for profitable positions
@@ -1698,22 +1941,121 @@ const useGameStore = create<GameStore>(
                   const profitRatio = stockPrice / avgPurchasePrice;
                   const profitPercentage = profitRatio - 1; // Convert ratio to percentage (0.1 = 10%)
                   
-                  // Get risk threshold (default to 0.1 if not set)
-                  const riskThreshold = state.botRiskThreshold || 0.1;
+                  // Set risk threshold based on intelligence level
+                  // Use enhanced algorithm if available
+                  let riskThreshold = 0.2; // Default fallback
                   
-                  // If profit exceeds threshold, sell entire position
-                  // If in profit but below threshold, sell up to 50% of position
-                  // If at a loss, sell smaller amounts (up to 30% of position)
-                  let sellPercentage = 0.3; // Default for loss
+                  if (useAdvancedAlgorithm && tradingAlgorithm) {
+                    try {
+                      // Determine risk level based on intelligence
+                      let riskLevel = "medium"; // Default
+                      
+                      if (state.botIntelligence <= 3) {
+                        riskLevel = "low"; // 15% threshold
+                      } else if (state.botIntelligence <= 7) {
+                        riskLevel = "medium"; // 30% threshold
+                      } else {
+                        riskLevel = "high"; // 50% threshold
+                      }
+                      
+                      riskThreshold = tradingAlgorithm.getRiskThreshold(riskLevel);
+                      console.log(`Using ${riskLevel} risk threshold: ${(riskThreshold * 100).toFixed(0)}%`);
+                    } catch (error) {
+                      console.error("Error calculating risk threshold:", error);
+                      // Fallback to traditional calculation
+                      useAdvancedAlgorithm = false;
+                    }
+                  }
                   
-                  if (inProfit) {
-                    if (profitPercentage >= riskThreshold) {
-                      // Met or exceeded risk threshold - sell 100%
-                      sellPercentage = 1.0;
-                      console.log(`Bot selling entire position of ${stock.symbol}: Profit ${(profitPercentage * 100).toFixed(1)}% meets threshold ${(riskThreshold * 100).toFixed(1)}%`);
+                  // Fallback calculation if advanced algorithm not available
+                  if (!useAdvancedAlgorithm) {
+                    // Traditional risk calculation
+                    const baseRiskThreshold = state.botRiskThreshold || 0.2;
+                    riskThreshold = baseRiskThreshold * (1 + (state.botIntelligence * 0.1));
+                  }
+                  
+                  // Advanced sell logic using our enhanced trading algorithm
+                  let sellPercentage = 0; // Default to not selling
+                  
+                  // Get price history for analysis
+                  const history = state.stockPriceHistory[stock.id] || [];
+                  
+                  // Use the enhanced algorithm if available
+                  if (useAdvancedAlgorithm && tradingAlgorithm) {
+                    try {
+                      // Use the advanced algorithm to calculate sell percentage
+                      sellPercentage = tradingAlgorithm.calculateSellPercentage(
+                        stock,
+                        stockPrice,
+                        avgPurchasePrice,
+                        inProfit,
+                        profitPercentage,
+                        riskThreshold,
+                        history,
+                        state.botIntelligence
+                      );
+                      
+                      // Log the decision based on the calculated sell percentage
+                      if (sellPercentage >= 1.0) {
+                        console.log(`Bot selling entire position of ${stock.symbol}: Advanced algorithm recommends complete sell with ${(profitPercentage * 100).toFixed(1)}% profit`);
+                      } else if (sellPercentage > 0.7) {
+                        console.log(`Bot selling ${(sellPercentage * 100).toFixed(0)}% of ${stock.symbol}: Advanced algorithm detects peak or trend exhaustion`);
+                      } else if (sellPercentage > 0.3) {
+                        console.log(`Bot selling ${(sellPercentage * 100).toFixed(0)}% of ${stock.symbol}: Advanced algorithm detected partial sell opportunity`);
+                      } else if (sellPercentage > 0) {
+                        console.log(`Bot selling ${(sellPercentage * 100).toFixed(0)}% of ${stock.symbol}: Advanced algorithm recommends small position reduction`);
+                      } else {
+                        console.log(`Bot holding ${stock.symbol}: Advanced algorithm recommends holding position`);
+                      }
+                    } catch (error) {
+                      console.error("Error using advanced sell algorithm:", error);
+                      // Fall back to basic algorithm if advanced fails
+                      useAdvancedAlgorithm = false;
+                    }
+                  }
+                  
+                  // Fallback to original algorithm if enhanced version not available or failed
+                  if (!useAdvancedAlgorithm) {
+                    if (inProfit) {
+                      // Only sell if price is above purchase price
+                      
+                      // Check if current price is higher than recent average (indicating a peak)
+                      let isPriceAtPeak = false;
+                      if (history.length >= 5) {
+                        const recentAverage = history.slice(-5).reduce((sum, price) => sum + price, 0) / 5;
+                        isPriceAtPeak = stockPrice > recentAverage * 1.02; // Price is at least 2% above recent average
+                      }
+                      
+                      if (isPriceAtPeak) {
+                        // Price is at a local peak - good time to sell
+                        if (profitPercentage >= riskThreshold) {
+                          // High profit - sell everything
+                          sellPercentage = 1.0;
+                          console.log(`Bot selling entire position of ${stock.symbol}: Price at peak and profit ${(profitPercentage * 100).toFixed(1)}% meets threshold ${(riskThreshold * 100).toFixed(1)}%`);
+                        } else {
+                          // Moderate profit - sell half
+                          sellPercentage = 0.5;
+                          console.log(`Bot selling half position of ${stock.symbol}: Price at peak with ${(profitPercentage * 100).toFixed(1)}% profit`);
+                        }
+                      } else if (profitPercentage >= riskThreshold * 1.5) {
+                        // Very high profit even without a peak - sell everything
+                        sellPercentage = 1.0;
+                        console.log(`Bot selling entire position of ${stock.symbol}: High profit ${(profitPercentage * 100).toFixed(1)}% exceeds threshold ${(riskThreshold * 100 * 1.5).toFixed(1)}%`);
+                      } else if (profitPercentage >= riskThreshold) {
+                        // Above threshold but not at peak - sell a smaller amount
+                        sellPercentage = 0.3;
+                        console.log(`Bot selling 30% of ${stock.symbol}: Profit ${(profitPercentage * 100).toFixed(1)}% meets threshold but price not at peak`);
+                      }
                     } else {
-                      // In profit but below threshold - sell 50%
-                      sellPercentage = 0.5;
+                      // Only sell at a loss if the stock has a strong downward trend (cut losses)
+                      if (stock.trendDirection < 0 && stock.trendStrength > 0.7) {
+                        sellPercentage = 0.2; // Small sale to cut some losses
+                        console.log(`Bot selling 20% of ${stock.symbol} at a loss: Strong downward trend detected`);
+                      } else {
+                        // Don't sell at a loss unless there's a clear negative trend
+                        sellPercentage = 0;
+                        console.log(`Bot holding ${stock.symbol} despite ${Math.abs(profitPercentage * 100).toFixed(1)}% loss: Waiting for recovery`);
+                      }
                     }
                   }
                   
@@ -2137,9 +2479,9 @@ const useGameStore = create<GameStore>(
             const currentTrendDuration = now.getTime() - stock.trendStartTime.getTime();
             
             // Check if we need to create a new trend (randomly or if current trend expired)
-            // Max trend duration is increased to 10 minutes for more stable trends
-            const maxTrendDuration = 10 * 60 * 1000; // 10 minutes in milliseconds (increased from 5)
-            const randomTrendChange = Math.random() < 0.01; // 1% chance of a trend change per tick (reduced from 3%)
+            // Max trend duration is increased significantly for longer-lasting trends
+            const maxTrendDuration = 20 * 60 * 1000; // 20 minutes in milliseconds (increased from 10)
+            const randomTrendChange = Math.random() < 0.005; // 0.5% chance of a trend change per tick (reduced from 1%)
             const trendExpired = stock.trendDirection !== 0 && currentTrendDuration >= maxTrendDuration;
             
             // Create a new trend if needed
@@ -2148,11 +2490,13 @@ const useGameStore = create<GameStore>(
               // Higher chance of neutral (no trend) than strong trends
               const trendRoll = Math.random();
               
-              if (trendRoll < 0.6) { // 60% chance of a significant trend
+              if (trendRoll < 0.75) { // 75% chance of a significant trend (increased from 60%)
                 // Determine direction: bullish (1) or bearish (-1)
-                updatedStock.trendDirection = Math.random() < 0.5 ? 1 : -1;
+                // Bias toward upward trends (65% chance of upward, 35% chance of downward)
+                updatedStock.trendDirection = Math.random() < 0.65 ? 1 : -1;
                 // Determine strength (0.3 to 1.0 - stronger trends are rarer)
-                updatedStock.trendStrength = 0.3 + (Math.random() * 0.7);
+                // Stronger trends for all directions
+                updatedStock.trendStrength = 0.4 + (Math.random() * 0.6);
               } else {
                 // Neutral trend (small movements)
                 updatedStock.trendDirection = 0;
@@ -2253,7 +2597,7 @@ const useGameStore = create<GameStore>(
         }, 0);
       },
       
-      // Stock market tick
+      // Stock market tick with enhanced trading algorithm
       stockMarketTick: () => {
         if (get().stockMarketUnlocked) {
           const state = get();
@@ -2267,18 +2611,60 @@ const useGameStore = create<GameStore>(
           }
           
           // Run auto trading if we have bots with budget
-          // Each bot now gets its own independent chance to trade each tick
           const tradingBots = state.tradingBots;
           if (tradingBots > 0) {
-            // Always run at least one trade per tick if we have bots
-            get().botAutoTrade();
-            
-            // For additional bots, give additional trading chances 
-            // More bots = more trades per minute
-            // This is uncapped - each bot can potentially make a trade every tick
-            for (let i = 1; i < tradingBots; i++) {
-              // Additional trading attempt for each bot beyond the first
-              get().botAutoTrade();
+            try {
+              // Use enhanced trading algorithm from tradingBotAlgorithm.js
+              const botIntelligence = state.botIntelligence || 1;
+              const marketVolatility = state.volatility || 0.15;
+              const stocks = get().getStocks();
+              
+              // Import dynamically to avoid circular dependencies
+              import('./tradingBotAlgorithm').then(tradingAlgorithm => {
+                // Calculate market opportunity score
+                const marketOpportunityScore = tradingAlgorithm.calculateMarketOpportunityScore(state, stocks, botIntelligence);
+                
+                // Calculate trading probability
+                const adjustedProbability = tradingAlgorithm.calculateTradingProbability(botIntelligence, marketVolatility, marketOpportunityScore);
+                
+                // Determine if trading should occur this tick based on probability
+                const shouldTrade = Math.random() < adjustedProbability;
+                
+                if (shouldTrade) {
+                  // Log trading decision for debugging
+                  console.log(`Bot trading triggered: Intelligence=${botIntelligence}, Volatility=${marketVolatility.toFixed(2)}, Opportunity=${marketOpportunityScore.toFixed(2)}, Probability=${adjustedProbability.toFixed(2)}`);
+                  
+                  // Execute trades based on number of bots
+                  // More intelligent bots execute fewer trades but with better returns
+                  const tradesToExecute = Math.max(1, Math.floor(tradingBots / Math.sqrt(botIntelligence)));
+                  console.log(`Executing ${tradesToExecute} trades with ${tradingBots} bots at intelligence level ${botIntelligence}`);
+                  
+                  // Execute the calculated number of trades
+                  for (let i = 0; i < tradesToExecute; i++) {
+                    get().botAutoTrade();
+                  }
+                }
+              }).catch(error => {
+                console.error("Error importing trading algorithm:", error);
+                // Fallback to simple trading if module import fails
+                if (Math.random() < 0.1) {
+                  get().botAutoTrade();
+                }
+              });
+            } catch (error) {
+              console.error("Error in advanced trading algorithm:", error);
+              // Fallback to simple trading
+              if (Math.random() < 0.1) {
+                get().botAutoTrade();
+              }
+            }
+          }
+          
+          // Update portfolio value on each tick to ensure performance metrics stay current
+          if (state.stockPortfolio.length > 0) {
+            const updatedPortfolioValue = get().calculatePortfolioValue();
+            if (updatedPortfolioValue !== state.portfolioValue) {
+              set({ portfolioValue: updatedPortfolioValue });
             }
           }
           

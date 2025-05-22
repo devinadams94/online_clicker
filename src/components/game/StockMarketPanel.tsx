@@ -347,6 +347,15 @@ export default function StockMarketPanel() {
     console.log("StockMarketPanel mounted with portfolio:", JSON.stringify(stockPortfolio));
     if (stockPortfolio.length > 0) {
       console.log("Initial holdings:", stockPortfolio);
+      
+      // Calculate initial portfolio value
+      const initialValue = calculatePortfolioValue();
+      console.log("Initial portfolio value:", initialValue);
+      
+      // Set the initial value as both current and last value
+      // This prevents performance metrics from showing large changes
+      // the first time they're calculated
+      setLastPortfolioValue(initialValue);
     } else {
       console.log("No initial stock holdings found");
     }
@@ -354,7 +363,7 @@ export default function StockMarketPanel() {
     return () => {
       console.log("StockMarketPanel unmounting with portfolio:", JSON.stringify(useGameStore.getState().stockPortfolio));
     };
-  }, [stockPortfolio]);
+  }, [stockPortfolio, calculatePortfolioValue]);
   
   // Refresh stock data more frequently
   useEffect(() => {
@@ -383,15 +392,35 @@ export default function StockMarketPanel() {
   
   // Update portfolio performance
   useEffect(() => {
+    // When component mounts, set initial portfolio value
+    if (lastPortfolioValue === 0 && portfolioValue > 0) {
+      setLastPortfolioValue(portfolioValue);
+      return;
+    }
+    
     // Update metrics if we have previous data
     if (lastPortfolioValue > 0 && portfolioValue > 0) {
       const change = ((portfolioValue - lastPortfolioValue) / lastPortfolioValue) * 100;
       setPercentChange(change);
+      // Save current value for next comparison after calculating change
+      setLastPortfolioValue(portfolioValue);
     }
-    
-    // Save current value for next comparison
-    setLastPortfolioValue(portfolioValue);
   }, [portfolioValue, lastPortfolioValue]);
+  
+  // Force recalculation of portfolio value at regular intervals
+  useEffect(() => {
+    // Update portfolio value every 3 seconds
+    const portfolioUpdateInterval = setInterval(() => {
+      // Force portfolio value recalculation
+      const currentValue = calculatePortfolioValue();
+      console.log("[Portfolio] Recalculated value:", currentValue, "Previous:", portfolioValue);
+      
+      // We don't need to set state here as the portfolioValue will update
+      // and trigger the effect above
+    }, 3000);
+    
+    return () => clearInterval(portfolioUpdateInterval);
+  }, [calculatePortfolioValue, portfolioValue]);
   
   // Format price with color based on change
   const formatPrice = (price: number, previousPrice: number) => {
@@ -463,7 +492,8 @@ export default function StockMarketPanel() {
   
   const formatPerformance = () => {
     const sign = percentChange >= 0 ? '+' : '';
-    return `${sign}${percentChange.toFixed(2)}%`;
+    const arrow = percentChange >= 0 ? '▲' : '▼';
+    return `${arrow} ${sign}${Math.abs(percentChange).toFixed(2)}%`;
   };
   
   // Direct database update for bot intelligence
@@ -585,10 +615,15 @@ export default function StockMarketPanel() {
               <div className="text-sm font-medium text-red-600">Total Losses</div>
               <div className="text-xl font-bold text-red-600">${botTradingLosses.toFixed(2)}</div>
             </div>
-            <div className="col-span-3 mt-2">
+            <div className="col-span-3 mt-2 flex items-center justify-between">
               <div className="text-sm font-medium">Performance</div>
-              <div className={`font-bold ${getPerformanceColor()}`}>
+              <div className={`text-xl font-bold ${getPerformanceColor()} flex items-center`}>
                 {formatPerformance()}
+                {/* Subtle animation when portfolio value updates */}
+                <span 
+                  key={portfolioValue}
+                  className="ml-2 w-2 h-2 bg-blue-500 rounded-full opacity-0 animate-ping-once"
+                ></span>
               </div>
             </div>
           </div>
@@ -619,8 +654,9 @@ export default function StockMarketPanel() {
               <div className="text-sm font-medium">Intelligence</div>
               <div className="text-md">Level {botIntelligence}</div>
               <div className="text-xs text-gray-500">
-                +{(botIntelligence * 5).toFixed(1)}% trade success<br />
-                +{Math.floor(Math.sqrt(botIntelligence) * 10)}% trade speed
+                <span className="text-green-600 font-semibold">+{(botIntelligence * 10).toFixed(1)}%</span> trade success<br />
+                <span className="text-green-600 font-semibold">+{Math.floor(Math.pow(botIntelligence, 1.5) * 10)}%</span> profit factor<br />
+                <span className="text-green-600 font-semibold">+{Math.floor(Math.pow(botIntelligence, 2) * 5)}%</span> trend detection
               </div>
               <button
                 className={`mt-2 w-full py-1 text-sm ${canUpgradeBotIntelligence ? 'bg-yellow-600 text-white hover:bg-yellow-700' : 'bg-gray-300 cursor-not-allowed'} rounded`}
@@ -654,6 +690,18 @@ export default function StockMarketPanel() {
                   disabled={parseInt(botBudgetInput) <= 0 || parseInt(botBudgetInput) > money}
                 >
                   Add
+                </button>
+                <button
+                  className="px-2 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded"
+                  onClick={() => {
+                    if (money > 0) {
+                      setBotTradingBudget(money);
+                      setBotBudgetInput('');
+                    }
+                  }}
+                  disabled={money <= 0}
+                >
+                  Invest All
                 </button>
               </div>
             </div>
@@ -699,7 +747,8 @@ export default function StockMarketPanel() {
               <div>
                 <div className="font-medium">Bot Trading Status: <span className="text-green-500">Active</span></div>
                 <div>Trading {tradingBots * 600} times per minute</div>
-                <div>Success rate: {Math.min(95, 40 + botIntelligence * 5).toFixed(1)}%</div>
+                <div>Success rate: <span className="text-green-600 font-semibold">{Math.min(99, 80 + botIntelligence * 2).toFixed(1)}%</span></div>
+                <div>Profit multiplier: <span className="text-green-600 font-semibold">{(1 + (botIntelligence * 0.5)).toFixed(1)}x</span></div>
                 
                 {/* Risk Threshold Controls */}
                 <div className="mt-2 border-t pt-2 dark:border-gray-600">
@@ -707,22 +756,22 @@ export default function StockMarketPanel() {
                   <div className="text-xs mb-1">Higher threshold = higher profits but longer hold times</div>
                   <div className="flex space-x-2 mt-1">
                     <button 
-                      className={`px-2 py-1 text-xs rounded ${botRiskThreshold === 0.1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
-                      onClick={() => setBotRiskThreshold(0.1)}
+                      className={`px-2 py-1 text-xs rounded ${botRiskThreshold === 0.15 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
+                      onClick={() => setBotRiskThreshold(0.15)}
                     >
-                      Low (10%)
-                    </button>
-                    <button 
-                      className={`px-2 py-1 text-xs rounded ${botRiskThreshold === 0.2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
-                      onClick={() => setBotRiskThreshold(0.2)}
-                    >
-                      Medium (20%)
+                      Low (15%)
                     </button>
                     <button 
                       className={`px-2 py-1 text-xs rounded ${botRiskThreshold === 0.3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
                       onClick={() => setBotRiskThreshold(0.3)}
                     >
-                      High (30%)
+                      Medium (30%)
+                    </button>
+                    <button 
+                      className={`px-2 py-1 text-xs rounded ${botRiskThreshold === 0.5 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
+                      onClick={() => setBotRiskThreshold(0.5)}
+                    >
+                      High (50%)
                     </button>
                   </div>
                 </div>

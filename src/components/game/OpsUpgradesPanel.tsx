@@ -34,6 +34,36 @@ export default function OpsUpgradesPanel() {
   // Use useEffect to get costs from game state or calculate them if not available
   const [upgradeCosts, setUpgradeCosts] = useState({});
   
+  // Check localStorage for Distributed Storage purchase on component mount
+  useEffect(() => {
+    // Check if Distributed Storage has been purchased (from localStorage)
+    if (localStorage.getItem('distributedStoragePurchased') === 'true') {
+      console.log('Distributed Storage purchase detected in localStorage');
+      
+      // Verify if it's also marked as purchased in the game state
+      if (Array.isArray(unlockedOpsUpgrades) && !unlockedOpsUpgrades.includes('distributedStorage')) {
+        console.warn('Distributed Storage marked as purchased in localStorage but not in game state!');
+        console.log('This could indicate a sync issue - checking if we need to force a save...');
+        
+        // Set pending save flag to ensure it gets saved properly
+        localStorage.setItem('pendingOpsUpgradeSave', 'true');
+        localStorage.setItem('pendingOpsUpgradeId', 'distributedStorage');
+        
+        // Trigger manual save event
+        if (typeof window !== 'undefined') {
+          const saveEvent = new CustomEvent('manual-save-trigger');
+          window.dispatchEvent(saveEvent);
+        }
+      }
+    }
+    
+    // For Distributed Storage specifically, check the game state to set localStorage
+    if (Array.isArray(unlockedOpsUpgrades) && unlockedOpsUpgrades.includes('distributedStorage')) {
+      localStorage.setItem('distributedStoragePurchased', 'true');
+      console.log('Distributed Storage is purchased in game state, updated localStorage to match');
+    }
+  }, [unlockedOpsUpgrades]);
+
   useEffect(() => {
     console.log("Getting upgrade costs from store or calculating defaults");
     console.log("storedUpgradeCosts from game store:", storedUpgradeCosts);
@@ -117,7 +147,7 @@ export default function OpsUpgradesPanel() {
           <div className="text-xs text-gray-500 mb-2">
             Need {5000 - opsMax} more OPs capacity to unlock Creativity
             <div className="mt-1 italic">
-              <span className="font-medium">Tip:</span> Purchase "Distributed Storage" multiple times to double memory capacity each time
+              <span className="font-medium">Tip:</span> Purchase "Memory Compression" multiple times to increase memory capacity
             </div>
           </div>
         )}
@@ -165,7 +195,44 @@ export default function OpsUpgradesPanel() {
                           onClick={() => {
                             if (ops >= upgradeCosts[upgrade.id]) {
                               console.log(`Clicking buy button for ${upgrade.id} with cost ${upgradeCosts[upgrade.id]}`);
-                              buyOpsUpgrade(upgrade.id, upgradeCosts[upgrade.id]);
+                              
+                              // For Distributed Storage, add extra validation to ensure it can only be purchased once
+                              if (upgrade.id === 'distributedStorage') {
+                                // Double-check it's not already purchased
+                                if (Array.isArray(unlockedOpsUpgrades) && unlockedOpsUpgrades.includes('distributedStorage')) {
+                                  console.log('Distributed Storage already purchased! Preventing duplicate purchase.');
+                                  alert('You have already purchased Distributed Storage!');
+                                  return;
+                                }
+                                
+                                // Set flag in localStorage to track the purchase
+                                localStorage.setItem('distributedStoragePurchased', 'true');
+                                
+                                // Force immediate save after purchase
+                                const purchaseAndSave = async () => {
+                                  buyOpsUpgrade(upgrade.id, upgradeCosts[upgrade.id]);
+                                  console.log('Distributed Storage purchased, forcing immediate save...');
+                                  
+                                  // Set a pending upgrade flag
+                                  localStorage.setItem('pendingOpsUpgradeSave', 'true');
+                                  localStorage.setItem('pendingOpsUpgradeId', 'distributedStorage');
+                                  
+                                  // Force immediate save if available
+                                  if (typeof window !== 'undefined' && window.saveGameNow) {
+                                    try {
+                                      await window.saveGameNow();
+                                      console.log('Distributed Storage purchase saved successfully!');
+                                    } catch (err) {
+                                      console.error('Error saving Distributed Storage purchase:', err);
+                                    }
+                                  }
+                                };
+                                
+                                purchaseAndSave();
+                              } else {
+                                // Normal purchase for other upgrades
+                                buyOpsUpgrade(upgrade.id, upgradeCosts[upgrade.id]);
+                              }
                             }
                           }}
                           disabled={ops < upgradeCosts[upgrade.id]}

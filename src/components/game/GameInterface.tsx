@@ -109,33 +109,44 @@ const ResearchPanel = () => {
     { id: 'wireProduction', name: 'Wire Production', cost: 400, description: 'Increase wire per spool by 50%', category: 'Basic' },
     { id: 'advancedClippers', name: 'Advanced Clippers', cost: 500, description: 'Increase autoclipper production by 25%', category: 'Basic' },
     { id: 'stockMarket', name: 'Stock Market Trading', cost: 1000, description: 'Unlock stock market investing', category: 'Basic' },
+    { id: 'hyperProduction', name: 'Hyper Production', cost: 12000, description: 'Quadruple production multiplier and increase click power by 5x', category: 'Basic' },
     
     // Advanced market research
     { id: 'demandAnalytics', name: 'Demand Analytics', cost: 1500, description: 'Increase market demand by 50% and max demand by 30%', category: 'Market' },
     { id: 'globalMarketing', name: 'Global Marketing', cost: 2000, description: 'Increase base price by 40% and market demand level', category: 'Market' },
     { id: 'marketPsychology', name: 'Market Psychology', cost: 3000, description: 'Reduce price sensitivity and market volatility', category: 'Market' },
     { id: 'viralCampaign', name: 'Viral Campaign', cost: 4000, description: 'Double market demand and max demand, reduce price sensitivity', category: 'Market' },
+    { id: 'globalMonopoly', name: 'Global Monopoly', cost: 15000, description: 'Triple base paperclip price and increase max demand by 200%', category: 'Market' },
+    { id: 'marketManipulation', name: 'Market Manipulation', cost: 20000, description: 'Gain significant control over market trends and reduce volatility by 75%', category: 'Market' },
     
     // Advanced production research
     { id: 'nanotechnology', name: 'Nanotechnology', cost: 2500, description: 'Increase production multiplier by 50%', category: 'Production' },
     { id: 'quantumEfficiency', name: 'Quantum Efficiency', cost: 3500, description: 'Increase clicks/sec by 75% and click multiplier by +3', category: 'Production' },
     { id: 'selfOptimization', name: 'Self-Optimization', cost: 5000, description: 'Double production multiplier and increase research by 50%', category: 'Production' },
     { id: 'swarmProduction', name: 'Swarm Production', cost: 6000, description: 'Triple clicks per second and increase production by 25%', category: 'Production' },
+    { id: 'molecularAssembly', name: 'Molecular Assembly', cost: 18000, description: 'Transform production process to atomic level, increasing efficiency by 300%', category: 'Production' },
+    { id: 'quantumFabrication', name: 'Quantum Fabrication', cost: 25000, description: 'Revolutionary production technique increases all production metrics by 500%', category: 'Production' },
     
     // Advanced resource research
     { id: 'materialScience', name: 'Material Science', cost: 2000, description: 'Double wire per spool', category: 'Resources' },
     { id: 'microAlloys', name: 'Micro-Alloys', cost: 3000, description: 'Increase production by 30% and wire per spool by 50%', category: 'Resources' },
     { id: 'wireRecycling', name: 'Wire Recycling', cost: 4000, description: 'Increase production by 80% through wire efficiency', category: 'Resources' },
+    { id: 'quantumMaterials', name: 'Quantum Materials', cost: 16000, description: 'Develop materials with quantum properties, increasing wire efficiency by 500%', category: 'Resources' },
+    { id: 'matterTransmutation', name: 'Matter Transmutation', cost: 22000, description: 'Convert basic elements into perfect wire material, reducing resource costs by 90%', category: 'Resources' },
     
     // Advanced intelligence research
     { id: 'enhancedLearning', name: 'Enhanced Learning', cost: 1500, description: 'Double research point generation', category: 'Intelligence' },
     { id: 'deepThinking', name: 'Deep Thinking', cost: 3000, description: 'Increase CPU level and memory, gain 10 OPs', category: 'Intelligence' },
     { id: 'computerVision', name: 'Computer Vision', cost: 4500, description: 'Increase bot intelligence by 2 and get 1 free trading bot', category: 'Intelligence' },
     { id: 'creativityEngine', name: 'Creativity Engine', cost: 5500, description: 'Unlock creativity and gain +5 creativity points', category: 'Intelligence' },
+    { id: 'neuralAcceleration', name: 'Neural Acceleration', cost: 14000, description: 'Triple creativity generation speed and increase memory capacity by 50%', category: 'Intelligence' },
+    { id: 'quantumConsciousness', name: 'Quantum Consciousness', cost: 23000, description: 'Achieve breakthrough in AI capabilities, increasing bot intelligence by 10 and creativity generation by 500%', category: 'Intelligence' },
     
     // Special projects
     { id: 'trustProject', name: 'Trust Project', cost: 10000, description: 'Gain 10 trust points and increase trust level', category: 'Special' },
-    { id: 'quantumComputing', name: 'Quantum Computing', cost: 15000, description: 'Double CPU and memory, triple research generation', category: 'Special' }
+    { id: 'quantumComputing', name: 'Quantum Computing', cost: 15000, description: 'Double CPU and memory, triple research generation', category: 'Special' },
+    { id: 'cosmicExpansion', name: 'Cosmic Expansion', cost: 20000, description: 'Begin preparation for interstellar paperclip production, unlocking new potential upgrades', category: 'Special' },
+    { id: 'multidimensionalResearch', name: 'Multidimensional Research', cost: 25000, description: 'Access parallel dimensions for research, boosting all production and research metrics by 1000%', category: 'Special' }
   ];
 
   // State for active category tab
@@ -228,7 +239,36 @@ const ResearchPanel = () => {
                 ) : (
                   <button
                     className={`w-full btn ${canAfford ? 'btn-primary' : 'bg-gray-300 cursor-not-allowed'}`}
-                    onClick={() => buyResearch(item.id)}
+                    onClick={() => {
+                      // Purchase the research
+                      buyResearch(item.id);
+                      
+                      console.log(`Research purchased: ${item.id} (cost: ${item.cost})`);
+                      
+                      // For expensive research (>10000 points), ensure it's saved immediately
+                      if (item.cost >= 10000) {
+                        console.log(`High-value research purchased (${item.cost} RP), forcing immediate save...`);
+                        
+                        // Track the purchase in localStorage
+                        const researchKey = `research_${item.id}_purchased`;
+                        localStorage.setItem(researchKey, 'true');
+                        
+                        // Set pending save flag to ensure it gets saved properly
+                        localStorage.setItem('pendingResearchSave', 'true');
+                        localStorage.setItem('pendingResearchId', item.id);
+                        
+                        // Force immediate save if available
+                        if (typeof window !== 'undefined' && window.saveGameNow) {
+                          window.saveGameNow()
+                            .then(() => console.log(`Research ${item.id} saved successfully!`))
+                            .catch(err => console.error(`Error saving research ${item.id}:`, err));
+                        }
+                        
+                        // Trigger manual save event as fallback
+                        const saveEvent = new CustomEvent('manual-save-trigger');
+                        window.dispatchEvent(saveEvent);
+                      }
+                    }}
                     disabled={!canAfford}
                   >
                     Research
@@ -973,6 +1013,39 @@ export default function GameInterface() {
         saveGameState();
         localStorage.removeItem('pendingOpsUpdate');
         localStorage.removeItem('pendingOpsCurrent');
+      }
+      
+      // Check for pending research purchase
+      if (localStorage.getItem('pendingResearchSave') === 'true') {
+        console.log('Found pending research purchase save, triggering save');
+        const researchId = localStorage.getItem('pendingResearchId');
+        if (researchId) {
+          console.log(`Found pending research ID: ${researchId}`);
+          
+          // Verify it's actually in the unlocked research
+          const unlockedResearch = useGameStore.getState().unlockedResearch;
+          if (Array.isArray(unlockedResearch) && !unlockedResearch.includes(researchId)) {
+            console.warn(`Research ${researchId} not found in unlocked research!`);
+            console.log('This could indicate a sync issue - attempting to force it');
+            
+            // Create updated unlocked research list
+            const updatedResearch = [...unlockedResearch, researchId];
+            
+            // Force update the state before saving
+            useGameStore.setState(state => ({
+              ...state,
+              unlockedResearch: updatedResearch
+            }));
+            
+            console.log(`Forced research ${researchId} into unlocked research`);
+          } else {
+            console.log(`Research ${researchId} already in unlocked research`);
+          }
+        }
+        
+        saveGameState();
+        localStorage.removeItem('pendingResearchSave');
+        localStorage.removeItem('pendingResearchId');
       }
     };
     
