@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+// import { useState, useEffect } from "react";
 import useGameStore from "@/lib/gameStore";
 
 export default function SpaceLaunchPanel() {
@@ -13,13 +13,13 @@ export default function SpaceLaunchPanel() {
     spaceWirePerSecond,
     spaceOrePerSecond,
     spacePaperclipsPerSecond,
-    spaceStats,
+    // spaceStats,
     makeProbe,
     launchWireHarvester,
     launchOreHarvester,
     buildFactory,
     spaceAgeUnlocked,
-    paperclips,
+    // paperclips,
     aerogradePaperclips
   } = useGameStore();
   

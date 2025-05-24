@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     console.log(`Game state created with ID: ${gameState.id}`);
 
     // Don't return the password
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
 
     console.log("Registration successful");
     return NextResponse.json(

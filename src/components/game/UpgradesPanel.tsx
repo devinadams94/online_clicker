@@ -8,7 +8,7 @@ export default function UpgradesPanel() {
     autoclippers, 
     money,
     autoclipper_cost, 
-    clicks_per_second, 
+    _clicks_per_second, 
     buyAutoclipper, 
     buyClickMultiplier, 
     clickMultiplier,
@@ -50,7 +50,7 @@ export default function UpgradesPanel() {
   const multiplierCost = Math.floor(50 * Math.pow(2, clickMultiplier - 1));
   
   // Format money with 2 decimal places
-  const formatMoney = (value: number) => {
+  const _formatMoney = (value: number) => {
     return `$${value.toFixed(2)}`;
   };
   

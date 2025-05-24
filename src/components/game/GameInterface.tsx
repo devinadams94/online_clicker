@@ -16,8 +16,8 @@ import MarketPanel from "./MarketPanel";
 import WirePanel from "./WirePanel";
 import StatsPanel from "./StatsPanel";
 import PaperclipButton from "./PaperclipButton";
-import ProductionMetricsPanel from "./ProductionMetricsPanel";
-import MetricsUpgradePanel from "./MetricsUpgradePanel";
+// import ProductionMetricsPanel from "./ProductionMetricsPanel";
+// import MetricsUpgradePanel from "./MetricsUpgradePanel";
 import StockMarketPanel from "./StockMarketPanel";
 import MetricsPanel from "./MetricsPanel";
 import OpsUpgradesPanel from "./OpsUpgradesPanel";
@@ -36,7 +36,7 @@ import FallbackClicker from "./FallbackClicker";
 
 // Add saveGameNow and pending upgrade flags to the Window interface
 declare global {
-  interface Window {
+  interface _Window {
     saveGameNow?: () => Promise<void>;
     __pendingCpuUpgrade?: {
       cost: number;
@@ -283,7 +283,7 @@ const ResearchPanel = () => {
 export default function GameInterface() {
   const { data: session } = useSession();
   const [phaserFailed, setPhaserFailed] = useState(false);
-  const [justUnlockedSpaceAge, setJustUnlockedSpaceAge] = useState(false);
+  const [_justUnlockedSpaceAge, setJustUnlockedSpaceAge] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { 
@@ -297,24 +297,24 @@ export default function GameInterface() {
     setUserId, 
     setAuthenticated, 
     setLoading,
-    paperclips,
-    money,
-    autoclippers,
-    autoclipper_cost,
-    clicks_per_second,
-    clickMultiplier,
-    totalClicks,
-    paperclipPrice,
-    marketDemand,
-    paperclipsSold,
-    totalSales,
+    // paperclips,
+    // money,
+    // autoclippers,
+    // autoclipper_cost,
+    // clicks_per_second,
+    // clickMultiplier,
+    // totalClicks,
+    // paperclipPrice,
+    // marketDemand,
+    // paperclipsSold,
+    // totalSales,
     setGameState,
     currentPage,
     setCurrentPage,
     stockMarketUnlocked,
     metricsUnlocked,
     spaceAgeUnlocked,
-    clickPaperclip, // Added this
+    // clickPaperclip, // Added this
   } = useGameStore();
   
   // Initialize space functions when component mounts
@@ -516,7 +516,7 @@ export default function GameInterface() {
         autoBattleEnabled, // Added auto-battle enabled state
         autoBattleUnlocked, // Added auto-battle unlocked state
         battleDifficulty, // Added battle difficulty multiplier
-        aerogradePaperclips // Added aerograde paperclips for space resources
+        // aerogradePaperclips // Added aerograde paperclips for space resources
       } = useGameStore.getState();
       
       // Debug money value
@@ -1168,9 +1168,9 @@ export default function GameInterface() {
             // Load base values from saved data
             const paperclips = data.paperclips || 0;
             const wire = data.wire || 1000;
-            const autoclippers = data.autoclippers || 0;
-            const clicksPerSecond = data.clicks_per_second || 0;
-            const prodMultiplier = data.productionMultiplier || 1;
+            const _autoclippers = data.autoclippers || 0;
+            const _clicksPerSecond = data.clicks_per_second || 0;
+            const _prodMultiplier = data.productionMultiplier || 1;
             const price = loadedPaperclipPrice || 0.25;
             const maxDemand = data.maxDemand || 50;
             const researchPerSec = data.researchPointsPerSecond || 0.1;
@@ -1187,7 +1187,7 @@ export default function GameInterface() {
             const cappedTimeDiff = Math.min(timeDiffInSeconds, maxOfflineSeconds);
             
             // Paperclip production (limited by wire availability)
-            const potentialProduction = clicksPerSecond * cappedTimeDiff;
+            const potentialProduction = _clicksPerSecond * cappedTimeDiff;
             const wireAvailable = wire;
             const actualProduction = Math.min(potentialProduction, wireAvailable);
             offlineProgress.paperclipsProduced = actualProduction;
@@ -1201,10 +1201,10 @@ export default function GameInterface() {
             offlineProgress.salesRevenue = actualSales * price;
             
             // Auto wire buying (if enabled and sales revenue is enough)
-            let autoWireCost = 0;
+            let _autoWireCost = 0;
             if (hasAutoWire && offlineProgress.wireUsed > 0) {
               const spoolsNeeded = Math.ceil(offlineProgress.wireUsed / wirePerSpool);
-              autoWireCost = spoolsNeeded * spoolCost;
+              const _autoWireCost = spoolsNeeded * spoolCost;
               // We'll apply this later when setting the game state
             }
             

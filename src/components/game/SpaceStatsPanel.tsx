@@ -9,8 +9,8 @@ export default function SpaceStatsPanel() {
     ops,
     probes,
     spaceStats,
-    upgradeStat: originalUpgradeStat,
-    unlockCombat: originalUnlockCombat,
+    upgradeStat: _originalUpgradeStat,
+    unlockCombat: _originalUnlockCombat,
     spaceAgeUnlocked,
     // Defection system fields
     enemyShips,

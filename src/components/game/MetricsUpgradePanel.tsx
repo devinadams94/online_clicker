@@ -8,7 +8,7 @@ export default function MetricsUpgradePanel() {
     metricsUnlocked, 
     unlockMetrics,
     totalPaperclipsMade,
-    paperclipsSold,
+    // paperclipsSold,
     revenuePerSecond
   } = useGameStore();
 

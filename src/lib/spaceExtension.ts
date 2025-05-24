@@ -1,6 +1,6 @@
 // Space-related extensions for the game store
 import type { GameState } from '@/types/game';
-import { Planet, CelestialBody, SpaceStats } from '@/types/game';
+import { Planet, CelestialBody } from '@/types/game';
 
 // Type for partial GameStore functions
 interface GameStoreFunctions {
@@ -97,7 +97,7 @@ const generateCelestialBodyDescription = (type: string): string => {
   return typeDescriptions[Math.floor(Math.random() * typeDescriptions.length)];
 };
 
-export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get: () => GameState): GameStoreFunctions => ({
+export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get: () => GameState): GameStoreFunctions => ({
   // Switch to a different planet
   switchPlanet: (planetIndex: number) => {
     const state = get();
@@ -204,7 +204,7 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
     // Initialize variables for resources
     let wireHarvestersNew = state.wireHarvesters;
     let oreHarvestersNew = state.oreHarvesters;
-    let factoriesNew = state.factories;
+    let _factoriesNew = state.factories;
     
     // Energy management - generate energy from solar arrays
     const energyGenerated = (state.solarArrays || 0) * 10; // 10 energy per solar array per tick
@@ -341,7 +341,7 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
     
     // Create defection event if significant activity occurred
     if (probesDefected > 0 || probesDestroyed > 0) {
-      const totalLoss = probesDefected + probesDestroyed;
+      const _totalLoss = probesDefected + probesDestroyed;
       let description = '';
       
       if (probesDefected > 0 && probesDestroyed > 0) {
@@ -740,7 +740,7 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
     
     // Get the count of this upgrade already purchased (for repeatable upgrades)
     const unlockedSpaceUpgrades = state.unlockedSpaceUpgrades || [];
-    const purchaseCount = unlockedSpaceUpgrades.filter((upgradeId: string) => upgradeId === id).length;
+    const _purchaseCount = unlockedSpaceUpgrades.filter((upgradeId: string) => upgradeId === id).length;
     
     // Deduct Aerograde paperclips and add upgrade to unlocked list
     set({
@@ -1014,7 +1014,7 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
     
     // Get the count of this upgrade already purchased (for repeatable upgrades)
     const unlockedMoneySpaceUpgrades = state.unlockedMoneySpaceUpgrades || [];
-    const purchaseCount = unlockedMoneySpaceUpgrades.filter((upgradeId: string) => upgradeId === id).length;
+    const _purchaseCount = unlockedMoneySpaceUpgrades.filter((upgradeId: string) => upgradeId === id).length;
     
     // Deduct money and add upgrade to unlocked list
     set({

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import useGameStore from '@/lib/gameStore';
 import { DEFAULT_PHASER_CONFIG } from '@/lib/phaserConfig';
-import dynamic from 'next/dynamic';
+// import dynamic from 'next/dynamic';
 
 // Import Phaser and PaperclipScene only on client side
 let Phaser: any;

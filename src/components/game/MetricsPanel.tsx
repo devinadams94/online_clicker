@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+// import { useState, useEffect } from 'react';
 import useGameStore from '@/lib/gameStore';
 
 export default function MetricsPanel() {
   const { 
-    paperclips, 
-    money, 
+    // paperclips, 
+    // money, 
     totalPaperclipsMade,
     revenuePerSecond,
     paperclipsSold,
     totalSales,
-    stockMarketInvestment,
+    // stockMarketInvestment,
     stockMarketReturns,
     portfolioValue,
     stockMarketUnlocked

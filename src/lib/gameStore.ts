@@ -510,7 +510,7 @@ const useGameStore = create<GameStore>(
       
       // Set the paperclip price (player controlled)
       setClipPrice: (price: number) => 
-        set((state: GameState) => {
+        set((_state: GameState) => {
           // Ensure price isn't negative or unreasonably high
           const safePrice = Math.max(0.01, Math.min(price, 1));
           return { paperclipPrice: safePrice };
@@ -681,7 +681,7 @@ const useGameStore = create<GameStore>(
           const wireEfficiency = state.prestigeRewards?.wireEfficiency || 1;
           
           // Calculate actual production based on available wire (with efficiency bonus)
-          const wireNeeded = potentialProduction / wireEfficiency;
+          const _wireNeeded = potentialProduction / wireEfficiency;
           const actualProduction = Math.min(potentialProduction, updatedState.wire * wireEfficiency);
           
           // Update resources
@@ -1468,7 +1468,7 @@ const useGameStore = create<GameStore>(
             // Higher intelligence = more likely to make good decisions
             let updatedPortfolio = portfolio; // Use the current portfolio state for this trade
             let updatedBudget = updatedState.botTradingBudget; // Use current budget state
-            let profit = 0;
+            let _profit = 0;
             
             // Initialize log object to track bot's actions
             const botLog = {
@@ -1484,7 +1484,7 @@ const useGameStore = create<GameStore>(
             // DRAMATICALLY higher chance of profitable trades with increased intelligence
             // Starting at 90% success rate even at intelligence level 1, scaling up to 100%
             // This makes bots with higher intelligence extremely profitable
-            const successProbability = 0.9 + (updatedState.botIntelligence * 0.1 * (1 - 0.9));
+            const _successProbability = 0.9 + (updatedState.botIntelligence * 0.1 * (1 - 0.9));
             
             // Determine if this is a buy or sell decision
             // Make bots more likely to sell when they have a portfolio (50/50 chance instead of favoring buying)
@@ -1906,7 +1906,7 @@ const useGameStore = create<GameStore>(
                   const bProfitRatio = stockB.price / b.averagePurchasePrice;
                   
                   // Intelligence factor for trend detection and prediction
-                  const intelligenceFactor = Math.pow(state.botIntelligence, 1.5);
+                  const _intelligenceFactor = Math.pow(state.botIntelligence, 1.5);
                   const trendAwareness = Math.min(1, state.botIntelligence / 10); // Maxes out at intelligence 10
                   
                   // NEW: Trend-based selling strategy
@@ -2150,7 +2150,7 @@ const useGameStore = create<GameStore>(
                   
                   // Update budget and profit
                   updatedBudget += totalRevenue;
-                  profit = profitLoss;
+                  _profit = profitLoss;
                   
                   // Update profit/loss totals directly
                   if (profitLoss > 0) {
@@ -3206,7 +3206,7 @@ const useGameStore = create<GameStore>(
             
           case 'distributedStorage':
             // Count previous purchases to determine effect scaling
-            const storageCount = state.unlockedOpsUpgrades.filter(id => id === 'distributedStorage').length;
+            const _storageCount = state.unlockedOpsUpgrades.filter(id => id === 'distributedStorage').length;
             // Always double the memory, regardless of previous purchases (more powerful)
             const storageMultiplier = 2.0;
             

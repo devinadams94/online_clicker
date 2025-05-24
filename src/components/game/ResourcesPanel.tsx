@@ -9,7 +9,7 @@ export default function ResourcesPanel() {
     wire,
     yomi,
     clicks_per_second, 
-    clickMultiplier, 
+    // clickMultiplier, 
     autoclippers,
     totalClicks,
     totalPaperclipsMade,
@@ -32,7 +32,7 @@ export default function ResourcesPanel() {
   } = useGameStore();
   
   // Format money with 2 decimal places
-  const formatMoney = (value: number) => {
+  const _formatMoney = (value: number) => {
     return `$${value.toFixed(2)}`;
   };
 

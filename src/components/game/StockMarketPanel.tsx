@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import useGameStore from "@/lib/gameStore";
-import { Stock, StockHolding } from "@/types/game";
+import { Stock } from "@/types/game";
 
 // Simple inline chart component for stock price history
 const StockPriceChart = ({ stockId, stockPriceHistory, height = 10 }: { stockId: string, stockPriceHistory: Record<string, number[]>, height?: number }) => {

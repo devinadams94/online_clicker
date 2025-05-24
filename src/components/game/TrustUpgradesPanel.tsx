@@ -8,7 +8,7 @@ export default function TrustUpgradesPanel() {
     money,
     trust,
     ops,
-    opsMax,
+    // opsMax,
     buyTrustUpgrade,
     buyTrustAbility,
     unlockedTrustAbilities,
@@ -116,7 +116,7 @@ export default function TrustUpgradesPanel() {
               const canAfford = money >= upgrade.cost;
               // Enhanced check for purchased status using multiple comparison methods
               const levelAsNumber = Number(upgrade.level);
-              const levelAsString = String(upgrade.level);
+              const _levelAsString = String(upgrade.level);
               const isPurchased = purchasedLevelsAsNumbers.includes(levelAsNumber);
               
               return (
@@ -153,7 +153,7 @@ export default function TrustUpgradesPanel() {
                       onClick={() => {
                         // Check if the level is already purchased using multiple methods
                         const levelAsNumber = Number(upgrade.level);
-                        const levelAsString = String(upgrade.level);
+                        const _levelAsString = String(upgrade.level);
                         const isAlreadyPurchased = purchasedLevelsAsNumbers.includes(levelAsNumber);
                         
                         if (isAlreadyPurchased) {

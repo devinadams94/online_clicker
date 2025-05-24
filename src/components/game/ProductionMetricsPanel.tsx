@@ -8,7 +8,7 @@ export default function ProductionMetricsPanel() {
     revenuePerSecond,
     totalSales,
     totalClicks,
-    clicks_per_second,
+    // clicks_per_second,
     paperclipsSold,
     autoclippers,
     productionMultiplier,

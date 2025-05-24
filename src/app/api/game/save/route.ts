@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { GameState } from "@/types/game";
+// GameState type is not used in this file
 
 export async function POST(req: Request) {
   try {

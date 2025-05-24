@@ -152,7 +152,7 @@ export default function OpsUpgradesPanel() {
                   // Check if upgrade is unlocked, with array validation
                   const isUnlocked = Array.isArray(unlockedOpsUpgrades) && unlockedOpsUpgrades.includes(upgrade.id);
                   const actualCost = upgradeCosts[upgrade.id];
-                  const canAfford = ops >= actualCost;
+                  const _canAfford = ops >= actualCost;
                   
                   // No debug info needed
                 
