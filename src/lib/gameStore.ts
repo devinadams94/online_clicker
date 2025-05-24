@@ -355,7 +355,9 @@ const useGameStore = create<GameStore>(
           
           // Each autoclipper produces 1 paperclip per second (affected by total production multiplier)
           const totalMultiplier = state.productionMultiplier + (state.opsProductionMultiplier || 0);
-          const newClicksPerSecond = newAutoclippers * 1 * totalMultiplier;
+          // Set to 10 clips per second per autoclipper, so when divided by 10 in the tick function, 
+          // we get 1 paperclip per second per autoclipper
+          const newClicksPerSecond = newAutoclippers * 10 * totalMultiplier;
           
           // Check if we should unlock Mega-Clippers at 100 autoclippers
           const megaClippersUnlocked = newAutoclippers >= 100 ? true : state.megaClippersUnlocked;
@@ -394,7 +396,8 @@ const useGameStore = create<GameStore>(
         
         // Recalculate production rate, including OPs production multiplier
         const totalMultiplier = newProductionMultiplier + (state.opsProductionMultiplier || 0);
-        const newClicksPerSecond = state.autoclippers * 1 * totalMultiplier;
+        // Multiply by 10 for consistent 1 paperclip per second per autoclipper
+        const newClicksPerSecond = state.autoclippers * 10 * totalMultiplier;
         
         // Update state with new values
         set({
@@ -610,6 +613,7 @@ const useGameStore = create<GameStore>(
           // Apply production multiplier (base + OPs bonus + prestige bonus) to the base rate
           const prestigeProductionMultiplier = state.prestigeRewards?.productionMultiplier || 1;
           const totalMultiplier = (state.productionMultiplier + (state.opsProductionMultiplier || 0)) * prestigeProductionMultiplier;
+          // tick runs 10 times per second, so divide by 10 to get production per tick
           const potentialProduction = (state.clicks_per_second * totalMultiplier) / 10;
           
           // Check if there's enough wire
@@ -1081,6 +1085,7 @@ const useGameStore = create<GameStore>(
               updatedState.wirePerSpool = state.wirePerSpool * 1.5;
               break;
             case 'advancedClippers':
+              // Apply 25% boost to production (keeping the 10x multiplier for 1 clip per second)
               updatedState.clicks_per_second = state.clicks_per_second * 1.25;
               break;
             case 'stockMarket':
@@ -1111,6 +1116,7 @@ const useGameStore = create<GameStore>(
               updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 1.5);
               break;
             case 'quantumEfficiency':
+              // Apply 75% boost to production (keeping the 10x multiplier for 1 clip per second)
               updatedState.clicks_per_second = state.clicks_per_second * 1.75;
               updatedState.clickMultiplier = state.clickMultiplier + 3;
               break;
@@ -1119,6 +1125,7 @@ const useGameStore = create<GameStore>(
               updatedState.researchPointsPerSecond = state.researchPointsPerSecond * 1.5;
               break;
             case 'swarmProduction':
+              // Apply 300% boost to production (keeping the 10x multiplier for 1 clip per second)
               updatedState.clicks_per_second = state.clicks_per_second * 3.0;
               updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 1.25);
               break;
