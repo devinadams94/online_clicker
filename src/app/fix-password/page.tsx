@@ -33,7 +33,6 @@ export default function FixPasswordPage() {
         data
       });
     } catch (error) {
-      console.error("Error updating password:", error);
       setResult({
         success: false,
         error: String(error)

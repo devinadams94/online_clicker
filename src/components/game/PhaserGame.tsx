@@ -16,7 +16,6 @@ if (typeof window !== 'undefined') {
     // Make sure to use the correct path to PaperclipScene
     PaperclipScene = require('../../scenes/PaperclipScene').default;
   } catch (error) {
-    console.error("Failed to load Phaser or PaperclipScene:", error);
   }
 }
 
@@ -57,7 +56,6 @@ export default function PhaserGame() {
           }
         });
       } catch (err) {
-        console.warn('Context cleanup error:', err);
       }
     };
 
@@ -93,7 +91,6 @@ export default function PhaserGame() {
               const unsubscribe = useGameStore.subscribe(callback);
               return unsubscribe;
             } catch (err) {
-              console.error("Failed to subscribe to game store:", err);
               return () => {}; // Return empty function as fallback
             }
           }
@@ -104,14 +101,12 @@ export default function PhaserGame() {
         delete (window as any).PHASER_LOADING;
         
       } catch (err) {
-        console.error("Failed to initialize Phaser:", err);
         const errorEvent = new Event('phaser-load-error');
         window.dispatchEvent(errorEvent);
       }
     } else {
       // If Phaser or PaperclipScene couldn't be loaded, trigger error event
       if (typeof window !== 'undefined' && !(window as any).PHASER_LOADING) {
-        console.error("Could not load Phaser or PaperclipScene");
         const errorEvent = new Event('phaser-load-error');
         window.dispatchEvent(errorEvent);
       }

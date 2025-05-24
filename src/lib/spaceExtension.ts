@@ -667,17 +667,13 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
     
     // Check if space age is unlocked
     if (!state.spaceAgeUnlocked) {
-      console.log("Space age not unlocked yet");
       return;
     }
     
     // Check if auto-battle is unlocked
     if (!state.autoBattleUnlocked) {
-      console.log("Auto-battle not unlocked yet");
       return;
     }
-    
-    console.log(`${state.autoBattleEnabled ? 'Disabling' : 'Enabling'} auto-battle`);
     
     // Toggle the state
     set({
@@ -691,30 +687,24 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
     
     // Check if space age is unlocked
     if (!state.spaceAgeUnlocked) {
-      console.log("Space age not unlocked yet");
       return;
     }
     
     // Check if combat is unlocked
     if (state.spaceStats.combat === undefined) {
-      console.log("Combat capability not unlocked yet");
       return;
     }
     
     // Check if auto-battle is already unlocked
     if (state.autoBattleUnlocked) {
-      console.log("Auto-battle already unlocked");
       return;
     }
     
     // Auto-battle costs 10,000 yomi
     const unlockCost = 10000;
     if (state.yomi < unlockCost) {
-      console.log(`Not enough yomi to unlock auto-battle (need ${unlockCost})`);
       return;
     }
-    
-    console.log(`Unlocking auto-battle for ${unlockCost} yomi`);
     
     // Unlock auto-battle and deduct yomi
     set({

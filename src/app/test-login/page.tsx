@@ -30,7 +30,6 @@ export default function TestLoginPage() {
         data
       });
     } catch (error) {
-      console.error("Error testing auth:", error);
       setResult({
         success: false,
         error: String(error)

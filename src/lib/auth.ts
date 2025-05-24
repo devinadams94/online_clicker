@@ -14,13 +14,10 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.log("Missing email or password");
           return null;
         }
 
         try {
-          console.log(`Attempting to authorize user: ${credentials.email}`);
-          
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email,
@@ -28,12 +25,10 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user) {
-            console.log(`User not found: ${credentials.email}`);
             return null;
           }
           
           if (!user.password) {
-            console.log(`User has no password: ${credentials.email}`);
             return null;
           }
 
@@ -43,18 +38,15 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!isPasswordValid) {
-            console.log(`Invalid password for user: ${credentials.email}`);
             return null;
           }
 
-          console.log(`Successfully authorized user: ${credentials.email}`);
           return {
             id: user.id,
             email: user.email,
             name: user.name,
           };
         } catch (error) {
-          console.error("Error in authorize:", error);
           return null;
         }
       },

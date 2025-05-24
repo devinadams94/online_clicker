@@ -850,7 +850,6 @@ export default function StockMarketPanel() {
                       stockPortfolio.forEach(holding => {
                         const stock = stocks.find(s => s.id === holding.stockId);
                         if (stock) {
-                          console.log(`Selling all ${holding.quantity} shares of ${stock.symbol}`);
                           sellStock(holding.stockId, holding.quantity);
                         }
                       });

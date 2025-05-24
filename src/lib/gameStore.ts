@@ -546,10 +546,6 @@ const useGameStore = create<GameStore>(
           const revenuePerSecond = revenue * 10;
           
           // Log the money update
-          console.log("Current money:", state.money);
-          console.log("Revenue from sales:", revenue);
-          console.log("New money total:", state.money + revenue);
-          console.log("Revenue per second:", revenuePerSecond);
           
           return {
             paperclips: state.paperclips - clipsSold,
@@ -602,20 +598,12 @@ const useGameStore = create<GameStore>(
           // Cost increases exponentially: cost * (1.8 ^ level)
           const newCost = Math.floor(state.marketDemandUpgradeCost * 1.8);
           
-          console.log("Upgrading market demand:");
-          console.log("- New max demand:", newMaxDemand);
-          console.log("- New demand level:", newLevel);
-          console.log("- New upgrade cost:", newCost);
           
           // Add special messages for notable market demand levels
           if (newLevel === 5) {
-            console.log("MARKET MILESTONE: Limited sales at $1.00 now possible (1 clip/sec)");
           } else if (newLevel === 10) {
-            console.log("MARKET MILESTONE: Medium-scale sales at $1.00 now possible (100 clips/sec)");
           } else if (newLevel === 15) {
-            console.log("MARKET MILESTONE: Large-scale sales at $1.00 now possible (1,000 clips/sec)");
           } else if (newLevel === 20) {
-            console.log("MARKET MILESTONE: Mass production at $1.00 now possible (10,000 clips/sec)");
           }
           
           return {
@@ -649,7 +637,6 @@ const useGameStore = create<GameStore>(
             const dynamicIncrease = frequencyFactor * purchaseCountFactor * 50;
             const newCost = Math.min(250, Math.max(baseCost, state.spoolCost + dynamicIncrease));
             
-            console.log(`Auto-wire purchased: Count=${newWirePurchaseCount}, Time factor=${frequencyFactor.toFixed(2)}, New cost=$${newCost.toFixed(2)}`);
             
             updatedState = {
               ...updatedState,
@@ -716,7 +703,6 @@ const useGameStore = create<GameStore>(
           const dynamicIncrease = frequencyFactor * purchaseCountFactor * 50; // Up to $50 additional cost (was $20)
           const newCost = Math.min(250, Math.max(baseCost, state.spoolCost + dynamicIncrease));
           
-          console.log(`Wire purchased: Count=${newWirePurchaseCount}, Time factor=${frequencyFactor.toFixed(2)}, New cost=$${newCost.toFixed(2)}`);
           
           return {
             money: state.money - state.spoolCost,
@@ -757,9 +743,6 @@ const useGameStore = create<GameStore>(
           // 50% discount applied to the formula
           const newCost = Math.floor(state.spoolSizeUpgradeCost * (newLevel * 1.2) * 0.5);
           
-          console.log(`Upgrading spool size: Level ${state.spoolSizeLevel} -> ${newLevel}`);
-          console.log(`Wire per spool: ${state.wirePerSpool} -> ${newWirePerSpool}`);
-          console.log(`Next upgrade cost: $${newCost}`);
           
           return {
             money: state.money - state.spoolSizeUpgradeCost,
@@ -777,7 +760,6 @@ const useGameStore = create<GameStore>(
             return state;
           }
           
-          console.log("Unlocking metrics for $500");
           
           return {
             money: state.money - 500,
@@ -793,14 +775,9 @@ const useGameStore = create<GameStore>(
         const state = get();
         
         // Extra debug information
-        console.log(`==== TRUST UPGRADE ATTEMPT ====`);
-        console.log(`Trust level: ${level}, Cost: $${cost.toFixed(2)}`);
-        console.log(`Current money: $${state.money.toFixed(2)}`);
-        console.log(`Current purchasedTrustLevels:`, state.purchasedTrustLevels);
         
         // Validate money amount
         if (state.money < cost) {
-          console.log(`Not enough money to buy trust level ${level}. Have: $${state.money.toFixed(2)}, Need: $${cost.toFixed(2)}`);
           return;
         }
         
@@ -810,23 +787,16 @@ const useGameStore = create<GameStore>(
         const levelStr = String(level);
         
         if (state.purchasedTrustLevels.includes(level) || purchasedLevelsStr.includes(levelStr)) {
-          console.log(`Trust level ${level} already purchased - ABORTING PURCHASE`);
-          console.log(`Current purchased levels:`, state.purchasedTrustLevels);
-          console.log(`As strings:`, purchasedLevelsStr);
           return;
         }
         
         // Calculate trust to gain based on level (5 * level)
         const trustGain = 5 * level;
         
-        console.log(`Buying trust upgrade level ${level} for $${cost.toFixed(2)}`);
-        console.log(`Gaining ${trustGain} trust points`);
         
         // Create a new array to ensure the reference changes, explicitly storing as number
         const levelAsNumber = Number(level);
         const newPurchasedLevels = [...state.purchasedTrustLevels, levelAsNumber];
-        console.log(`New purchasedTrustLevels:`, newPurchasedLevels);
-        console.log(`Types of items:`, newPurchasedLevels.map(l => typeof l));
         
         // Update state
         set({
@@ -873,12 +843,10 @@ const useGameStore = create<GameStore>(
             case 'wireEfficiency':
               // Each wire produces more paperclips (500% increase)
               updatedState.productionMultiplier = state.productionMultiplier * 6.0; // 1.0 + 5.0 = 6.0 (500% increase)
-              console.log(`Wire Efficiency upgrade: Production multiplier ${state.productionMultiplier} -> ${state.productionMultiplier * 6.0} (500% increase)`);
               break;
             case 'marketInfluence':
               updatedState.marketDemand = state.marketDemand * 50.0; // Increased from 2.0x to 50.0x (5000%)
               updatedState.maxDemand = state.maxDemand * 50.0; // Increased from 1.5x to 50.0x (5000%)
-              console.log(`Market Influence upgrade: Demand ${state.marketDemand} -> ${state.marketDemand * 50}, Max Demand ${state.maxDemand} -> ${state.maxDemand * 50}`);
               break;
             case 'researchInsight':
               updatedState.researchPointsPerSecond = state.researchPointsPerSecond * 3.0;
@@ -886,8 +854,6 @@ const useGameStore = create<GameStore>(
             case 'autoManagement':
               updatedState.productionMultiplier = state.productionMultiplier * 6.0; // 1.0 + 5.0 = 6.0 (500% increase)
               updatedState.memoryRegenRate = state.memoryRegenRate * 4.0; // Quadruple memory regen
-              console.log(`Auto Management upgrade: Production multiplier ${state.productionMultiplier} -> ${state.productionMultiplier * 6.0} (500% increase)`);
-              console.log(`Auto Management upgrade: Memory regen ${state.memoryRegenRate} -> ${state.memoryRegenRate * 4.0} (quadrupled)`);
               break;
             case 'quantumComputation':
               updatedState.cpuLevel = state.cpuLevel * 2;
@@ -897,12 +863,10 @@ const useGameStore = create<GameStore>(
               break;
           }
           
-          console.log(`Purchased trust ability: ${id} for ${cost} trust points`);
           
           // Special handling for Space Age upgrade
           if (id === 'spaceAge') {
             updatedState.spaceAgeUnlocked = true;
-            console.log("Space Age unlocked!");
           }
           
           // Update state
@@ -910,15 +874,11 @@ const useGameStore = create<GameStore>(
           
           // Verify state was updated correctly
           const verifyState = get();
-          console.log(`State after update - unlockedTrustAbilities:`, verifyState.unlockedTrustAbilities);
-          console.log(`Verifying ability ${id} was added:`, verifyState.unlockedTrustAbilities.includes(id));
           
           // Force an immediate save after updating state
-          console.log("Forcing immediate save after trust ability purchase");
           if (typeof window !== 'undefined' && window.saveGameNow) {
             window.saveGameNow();
           } else {
-            console.warn("window.saveGameNow is not available!");
           }
           
           return;
@@ -946,7 +906,6 @@ const useGameStore = create<GameStore>(
             [stat]: currentValue + 1
           };
           
-          console.log(`Upgraded space stat: ${stat} to level ${currentValue + 1} for ${cost} trust`);
           
           return {
             trust: state.trust - cost,
@@ -973,7 +932,6 @@ const useGameStore = create<GameStore>(
             combat: 1
           };
           
-          console.log(`Unlocked combat capability for 50,000 OPs`);
           
           return {
             ops: state.ops - 50000,
@@ -991,7 +949,6 @@ const useGameStore = create<GameStore>(
         
         if (now.getTime() - lastUpdate.getTime() >= 1000) {
           // Log money value every market tick
-          console.log("Money before market tick:", state.money);
           
           // Update market conditions every 60 seconds
           if (now.getTime() - lastUpdate.getTime() >= 60000) {
@@ -1003,7 +960,6 @@ const useGameStore = create<GameStore>(
           
           // Log money value after market actions
           const newState = get();
-          console.log("Money after market tick:", newState.money);
         }
       },
 
@@ -1298,13 +1254,7 @@ const useGameStore = create<GameStore>(
           const costMultiplier = 1.8 * (0.8 + (0.2 / intelligenceBoost)); // Discount for larger boosts
           const newCost = Math.floor(state.botIntelligenceCost * costMultiplier * 100) / 100;
           
-          console.log(`STORE: Upgrading bot intelligence from ${currentIntelligence} to ${newIntelligence} (+${intelligenceBoost} levels)`);
-          console.log(`STORE: Raw store value before: ${state.botIntelligence}`);
-          console.log(`STORE: New cost will be: $${newCost.toFixed(2)}`);
           
-          console.log(`Massive intelligence upgrade: Level ${currentIntelligence} -> ${newIntelligence} (+${intelligenceBoost} levels)`);
-          console.log(`New upgrade cost: $${newCost.toFixed(2)}`);
-          console.log(`This significantly improves trading performance and stock evaluation accuracy!`);
           
           return {
             money: state.money - state.botIntelligenceCost,
@@ -1320,11 +1270,9 @@ const useGameStore = create<GameStore>(
           
           // Check if player has enough money and amount is valid
           if (state.money < safeAmount || safeAmount <= 0) {
-            console.log(`Invalid amount for bot trading budget: ${amount} (parsed as ${safeAmount})`);
             return state;
           }
           
-          console.log(`Setting bot trading budget: $${state.botTradingBudget} -> $${state.botTradingBudget + safeAmount}`);
           
           // Ensure botLastTradeTime is valid
           const safeLastTradeTime = state.botLastTradeTime instanceof Date && !isNaN(state.botLastTradeTime.getTime())
@@ -1345,11 +1293,9 @@ const useGameStore = create<GameStore>(
           
           // Check if bot budget has enough and amount is valid
           if (state.botTradingBudget < safeAmount || safeAmount <= 0) {
-            console.log(`Invalid amount for bot trading budget withdrawal: ${amount} (parsed as ${safeAmount})`);
             return state;
           }
           
-          console.log(`Withdrawing from bot trading budget: $${state.botTradingBudget} -> $${state.botTradingBudget - safeAmount}`);
           
           return {
             money: state.money + safeAmount,
@@ -1363,7 +1309,6 @@ const useGameStore = create<GameStore>(
           // Validate inputs - ensure threshold is between 0.1 and 0.5
           const safeThreshold = Math.max(0.1, Math.min(0.5, Number(threshold) || 0.1));
           
-          console.log(`Setting bot risk threshold: ${state.botRiskThreshold} -> ${safeThreshold}`);
           
           return {
             botRiskThreshold: safeThreshold
@@ -1381,24 +1326,19 @@ const useGameStore = create<GameStore>(
             // This is for backward compatibility and graceful degradation
             tradingAlgorithm = require('./tradingBotAlgorithm');
             useAdvancedAlgorithm = true;
-            console.log("Using enhanced trading algorithm");
           } catch (error) {
-            console.log("Enhanced trading algorithm not available, using fallback");
             useAdvancedAlgorithm = false;
           }
           
           // Log the current state for debugging
-          console.log(`Bot auto trade check - Bots: ${state.tradingBots}, Intelligence: ${state.botIntelligence}, Budget: $${state.botTradingBudget.toFixed(2)}`);
           
           // Skip if no trading bots, no intelligence, or no budget
           if (state.tradingBots <= 0 || state.botIntelligence <= 0 || state.botTradingBudget <= 0) {
-            console.log("Bot trading skipped: missing bots, intelligence, or budget");
             return state;
           }
           
           // Reduce minimum budget requirement to $10 for more frequent trades
           if (state.botTradingBudget < 10) {
-            console.log(`Bot trading budget too low for meaningful trades: $${state.botTradingBudget.toFixed(2)}`);
             return state;
           }
           
@@ -1407,11 +1347,9 @@ const useGameStore = create<GameStore>(
           // Ensure lastTrade is a proper Date object (for backwards compatibility)
           try {
             if (!(state.botLastTradeTime instanceof Date)) {
-              console.log("Converting botLastTradeTime to Date object");
               state.botLastTradeTime = new Date(state.botLastTradeTime || now);
             }
           } catch (err) {
-            console.error("Error parsing botLastTradeTime:", err);
           }
           
           // Number of trades to execute in this tick depends on number of bots
@@ -1430,13 +1368,11 @@ const useGameStore = create<GameStore>(
           for (let tradeIndex = 0; tradeIndex < tradesPerTick; tradeIndex++) {
             // Skip further trades if budget is depleted
             if (updatedState.botTradingBudget <= 0) {
-              console.log(`Stopping trading: Bot trading budget depleted after ${tradeIndex} trades`);
               break;
             }
             
             // Log trading activity if multiple bots
             if (state.tradingBots > 1 && tradeIndex === 0) {
-              console.log(`Executing ${tradesPerTick} bot trades (${state.tradingBots} trading bots active)`);
             }
           
             // For this trade iteration, use the current updated state
@@ -1462,7 +1398,6 @@ const useGameStore = create<GameStore>(
             const tradeAmount = Math.max(minTradeAmount, baseTradeAmount * randomFactor);
             
             // Debug log for trade amounts
-            console.log(`Bot trading: Budget: $${updatedState.botTradingBudget.toFixed(2)}, Trade amount: $${tradeAmount.toFixed(2)}`);
             
             // Decide whether to buy or sell based on probability
             // Higher intelligence = more likely to make good decisions
@@ -1565,7 +1500,6 @@ const useGameStore = create<GameStore>(
                     
                     // Log pattern detection for high-intelligence bots
                     if (botIntelligence >= 6) {
-                      console.log(`Bot detected potential reversal pattern in ${stock.symbol}: Previous decline ${((previous3Avg/recent3Avg-1)*100).toFixed(1)}%, now stabilizing`);
                     }
                   }
                 }
@@ -1578,7 +1512,6 @@ const useGameStore = create<GameStore>(
                     // Downtrend near exhaustion (less than 30% remaining)
                     if (trendTimeRemaining < 0.3) {
                       buySignalStrength += 3;
-                      console.log(`Bot detected downtrend exhaustion in ${stock.symbol}: ${(trendTimeRemaining*100).toFixed(0)}% remaining`);
                     }
                   }
                 }
@@ -1593,15 +1526,12 @@ const useGameStore = create<GameStore>(
               
               // If there are good buying opportunities and we have budget, set to buy mode
               if (stocksWithBuyOpportunities.length > 0 && updatedBudget > 100) {
-                console.log(`Bot found ${stocksWithBuyOpportunities.length} stocks with strong buying signals - switching to BUY mode`);
                 isBuyDecision = true;
                 
                 // Log additional analysis for high intelligence bots
                 if (botIntelligence >= 5) {
-                  console.log(`Advanced market analysis complete: Found ${stocksWithBuyOpportunities.length} buying opportunities with bot intelligence ${botIntelligence}`);
                 }
               } else {
-                console.log(`Bot found no good buying opportunities - remaining in SELL mode`);
                 isBuyDecision = false;
               }
             } else {
@@ -1624,12 +1554,10 @@ const useGameStore = create<GameStore>(
                   }
                 });
                 
-                console.log(`High intelligence bot market analysis: ${strongBuySignals} stocks with strong buy signals`);
               }
             }
             
             // Debug log for buy decision
-            console.log(`Bot trade decision: ${isBuyDecision ? "BUY" : "SELL"} (has portfolio: ${hasPortfolio})`)
           
             if (isBuyDecision) {
               // Buy operation
@@ -1701,7 +1629,6 @@ const useGameStore = create<GameStore>(
                     
                     // Log significant drops for debugging
                     if (aRecentDropBonus > 3) {
-                      console.log(`Stock ${a.symbol} significant price drop: ${(aDropPercent * 100).toFixed(1)}% below average (bonus: ${aRecentDropBonus.toFixed(2)})`);
                     }
                   }
                 } else if (a.price < a.previousPrice) {
@@ -1718,7 +1645,6 @@ const useGameStore = create<GameStore>(
                     bRecentDropBonus = Math.pow(Math.abs(bDropPercent) * 10, 1.5) * 5;
                     
                     if (bRecentDropBonus > 3) {
-                      console.log(`Stock ${b.symbol} significant price drop: ${(bDropPercent * 100).toFixed(1)}% below average (bonus: ${bRecentDropBonus.toFixed(2)})`);
                     }
                   }
                 } else if (b.price < b.previousPrice) {
@@ -1755,9 +1681,6 @@ const useGameStore = create<GameStore>(
                   const aInfo = a.trendDirection !== 0 ? `${a.symbol}: ${a.trendDirection > 0 ? "UP" : "DOWN"} trend (${(a.trendStrength*100).toFixed(0)}%), score=${aScore.toFixed(2)}` : "";
                   const bInfo = b.trendDirection !== 0 ? `${b.symbol}: ${b.trendDirection > 0 ? "UP" : "DOWN"} trend (${(b.trendStrength*100).toFixed(0)}%), score=${bScore.toFixed(2)}` : "";
                   if (aInfo || bInfo) {
-                    console.log(`Bot trend analysis (intelligence ${state.botIntelligence}):`);
-                    if (aInfo) console.log(aInfo);
-                    if (bInfo) console.log(bInfo);
                   }
                 }
                 
@@ -1776,11 +1699,9 @@ const useGameStore = create<GameStore>(
               const affordableStocks = stocksWithHistories.filter(stock => stock.price <= updatedBudget);
               
               // Debug log for affordable stocks
-              console.log(`Bot trading: Found ${affordableStocks.length} affordable stocks out of ${rankedStocks.length} total`);
               
               // If no affordable stocks, skip this trade
               if (affordableStocks.length === 0) {
-                console.log(`Bot trading: No affordable stocks found, skipping buy operation`);
                 return updatedState;
               }
               
@@ -1797,9 +1718,7 @@ const useGameStore = create<GameStore>(
                     state.botIntelligence
                   );
                   
-                  console.log(`Advanced stock selection algorithm selected ${stocksToBuy.length} stocks to buy`);
                 } catch (error) {
-                  console.error("Error using advanced stock selection algorithm:", error);
                   useAdvancedAlgorithm = false;
                 }
               }
@@ -1833,13 +1752,10 @@ const useGameStore = create<GameStore>(
                 
                 // Skip if we don't have enough budget
                 if (updatedBudget < totalCost || quantity <= 0) {
-                  console.log(`Skipping purchase of ${stockToBuy.symbol}: Not enough budget`);
                   continue;
                 }
                 
                 // Debug log for quantity calculation
-                console.log(`Bot trading: Buying ${quantity} shares of ${stockToBuy.symbol} for $${totalCost.toFixed(2)}`);
-                console.log(`Bot trading: Budget check - Available: $${updatedBudget.toFixed(2)}, Required: $${totalCost.toFixed(2)}`);
                 
                 // Update budget
                 updatedBudget -= totalCost;
@@ -1873,14 +1789,12 @@ const useGameStore = create<GameStore>(
                 }
                 
                 // Log the action
-                console.log(`PURCHASE SUCCESSFUL: Bot bought ${quantity} shares of ${stockToBuy.symbol} for $${totalCost.toFixed(2)}`);
               }
               
               // Update the state with new portfolio and budget
               updatedState.stockPortfolio = updatedPortfolio;
               updatedState.botTradingBudget = updatedBudget;
               
-              console.log(`Bot trading complete: Remaining budget: $${updatedBudget.toFixed(2)}`);
               
               // Record only the last purchase in the bot log for simplicity
               if (stocksToBuy.length > 0) {
@@ -1944,12 +1858,9 @@ const useGameStore = create<GameStore>(
                   if ((stockA.trendStrength > 0.7 || stockB.trendStrength > 0.7) && 
                       (aProfitRatio > 1.2 || bProfitRatio > 1.2) &&
                       state.botIntelligence >= 5) {
-                    console.log(`Bot selling analysis (intelligence ${state.botIntelligence}):`);
                     if (stockA.trendDirection < 0 && aProfitRatio > 1.2) {
-                      console.log(`${stockA.symbol}: SELL SIGNAL - Downtrend (${(stockA.trendStrength*100).toFixed(0)}%) with profit ratio ${aProfitRatio.toFixed(2)}`);
                     }
                     if (stockB.trendDirection < 0 && bProfitRatio > 1.2) {
-                      console.log(`${stockB.symbol}: SELL SIGNAL - Downtrend (${(stockB.trendStrength*100).toFixed(0)}%) with profit ratio ${bProfitRatio.toFixed(2)}`);
                     }
                   }
                   
@@ -2014,9 +1925,7 @@ const useGameStore = create<GameStore>(
                       }
                       
                       riskThreshold = tradingAlgorithm.getRiskThreshold(riskLevel);
-                      console.log(`Using ${riskLevel} risk threshold: ${(riskThreshold * 100).toFixed(0)}%`);
                     } catch (error) {
-                      console.error("Error calculating risk threshold:", error);
                       // Fallback to traditional calculation
                       useAdvancedAlgorithm = false;
                     }
@@ -2052,18 +1961,12 @@ const useGameStore = create<GameStore>(
                       
                       // Log the decision based on the calculated sell percentage
                       if (sellPercentage >= 1.0) {
-                        console.log(`Bot selling entire position of ${stock.symbol}: Advanced algorithm recommends complete sell with ${(profitPercentage * 100).toFixed(1)}% profit`);
                       } else if (sellPercentage > 0.7) {
-                        console.log(`Bot selling ${(sellPercentage * 100).toFixed(0)}% of ${stock.symbol}: Advanced algorithm detects peak or trend exhaustion`);
                       } else if (sellPercentage > 0.3) {
-                        console.log(`Bot selling ${(sellPercentage * 100).toFixed(0)}% of ${stock.symbol}: Advanced algorithm detected partial sell opportunity`);
                       } else if (sellPercentage > 0) {
-                        console.log(`Bot selling ${(sellPercentage * 100).toFixed(0)}% of ${stock.symbol}: Advanced algorithm recommends small position reduction`);
                       } else {
-                        console.log(`Bot holding ${stock.symbol}: Advanced algorithm recommends holding position`);
                       }
                     } catch (error) {
-                      console.error("Error using advanced sell algorithm:", error);
                       // Fall back to basic algorithm if advanced fails
                       useAdvancedAlgorithm = false;
                     }
@@ -2086,34 +1989,27 @@ const useGameStore = create<GameStore>(
                         if (profitPercentage >= riskThreshold) {
                           // High profit - sell everything
                           sellPercentage = 1.0;
-                          console.log(`Bot selling entire position of ${stock.symbol}: Price at peak and profit ${(profitPercentage * 100).toFixed(1)}% meets threshold ${(riskThreshold * 100).toFixed(1)}%`);
                         } else {
                           // Moderate profit - sell half
                           sellPercentage = 0.5;
-                          console.log(`Bot selling half position of ${stock.symbol}: Price at peak with ${(profitPercentage * 100).toFixed(1)}% profit`);
                         }
                       } else if (profitPercentage >= riskThreshold * 2.0) {
                         // Very high profit - sell everything
                         sellPercentage = 1.0;
-                        console.log(`Bot selling entire position of ${stock.symbol}: High profit ${(profitPercentage * 100).toFixed(1)}% exceeds ${(riskThreshold * 200).toFixed(0)}%`);
                       } else if (profitPercentage >= riskThreshold * 1.5) {
                         // Good profit - sell most of it
                         sellPercentage = 0.8;
-                        console.log(`Bot selling 80% of ${stock.symbol}: Good profit ${(profitPercentage * 100).toFixed(1)}% exceeds ${(riskThreshold * 150).toFixed(0)}%`);
                       } else if (profitPercentage >= riskThreshold) {
                         // At threshold - sell half to realize profits
                         sellPercentage = 0.5;
-                        console.log(`Bot selling 50% of ${stock.symbol}: Profit ${(profitPercentage * 100).toFixed(1)}% meets ${(riskThreshold * 100).toFixed(0)}% threshold`);
                       }
                     } else {
                       // Only sell at a loss if the stock has a strong downward trend (cut losses)
                       if (stock.trendDirection < 0 && stock.trendStrength > 0.7) {
                         sellPercentage = 0.2; // Small sale to cut some losses
-                        console.log(`Bot selling 20% of ${stock.symbol} at a loss: Strong downward trend detected`);
                       } else {
                         // Don't sell at a loss unless there's a clear negative trend
                         sellPercentage = 0;
-                        console.log(`Bot holding ${stock.symbol} despite ${Math.abs(profitPercentage * 100).toFixed(1)}% loss: Waiting for recovery`);
                       }
                     }
                   }
@@ -2155,10 +2051,8 @@ const useGameStore = create<GameStore>(
                   // Update profit/loss totals directly
                   if (profitLoss > 0) {
                     updatedState.botTradingProfit += profitLoss;
-                    console.log(`Added $${profitLoss.toFixed(2)} to trading profit, new total: $${updatedState.botTradingProfit.toFixed(2)}`);
                   } else if (profitLoss < 0) {
                     updatedState.botTradingLosses += Math.abs(profitLoss);
-                    console.log(`Added $${Math.abs(profitLoss).toFixed(2)} to trading losses, new total: $${updatedState.botTradingLosses.toFixed(2)}`);
                   }
                   
                   // Log the action
@@ -2173,7 +2067,6 @@ const useGameStore = create<GameStore>(
                   updatedState.stockPortfolio = updatedPortfolio;
                   updatedState.botTradingBudget = updatedBudget;
                   
-                  console.log(`Bot sold ${sellQuantity} shares of ${stock.symbol} for $${totalRevenue.toFixed(2)} (${profitLoss >= 0 ? 'Profit' : 'Loss'}: $${Math.abs(profitLoss).toFixed(2)})`);
                 }
               }
             }
@@ -2187,7 +2080,6 @@ const useGameStore = create<GameStore>(
           }, 0);
           
           // Log the final state of the portfolio after all trades
-          console.log(`Bot trading complete. Portfolio size: ${updatedState.stockPortfolio.length}, Budget: $${updatedState.botTradingBudget.toFixed(2)}, Portfolio value: $${newPortfolioValue.toFixed(2)}`);
           
           // Update state with all changes from multiple trades
           return {
@@ -2245,8 +2137,6 @@ const useGameStore = create<GameStore>(
           // Apply adjusted return rate to investment
           const returns = state.stockMarketInvestment * adjustedReturnRate;
           
-          console.log(`Stock market returns: $${returns.toFixed(2)} (${(adjustedReturnRate * 100).toFixed(2)}% rate)`);
-          console.log(`Base rate: ${(returnRate * 100).toFixed(2)}%, Scaling: ${scalingMultiplier.toFixed(2)}x`);
           
           return {
             money: state.money + returns,
@@ -2476,7 +2366,6 @@ const useGameStore = create<GameStore>(
                 // Log restored trend for debugging
                 const direction = updatedStock.trendDirection === 1 ? "BULLISH" : 
                                 (updatedStock.trendDirection === -1 ? "BEARISH" : "NEUTRAL");
-                console.log(`Restored ${direction} trend for ${updatedStock.symbol} with ${updatedStock.trendStrength.toFixed(2)} strength (${Math.floor(currentDuration/1000)}s old)`);
               }
             }
           }
@@ -2492,7 +2381,6 @@ const useGameStore = create<GameStore>(
           const stock = stocks.find((s: Stock) => s.id === stockId);
           
           if (!stock) {
-            console.error(`Stock ${stockId} not found`);
             return state;
           }
           
@@ -2500,7 +2388,6 @@ const useGameStore = create<GameStore>(
           
           // Check if player has enough money
           if (state.money < totalCost) {
-            console.error(`Not enough money to buy ${quantity} shares of ${stock.symbol}`);
             return state;
           }
           
@@ -2539,7 +2426,6 @@ const useGameStore = create<GameStore>(
             return total + (holding.quantity * stockPrice);
           }, 0);
           
-          console.log(`Bought ${quantity} shares of ${stock.symbol} at $${stock.price} for a total of $${totalCost}`);
           
           return {
             money: state.money - totalCost,
@@ -2555,7 +2441,6 @@ const useGameStore = create<GameStore>(
           const stock = stocks.find((s: Stock) => s.id === stockId);
           
           if (!stock) {
-            console.error(`Stock ${stockId} not found`);
             return state;
           }
           
@@ -2563,7 +2448,6 @@ const useGameStore = create<GameStore>(
           const existingHolding = state.stockPortfolio.find(h => h.stockId === stockId);
           
           if (!existingHolding || existingHolding.quantity < quantity) {
-            console.error(`Not enough shares of ${stock.symbol} to sell`);
             return state;
           }
           
@@ -2597,8 +2481,6 @@ const useGameStore = create<GameStore>(
           const costBasis = existingHolding.averagePurchasePrice * quantity;
           const profitLoss = totalRevenue - costBasis;
           
-          console.log(`Sold ${quantity} shares of ${stock.symbol} at $${stock.price} for a total of $${totalRevenue}`);
-          console.log(`Profit/Loss: $${profitLoss.toFixed(2)}`);
           
           return {
             money: state.money + totalRevenue,
@@ -2655,7 +2537,6 @@ const useGameStore = create<GameStore>(
               if (updatedStock.trendDirection !== 0) {
                 const direction = updatedStock.trendDirection === 1 ? "BULLISH" : "BEARISH";
                 const strength = (updatedStock.trendStrength * 100).toFixed(0);
-                console.log(`${updatedStock.symbol}: New ${direction} trend starting with ${strength}% strength!`);
               }
             } else {
               // Update the duration of the existing trend
@@ -2776,12 +2657,10 @@ const useGameStore = create<GameStore>(
                 
                 if (shouldTrade) {
                   // Log trading decision for debugging
-                  console.log(`Bot trading triggered: Intelligence=${botIntelligence}, Volatility=${marketVolatility.toFixed(2)}, Opportunity=${marketOpportunityScore.toFixed(2)}, Probability=${adjustedProbability.toFixed(2)}`);
                   
                   // Execute trades based on number of bots
                   // More intelligent bots execute fewer trades but with better returns
                   const tradesToExecute = Math.max(1, Math.floor(tradingBots / Math.sqrt(botIntelligence)));
-                  console.log(`Executing ${tradesToExecute} trades with ${tradingBots} bots at intelligence level ${botIntelligence}`);
                   
                   // Execute the calculated number of trades
                   for (let i = 0; i < tradesToExecute; i++) {
@@ -2789,14 +2668,12 @@ const useGameStore = create<GameStore>(
                   }
                 }
               }).catch(error => {
-                console.error("Error importing trading algorithm:", error);
                 // Fallback to simple trading if module import fails
                 if (Math.random() < 0.1) {
                   get().botAutoTrade();
                 }
               });
             } catch (error) {
-              console.error("Error in advanced trading algorithm:", error);
               // Fallback to simple trading
               if (Math.random() < 0.1) {
                 get().botAutoTrade();
@@ -2822,7 +2699,6 @@ const useGameStore = create<GameStore>(
         // First check if we have enough money before any side effects
         const state = get();
         if (state.money < state.cpuCost) {
-          console.log(`Cannot upgrade CPU: Not enough money. Have $${state.money.toFixed(2)}, need $${state.cpuCost.toFixed(2)}`);
           return;
         }
 
@@ -2833,7 +2709,6 @@ const useGameStore = create<GameStore>(
         // Each CPU level increases memory regeneration rate by 0.5
         const newRegenRate = 1 + (newLevel - 1) * 0.5;
         
-        console.log(`CPU upgraded to level ${newLevel}, new regen rate: ${newRegenRate}, new cost: ${newCost}`);
         
         // Update state with new values
         set({
@@ -2845,24 +2720,17 @@ const useGameStore = create<GameStore>(
         
         // Verify state was updated correctly
         const updatedState = get();
-        console.log(`CPU upgrade verified: Level ${updatedState.cpuLevel}, Cost: $${updatedState.cpuCost}, Regen Rate: ${updatedState.memoryRegenRate}`);
         
         // Force an immediate save to the database after upgrading CPU
         // Wait a bit to ensure state is fully updated
         setTimeout(() => {
           try {
-            console.log('Attempting to save after CPU upgrade');
-            console.log('CRITICAL CPU COST TO BE SAVED:', newCost);
             
             // Detailed diagnostic info for window.saveGameNow
             if (typeof window === 'undefined') {
-              console.error('Cannot save game: window is undefined (server-side context)');
               return;
             }
             
-            console.log('window exists:', !!window);
-            console.log('window.saveGameNow exists:', !!window.saveGameNow);
-            console.log('window.saveGameNow type:', typeof window.saveGameNow);
             
             // Force global flag for pending CPU save in the app context
             try {
@@ -2872,27 +2740,19 @@ const useGameStore = create<GameStore>(
                   level: newLevel,
                   timestamp: new Date().getTime()
                 };
-                console.log('Set global __pendingCpuUpgrade flag');
               }
             } catch (e) {
-              console.error('Error setting global flag:', e);
             }
             
             if (typeof window.saveGameNow === 'function') {
-              console.log('Forcing game save after CPU upgrade');
               window.saveGameNow()
                 .then(() => {
-                  console.log('CPU upgrade save completed successfully');
                   // Verify the state after saving
                   const finalState = get();
-                  console.log('VERIFICATION - Final CPU Cost after save:', finalState.cpuCost);
                 })
-                .catch(saveErr => console.error('Error during CPU upgrade save operation:', saveErr));
             } else {
-              console.error('Cannot save game: window.saveGameNow is not a function');
               
               // Attempt to save using the save interval as a fallback
-              console.log('Attempting to trigger a manual save event');
               const saveEvent = new CustomEvent('manual-save-trigger');
               window.dispatchEvent(saveEvent);
               
@@ -2900,13 +2760,10 @@ const useGameStore = create<GameStore>(
               try {
                 localStorage.setItem('pendingCpuUpgradeSave', 'true');
                 localStorage.setItem('pendingCpuUpgradeCost', String(newCost));
-                console.log('Set pendingCpuUpgradeSave flag in localStorage with cost:', newCost);
               } catch (e) {
-                console.error('Could not set localStorage flag:', e);
               }
             }
           } catch (err) {
-            console.error('Error saving game after CPU upgrade:', err);
           }
         }, 100); // Reduced to 100ms for faster saving
       },
@@ -2915,7 +2772,6 @@ const useGameStore = create<GameStore>(
         // First check if we have enough money before any side effects
         const state = get();
         if (state.money < state.memoryCost) {
-          console.log(`Cannot upgrade Memory: Not enough money. Have $${state.money.toFixed(2)}, need $${state.memoryCost.toFixed(2)}`);
           return;
         }
         
@@ -2927,9 +2783,6 @@ const useGameStore = create<GameStore>(
         // OPs max is 50 x memory (increased from 10x)
         const newOpsMax = newMemoryMax * 50;
         
-        console.log(`Upgrading memory: ${state.memoryMax} -> ${newMemoryMax}`);
-        console.log(`Memory cost: $${state.memoryCost.toFixed(2)} -> $${newCost.toFixed(2)} (10% increase)`);
-        console.log(`OPs capacity: ${state.opsMax} -> ${newOpsMax} (50 OPs per memory)`);
         
         // Update state with new values
         set({
@@ -2942,24 +2795,17 @@ const useGameStore = create<GameStore>(
         
         // Verify state was updated correctly
         const updatedState = get();
-        console.log(`Memory upgrade verified: Max ${updatedState.memoryMax}, Cost: $${updatedState.memoryCost}, OPs max: ${updatedState.opsMax}`);
         
         // Force an immediate save to the database after upgrading Memory
         // Wait a bit to ensure state is fully updated
         setTimeout(() => {
           try {
-            console.log('Attempting to save after Memory upgrade');
-            console.log('CRITICAL MEMORY COST TO BE SAVED:', newCost);
             
             // Detailed diagnostic info for window.saveGameNow
             if (typeof window === 'undefined') {
-              console.error('Cannot save game: window is undefined (server-side context)');
               return;
             }
             
-            console.log('window exists:', !!window);
-            console.log('window.saveGameNow exists:', !!window.saveGameNow);
-            console.log('window.saveGameNow type:', typeof window.saveGameNow);
             
             // Force global flag for pending Memory save in the app context
             try {
@@ -2969,27 +2815,19 @@ const useGameStore = create<GameStore>(
                   max: newMemoryMax,
                   timestamp: new Date().getTime()
                 };
-                console.log('Set global __pendingMemoryUpgrade flag');
               }
             } catch (e) {
-              console.error('Error setting global flag:', e);
             }
             
             if (typeof window.saveGameNow === 'function') {
-              console.log('Forcing game save after Memory upgrade');
               window.saveGameNow()
                 .then(() => {
-                  console.log('Memory upgrade save completed successfully');
                   // Verify the state after saving
                   const finalState = get();
-                  console.log('VERIFICATION - Final Memory Cost after save:', finalState.memoryCost);
                 })
-                .catch(saveErr => console.error('Error during Memory upgrade save operation:', saveErr));
             } else {
-              console.error('Cannot save game: window.saveGameNow is not a function');
               
               // Attempt to save using the save interval as a fallback
-              console.log('Attempting to trigger a manual save event');
               const saveEvent = new CustomEvent('manual-save-trigger');
               window.dispatchEvent(saveEvent);
               
@@ -2998,13 +2836,10 @@ const useGameStore = create<GameStore>(
                 localStorage.setItem('pendingMemoryUpgradeSave', 'true');
                 localStorage.setItem('pendingMemoryCost', String(newCost));
                 localStorage.setItem('pendingMemoryMax', String(newMemoryMax));
-                console.log('Set pendingMemoryUpgradeSave flag in localStorage with cost:', newCost);
               } catch (e) {
-                console.error('Could not set localStorage flag:', e);
               }
             }
           } catch (err) {
-            console.error('Error saving game after Memory upgrade:', err);
           }
         }, 100); // Reduced to 100ms for faster saving
       },
@@ -3042,11 +2877,9 @@ const useGameStore = create<GameStore>(
       // Function to use OPs with immediate save functionality
       useOps: (amount: number) => {
         const state = get();
-        console.log(`Attempting to use ${amount} OPs. Current OPs: ${state.ops}`);
         
         // Check if there's enough OPs
         if (state.ops < amount) {
-          console.log(`Not enough OPs: have ${state.ops}, need ${amount}`);
           return false; // Not enough OPs
         }
         
@@ -3057,12 +2890,10 @@ const useGameStore = create<GameStore>(
         
         // Get updated state
         const updatedState = get();
-        console.log(`Used ${amount} OPs. New OPs: ${updatedState.ops}/${updatedState.opsMax}`);
         
         // Force an immediate save to the database after using OPs
         setTimeout(() => {
           try {
-            console.log('Attempting to save after OPs usage');
             
             // Set global flag for pending OPs update
             if (typeof window !== 'undefined') {
@@ -3071,30 +2902,22 @@ const useGameStore = create<GameStore>(
                 max: updatedState.opsMax,
                 timestamp: new Date().getTime()
               };
-              console.log('Set global __pendingOpsUpdate flag');
             }
             
             if (typeof window !== 'undefined' && typeof window.saveGameNow === 'function') {
-              console.log('Forcing game save after OPs usage');
               window.saveGameNow()
-                .then(() => console.log('OPs usage save completed successfully'))
-                .catch(saveErr => console.error('Error during OPs usage save operation:', saveErr));
             } else {
-              console.error('Cannot save game: window.saveGameNow is not a function or window is undefined');
               
               // Set a flag in localStorage as a fallback
               try {
                 if (typeof localStorage !== 'undefined') {
                   localStorage.setItem('pendingOpsUpdate', 'true');
                   localStorage.setItem('pendingOpsCurrent', String(updatedState.ops));
-                  console.log('Set pendingOpsUpdate flag in localStorage');
                 }
               } catch (e) {
-                console.error('Could not set localStorage flag:', e);
               }
             }
           } catch (err) {
-            console.error('Error saving game after OPs usage:', err);
           }
         }, 100);
         
@@ -3107,28 +2930,22 @@ const useGameStore = create<GameStore>(
         const state = get();
         
         // Debug info for troubleshooting
-        console.log(`Buying Ops upgrade ${id} with cost ${cost}`);
-        console.log(`Current ops: ${state.ops}`);
-        console.log(`Current unlockedOpsUpgrades:`, state.unlockedOpsUpgrades);
         
         // List of non-repeatable upgrades
         const nonRepeatableUpgrades = ['distributedStorage'];
         
         // For non-repeatable upgrades, check if already purchased
         if (nonRepeatableUpgrades.includes(id) && state.unlockedOpsUpgrades.includes(id)) {
-          console.log(`Cannot buy upgrade: ${id} is not repeatable and has already been purchased`);
           return false;
         }
         
         // Check if player has enough OPs
         if (state.ops < cost) {
-          console.log(`Not enough OPs: have ${state.ops}, need ${cost}`);
           return false;
         }
         
         // Use OPs with the new useOps function which includes saving functionality
         if (!get().useOps(cost)) {
-          console.log(`Failed to use ${cost} OPs for upgrade ${id}`);
           return false;
         }
         
@@ -3137,7 +2954,6 @@ const useGameStore = create<GameStore>(
         const newCost = cost * 2;
         let upgradeCosts = { ...state.upgradeCosts };
         upgradeCosts[id] = newCost;
-        console.log(`Updating cost for ${id}: ${cost} -> ${newCost}`);
         
         // Apply upgrade effects (without changing ops which is now handled by useOps)
         let updatedState: Partial<GameState> = {
@@ -3179,7 +2995,6 @@ const useGameStore = create<GameStore>(
             updatedState.productionMultiplier = newProdMultiplier;
             
             // Log for debugging
-            console.log(`Neural Optimization upgrade: Production multiplier ${state.productionMultiplier} * ${prodMultiplier} = ${newProdMultiplier} (capped at ${updatedState.productionMultiplier})`);
             break;
           
           // Memory management upgrades
@@ -3215,7 +3030,6 @@ const useGameStore = create<GameStore>(
             // Update OPs max when memory increases (50 OPs per memory)
             updatedState.opsMax = newMemory * 50;
             
-            console.log(`Distributed Storage purchased! Memory: ${state.memoryMax} → ${newMemory}, OPs capacity: ${state.opsMax} → ${newMemory * 50}`);
             break;
           
           // Market analysis upgrades
@@ -3246,41 +3060,29 @@ const useGameStore = create<GameStore>(
             break;
         }
         
-        console.log(`Purchased OPs upgrade: ${id} for ${cost} OPs`);
         
         // Update state with new values
         set(updatedState);
         
         // Verify state was updated correctly
         const updatedStateResult = get();
-        console.log(`OPs upgrade '${id}' verified: OPs: ${updatedStateResult.ops}, Upgrades: ${updatedStateResult.unlockedOpsUpgrades.length}`);
         
         // Force an immediate save to the database after buying OPs upgrade
         // Wait a bit to ensure state is fully updated
         setTimeout(() => {
           try {
-            console.log('Attempting to save after OPs upgrade purchase');
             
             // Detailed diagnostic info for window.saveGameNow
             if (typeof window === 'undefined') {
-              console.error('Cannot save game: window is undefined (server-side context)');
               return;
             }
             
-            console.log('window exists:', !!window);
-            console.log('window.saveGameNow exists:', !!window.saveGameNow);
-            console.log('window.saveGameNow type:', typeof window.saveGameNow);
             
             if (typeof window.saveGameNow === 'function') {
-              console.log('Forcing game save after OPs upgrade purchase');
               window.saveGameNow()
-                .then(() => console.log('OPs upgrade save completed successfully'))
-                .catch(saveErr => console.error('Error during OPs upgrade save operation:', saveErr));
             } else {
-              console.error('Cannot save game: window.saveGameNow is not a function');
               
               // Attempt to save using the save interval as a fallback
-              console.log('Attempting to trigger a manual save event');
               const saveEvent = new CustomEvent('manual-save-trigger');
               window.dispatchEvent(saveEvent);
               
@@ -3288,13 +3090,10 @@ const useGameStore = create<GameStore>(
               try {
                 localStorage.setItem('pendingOpsUpgradeSave', 'true');
                 localStorage.setItem('pendingOpsUpgradeId', id);
-                console.log('Set pendingOpsUpgradeSave flag in localStorage');
               } catch (e) {
-                console.error('Could not set localStorage flag:', e);
               }
             }
           } catch (err) {
-            console.error('Error saving game after OPs upgrade purchase:', err);
           }
         }, 250); // Increased timeout to 250ms for more reliability
         
@@ -3307,25 +3106,18 @@ const useGameStore = create<GameStore>(
         const state = get();
         
         // Debug info for troubleshooting
-        console.log(`Buying Creativity upgrade ${id} with cost ${cost}`);
-        console.log(`Current creativity: ${state.creativity}`);
-        console.log(`Creativity unlocked: ${state.creativityUnlocked}`);
-        console.log(`Current unlockedCreativityUpgrades:`, state.unlockedCreativityUpgrades);
         
         // Skip if already unlocked or creativity not unlocked
         if (!state.creativityUnlocked) {
-          console.log(`Cannot buy creativity upgrade: Creativity not unlocked yet`);
           return false;
         }
         
         if (state.unlockedCreativityUpgrades.includes(id)) {
-          console.log(`Cannot buy creativity upgrade: ${id} already purchased`);
           return false;
         }
         
         // Check if player has enough creativity
         if (state.creativity < cost) {
-          console.log(`Not enough creativity: have ${state.creativity}, need ${cost}`);
           return false;
         }
         
@@ -3379,41 +3171,29 @@ const useGameStore = create<GameStore>(
             break;
         }
         
-        console.log(`Purchased Creativity upgrade: ${id} for ${cost} creativity points`);
         
         // Update state with new values
         set(updatedState);
         
         // Verify state was updated correctly
         const updatedStateResult = get();
-        console.log(`Creativity upgrade '${id}' verified: Creativity: ${updatedStateResult.creativity}, Upgrades: ${updatedStateResult.unlockedCreativityUpgrades.length}`);
         
         // Force an immediate save to the database after buying Creativity upgrade
         // Wait a bit to ensure state is fully updated
         setTimeout(() => {
           try {
-            console.log('Attempting to save after Creativity upgrade purchase');
             
             // Detailed diagnostic info for window.saveGameNow
             if (typeof window === 'undefined') {
-              console.error('Cannot save game: window is undefined (server-side context)');
               return;
             }
             
-            console.log('window exists:', !!window);
-            console.log('window.saveGameNow exists:', !!window.saveGameNow);
-            console.log('window.saveGameNow type:', typeof window.saveGameNow);
             
             if (typeof window.saveGameNow === 'function') {
-              console.log('Forcing game save after Creativity upgrade purchase');
               window.saveGameNow()
-                .then(() => console.log('Creativity upgrade save completed successfully'))
-                .catch(saveErr => console.error('Error during Creativity upgrade save operation:', saveErr));
             } else {
-              console.error('Cannot save game: window.saveGameNow is not a function');
               
               // Attempt to save using the save interval as a fallback
-              console.log('Attempting to trigger a manual save event');
               const saveEvent = new CustomEvent('manual-save-trigger');
               window.dispatchEvent(saveEvent);
               
@@ -3421,13 +3201,10 @@ const useGameStore = create<GameStore>(
               try {
                 localStorage.setItem('pendingCreativityUpgradeSave', 'true');
                 localStorage.setItem('pendingCreativityUpgradeId', id);
-                console.log('Set pendingCreativityUpgradeSave flag in localStorage');
               } catch (e) {
-                console.error('Could not set localStorage flag:', e);
               }
             }
           } catch (err) {
-            console.error('Error saving game after Creativity upgrade purchase:', err);
           }
         }, 250); // Increased timeout to 250ms for more reliability
         
@@ -3464,8 +3241,6 @@ const useGameStore = create<GameStore>(
           // Calculate next trust threshold (increases by 100% each level)
           const newNextTrustAt = state.nextTrustAt * 2;
           
-          console.log(`Trust Level Up: ${state.trustLevel} -> ${newTrustLevel}`);
-          console.log(`Next trust at: ${newNextTrustAt} paperclips`);
           
           return {
             trust: state.trust + 1,
@@ -3507,7 +3282,6 @@ const useGameStore = create<GameStore>(
             const creativityUnlocked = state.creativityUnlocked || state.opsMax >= 5000;
             
             if (creativityUnlocked && !state.creativityUnlocked) {
-              console.log("Creativity unlocked! OPs Max capacity reached 5000");
               // Force immediate save to persist the unlocked state
               if (typeof window !== 'undefined' && typeof window.saveGameNow === 'function') {
                 setTimeout(() => (window.saveGameNow as Function)(), 100);
@@ -3558,7 +3332,6 @@ const useGameStore = create<GameStore>(
           // Additional points for space age progression
           const spaceBonus = Math.floor(Math.sqrt(aerogradePaperclips / 100)); // 1 point per 10,000 aerograde paperclips
           prestigePoints += spaceBonus;
-          console.log(`Space age bonus: ${spaceBonus} points from ${aerogradePaperclips} aerograde paperclips`);
         }
         
         // Min 1 point if they have at least 1 million total value
@@ -3566,7 +3339,6 @@ const useGameStore = create<GameStore>(
           prestigePoints = 1;
         }
         
-        console.log(`Calculating prestige points: ${prestigePoints} from ${basePaperclips} paperclips + ${aerogradePaperclips} aerograde (${totalValue} total value)`);
         return prestigePoints;
       },
       
@@ -3575,7 +3347,6 @@ const useGameStore = create<GameStore>(
         const currentPoints = state.calculatePrestigePoints();
         
         if (currentPoints <= 0) {
-          console.log("Not enough progress to prestige yet");
           return false;
         }
         
@@ -3600,15 +3371,12 @@ const useGameStore = create<GameStore>(
         
         // Save the game immediately before resetting
         if (typeof window !== 'undefined' && window.saveGameNow) {
-          console.log("Saving game before prestige reset");
           window.saveGameNow()
             .then(() => {
-              console.log("Game saved, now performing reset");
               // Now reset the game state
               get().resetGame();
             })
             .catch(err => {
-              console.error("Error saving before prestige:", err);
               // Still reset the game even if save fails
               get().resetGame();
             });
@@ -3634,7 +3402,6 @@ const useGameStore = create<GameStore>(
           clickMultiplier: 1 + (points * 0.1)        // Each point gives +10% click production
         };
         
-        console.log(`Applying prestige rewards for ${points} points:`, newRewards);
         
         // Update the rewards
         set({ prestigeRewards: newRewards });

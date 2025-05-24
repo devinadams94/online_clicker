@@ -6,7 +6,6 @@ export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
     
-    console.log("Test auth API: Checking credentials for", email);
     
     if (!email || !password) {
       return NextResponse.json(
@@ -29,7 +28,6 @@ export async function POST(req: Request) {
     
     // Compare password
     const isValid = await bcrypt.compare(password, user.password);
-    console.log("Test auth API: Password valid?", isValid);
     
     if (!isValid) {
       return NextResponse.json(
@@ -49,7 +47,6 @@ export async function POST(req: Request) {
       }
     });
   } catch (error) {
-    console.error("Test auth API error:", error);
     return NextResponse.json(
       { success: false, message: "Internal server error" },
       { status: 500 }

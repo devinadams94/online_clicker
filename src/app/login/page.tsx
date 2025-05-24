@@ -18,7 +18,6 @@ export default function LoginPage() {
     setError("");
 
     try {
-      console.log("Attempting login with:", { email });
       
       try {
         const result = await signIn("credentials", {
@@ -27,16 +26,13 @@ export default function LoginPage() {
           password,
         });
 
-        console.log("Login result:", result);
 
         if (result?.error) {
-          console.error("Login error details:", result.error);
           setError(`Invalid email or password`);
           setLoading(false);
           return;
         }
       } catch (err) {
-        console.error("Login failed with exception:", err);
         setError("Login request failed. Please try again.");
         setLoading(false);
         return;
@@ -45,7 +41,6 @@ export default function LoginPage() {
       // Redirect to the game page after successful login
       router.push("/game");
     } catch (err) {
-      console.error("Login error:", err);
       setError("Something went wrong. Please try again.");
       setLoading(false);
     }

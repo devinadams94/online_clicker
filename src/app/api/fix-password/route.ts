@@ -7,7 +7,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { email, newPassword } = body;
     
-    console.log("Fix password API: Updating password for", email);
     
     if (!email || !newPassword) {
       return NextResponse.json(
@@ -22,18 +21,15 @@ export async function POST(req: Request) {
     });
     
     if (!user) {
-      console.log(`User not found: ${email}`);
       return NextResponse.json(
         { success: false, message: "User not found" },
         { status: 404 }
       );
     }
     
-    console.log(`Found user: ${user.name} (${user.id})`);
     
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
-    console.log("Generated new password hash");
     
     // Update user
     await prisma.user.update({
@@ -41,7 +37,6 @@ export async function POST(req: Request) {
       data: { password: hashedPassword }
     });
     
-    console.log("Password updated successfully");
     
     // Success
     return NextResponse.json({
@@ -49,7 +44,6 @@ export async function POST(req: Request) {
       message: "Password updated successfully"
     });
   } catch (error) {
-    console.error("Fix password API error:", error);
     return NextResponse.json(
       { 
         success: false, 

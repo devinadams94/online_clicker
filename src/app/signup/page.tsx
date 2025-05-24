@@ -27,14 +27,12 @@ export default function SignupPage() {
       });
 
       const data = await response.json();
-      console.log("Signup response:", data);
 
       if (!response.ok) {
         let errorMsg = data.message || "Something went wrong";
         if (data.error) {
           errorMsg += `: ${data.error}`;
         }
-        console.error("Signup failed:", errorMsg, data);
         setError(errorMsg);
         setLoading(false);
         return;
@@ -43,7 +41,6 @@ export default function SignupPage() {
       // Redirect to login page after successful signup
       router.push("/login?registered=true");
     } catch (err) {
-      console.error("Signup error:", err);
       setError("Something went wrong. Please try again.");
       setLoading(false);
     }

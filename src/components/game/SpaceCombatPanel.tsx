@@ -348,8 +348,7 @@ export default function SpaceCombatPanel() {
       setTimeout(() => {
         if (typeof window !== 'undefined' && window.saveGameNow) {
           window.saveGameNow()
-            .then(() => console.log("Game saved after battle"))
-            .catch(err => console.error("Error saving after battle:", err));
+            .then(() => {})
         }
       }, 500);
       

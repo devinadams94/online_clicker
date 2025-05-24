@@ -5,19 +5,16 @@ import "@/lib/env"; // Ensure environment variables are loaded
 
 export async function POST(req: Request) {
   try {
-    console.log("Starting signup process...");
     const body = await req.json();
     const { email, name, password } = body;
 
     if (!email || !name || !password) {
-      console.log("Missing required fields:", { email: !!email, name: !!name, password: !!password });
       return NextResponse.json(
         { message: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    console.log(`Checking if user exists: ${email}`);
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: {
@@ -26,7 +23,6 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
-      console.log(`User already exists: ${email}`);
       return NextResponse.json(
         { message: "User already exists" },
         { status: 409 }
@@ -34,11 +30,9 @@ export async function POST(req: Request) {
     }
 
     // Hash the password
-    console.log("Hashing password...");
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
-    console.log(`Creating new user: ${email}`);
     const user = await prisma.user.create({
       data: {
         email,
@@ -47,10 +41,8 @@ export async function POST(req: Request) {
       },
     });
     
-    console.log(`User created with ID: ${user.id}`);
     
     // Create empty game state
-    console.log(`Creating game state for user: ${user.id}`);
     const gameState = await prisma.gameState.create({
       data: {
         userId: user.id,
@@ -58,12 +50,10 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log(`Game state created with ID: ${gameState.id}`);
 
     // Don't return the password
     const { password: _password, ...userWithoutPassword } = user;
 
-    console.log("Registration successful");
     return NextResponse.json(
       { 
         message: "User created successfully",
@@ -72,7 +62,6 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Registration error:", error);
     
     // Return more detailed error for debugging
     const errorMessage = error instanceof Error 
@@ -80,7 +69,6 @@ export async function POST(req: Request) {
       : "Unknown error";
     
     const errorStack = error instanceof Error ? error.stack : "No stack trace";
-    console.error("Error stack:", errorStack);
       
     return NextResponse.json(
       { 

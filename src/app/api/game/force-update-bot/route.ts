@@ -20,8 +20,6 @@ export async function POST(req: Request) {
     const botIntelligence = parseInt(body.botIntelligence || 1) || 1;
     const botIntelligenceCost = parseFloat(body.botIntelligenceCost || 1500) || 1500;
     
-    console.log("Forced update bot intelligence to:", botIntelligence);
-    console.log("Forced update bot intelligence cost to:", botIntelligenceCost);
     
     // Check if user has a game state
     const existingGameState = await prisma.gameState.findUnique({
@@ -60,7 +58,6 @@ export async function POST(req: Request) {
       botIntelligenceCost: updatedGameState.botIntelligenceCost
     });
   } catch (error) {
-    console.error("Force update bot intelligence error:", error);
     
     return NextResponse.json(
       { message: "An error occurred while updating bot intelligence" },

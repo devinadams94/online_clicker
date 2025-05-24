@@ -16,7 +16,6 @@ export default function GamePage() {
             // Prevent F5 and Ctrl+R from refreshing the page
             if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
               e.preventDefault();
-              console.log('Page refresh prevented');
               // Trigger save instead
               if (window.saveGameNow) {
                 window.saveGameNow();

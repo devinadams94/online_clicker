@@ -387,9 +387,7 @@ export default function GameInterface() {
 
   // Save game state periodically
   const saveGameState = useCallback(async () => {
-    console.log('saveGameState called at', new Date().toISOString());
     if (!isAuthenticated || !session?.user?.id) {
-      console.log('Not saving: Not authenticated or no user ID');
       return;
     }
     
@@ -397,7 +395,6 @@ export default function GameInterface() {
     if (typeof window !== 'undefined') {
       // Check for pending CPU upgrade
       if (window.__pendingCpuUpgrade) {
-        console.log('Found pending CPU upgrade in global context:', window.__pendingCpuUpgrade);
         
         // Force update the state before saving
         const { cost, level } = window.__pendingCpuUpgrade;
@@ -407,7 +404,6 @@ export default function GameInterface() {
             cpuCost: cost,
             cpuLevel: level || state.cpuLevel
           }));
-          console.log('Forced CPU cost update from global context to:', cost);
         }
         
         // Clear the flag
@@ -416,7 +412,6 @@ export default function GameInterface() {
       
       // Check for pending Memory upgrade
       if (window.__pendingMemoryUpgrade) {
-        console.log('Found pending Memory upgrade in global context:', window.__pendingMemoryUpgrade);
         
         // Force update the state before saving
         const { cost, max } = window.__pendingMemoryUpgrade;
@@ -426,7 +421,6 @@ export default function GameInterface() {
             memoryCost: cost,
             memoryMax: max || state.memoryMax
           }));
-          console.log('Forced Memory cost update from global context to:', cost);
         }
         
         // Clear the flag
@@ -435,7 +429,6 @@ export default function GameInterface() {
       
       // Check for pending OPs update
       if (window.__pendingOpsUpdate) {
-        console.log('Found pending OPs update in global context:', window.__pendingOpsUpdate);
         
         // Force update the state before saving
         const { current, max } = window.__pendingOpsUpdate;
@@ -445,7 +438,6 @@ export default function GameInterface() {
             ops: current,
             opsMax: max || state.opsMax
           }));
-          console.log('Forced OPs update from global context - current:', current, 'max:', max);
         }
         
         // Clear the flag
@@ -520,33 +512,14 @@ export default function GameInterface() {
       } = useGameStore.getState();
       
       // Debug money value
-      console.log('Current money in save function:', money);
       
       // Debug market demand upgrade values
-      console.log('Market demand level in save function:', marketDemandLevel);
-      console.log('Market demand upgrade cost in save function:', marketDemandUpgradeCost);
-      console.log('Max demand in save function:', maxDemand);
       
       // Debug metrics unlock and total paperclips
-      console.log('Metrics unlocked in save function:', metricsUnlocked);
-      console.log('Total paperclips made in save function:', totalPaperclipsMade);
       
       // Debug advanced resources
-      console.log('Trust level in save function:', trustLevel);
-      console.log('Next trust at in save function:', nextTrustAt);
-      console.log('OPs in save function:', ops, '/', opsMax);
-      console.log('Creativity in save function:', creativity);
-      console.log('Creativity unlocked in save function:', creativityUnlocked);
-      console.log('Unlocked OPs upgrades:', unlockedOpsUpgrades);
-      console.log('Unlocked Creativity upgrades:', unlockedCreativityUpgrades);
       
       // Debug computational upgrade values explicitly
-      console.log('Computational upgrades - CPU Level:', cpuLevel);
-      console.log('Computational upgrades - CPU Cost:', cpuCost);
-      console.log('Computational upgrades - Memory Max:', memoryMax);
-      console.log('Computational upgrades - Memory Cost:', memoryCost);
-      console.log('Computational upgrades - Memory Regen Rate:', memoryRegenRate);
-      console.log('Computational upgrades - OPs Max:', opsMax);
       
       // Get production values from the state
       const { 
@@ -569,50 +542,28 @@ export default function GameInterface() {
       } = useGameStore.getState();
       
       // Debug mega clippers values explicitly
-      console.log('Production upgrades - Mega Clippers:', megaClippers);
-      console.log('Production upgrades - Mega Clipper Cost:', megaClipperCost);
-      console.log('Production upgrades - Mega Clippers Unlocked:', megaClippersUnlocked);
-      console.log('Production upgrades - Production Multiplier:', productionMultiplier);
       
       // Debug upgradeCosts object with enhanced validation
-      console.log('Computational upgrade costs:', upgradeCosts);
       
       // Validate upgradeCosts to ensure they're properly formatted before saving
       if (upgradeCosts) {
         if (typeof upgradeCosts !== 'object' || Array.isArray(upgradeCosts)) {
-          console.error('upgradeCosts has an invalid type:', typeof upgradeCosts);
         } else {
           // Check key values
           Object.entries(upgradeCosts).forEach(([key, value]) => {
             if (typeof value !== 'number') {
-              console.warn(`upgradeCosts[${key}] is not a number:`, value, 'type:', typeof value);
             }
             // Log parallelProcessing specifically since it's causing issues
             if (key === 'parallelProcessing') {
-              console.log(`SAVING parallelProcessing cost: ${value} (${typeof value})`);
             }
           });
         }
       } else {
-        console.error('upgradeCosts is null or undefined when saving');
       }
       
       // Debug bot intelligence data
-      console.log('Bot intelligence in save function:', botIntelligence);
-      console.log('Bot intelligence type:', typeof botIntelligence);
-      console.log('Bot intelligence as number:', Number(botIntelligence));
-      console.log('Bot intelligence as parsed int:', parseInt(String(botIntelligence))); 
-      console.log('Bot intelligence cost in save function:', botIntelligenceCost);
       
       // Debug space age data
-      console.log('Space age data in save function:');
-      console.log('- Space age unlocked:', spaceAgeUnlocked);
-      console.log('- Probes:', probes);
-      console.log('- Universe explored:', universeExplored);
-      console.log('- Wire harvesters:', wireHarvesters);
-      console.log('- Ore harvesters:', oreHarvesters);
-      console.log('- Factories:', factories);
-      console.log('- Space stats:', spaceStats);
       
       // Get additional stock market and trading data
       const { 
@@ -630,15 +581,11 @@ export default function GameInterface() {
       const botLastTradeTime = botTradeData.botLastTradeTime;
       
       // Debug bot trade time after it's been properly declared
-      console.log('Bot last trade time:', botLastTradeTime);
-      console.log('Bot last trade time type:', botLastTradeTime ? typeof botLastTradeTime : 'undefined');
       
       // Get trust-specific fields for debugging
       const { purchasedTrustLevels, unlockedTrustAbilities } = useGameStore.getState();
       
       // Debug trust upgrade information
-      console.log("Trust upgrades before save - purchasedTrustLevels:", purchasedTrustLevels);
-      console.log("Trust upgrades before save - unlockedTrustAbilities:", unlockedTrustAbilities);
       
       const gameData: { [key: string]: any } = {
         // Resources
@@ -751,11 +698,9 @@ export default function GameInterface() {
             const uniqueUpgrades = [...new Set(validUpgrades)];
             
             // Log what we're saving
-            console.log("Saving creativity upgrades:", uniqueUpgrades);
             
             return JSON.stringify(uniqueUpgrades);
           } catch (err) {
-            console.error("Error serializing unlockedCreativityUpgrades:", err);
             return "[]";
           }
         })(),
@@ -773,10 +718,8 @@ export default function GameInterface() {
             });
             
             const stringified = JSON.stringify(validatedCosts);
-            console.log(`FINAL SERIALIZED upgradeCosts: ${stringified}`);
             return stringified;
           } catch (err) {
-            console.error('Error serializing upgradeCosts:', err);
             // Fallback to default costs if there's an error
             return JSON.stringify({
               'parallelProcessing': 15,
@@ -810,20 +753,13 @@ export default function GameInterface() {
       // Validate numeric values to avoid NaN issues
       Object.entries(gameData).forEach(([key, value]) => {
         if (typeof value === 'number' && isNaN(value)) {
-          console.warn(`Invalid value for ${key}: ${value}`);
           gameData[key] = 0; // Default to 0 for NaN values
         }
       });
       
       // Log the full data we're about to send
       // Log specific wire spool data for debugging
-      console.log("Saving wire spool data:", {
-        spoolSizeLevel: gameData.spoolSizeLevel,
-        spoolSizeUpgradeCost: gameData.spoolSizeUpgradeCost,
-        wirePerSpool: gameData.wirePerSpool
-      });
       
-      console.log("Full game data being saved:", JSON.stringify(gameData));
       
       try {
         const response = await fetch('/api/game/save', {
@@ -835,12 +771,9 @@ export default function GameInterface() {
         });
         
         // Log raw response info for debugging
-        console.log('Save response status:', response.status, response.statusText);
-        console.log('Save response headers:', Object.fromEntries([...response.headers.entries()]));
         
         // Process successful response
         if (response.ok) {
-          console.log('Game state saved successfully');
         } else {
           // Handle error response
           let errorMessage = `Failed to save: HTTP status ${response.status}`;
@@ -849,19 +782,16 @@ export default function GameInterface() {
           try {
             // Try to get the response as text first (works for all responses)
             responseText = await response.text();
-            console.log('Raw error response text:', responseText);
             
             // If the text looks like JSON, try to parse it
             if (responseText && responseText.trim().startsWith('{')) {
               try {
                 const errorData = JSON.parse(responseText);
-                console.log('Parsed error response:', errorData);
                 
                 if (errorData && errorData.message) {
                   errorMessage += ` - ${errorData.message}`;
                 }
               } catch (jsonError) {
-                console.log('Response text is not valid JSON despite appearance:', jsonError);
                 // Use text as fallback
                 if (responseText && responseText.trim()) {
                   errorMessage += ` - ${responseText}`;
@@ -872,17 +802,13 @@ export default function GameInterface() {
               errorMessage += ` - ${responseText}`;
             }
           } catch (readError) {
-            console.error('Failed to read response body:', readError);
           }
           
-          console.error(errorMessage);
           // Don't throw - just log the error and continue
         }
       } catch (networkError) {
-        console.error('Network error during save:', networkError);
       }
     } catch (error) {
-      console.error('Failed to save game state:', error);
     }
   }, [isAuthenticated, session]);
 
@@ -895,22 +821,17 @@ export default function GameInterface() {
       // Make sure saveGameNow is a properly defined Promise-returning function
       window.saveGameNow = async () => {
         try {
-          console.log('window.saveGameNow called directly');
           await saveGameState();
           // Don't return anything (void return type)
         } catch (err) {
-          console.error('Error in window.saveGameNow:', err);
           throw err;
         }
       };
-      console.log('Successfully defined window.saveGameNow as a promise-returning function');
     } catch (err) {
-      console.error('Failed to assign saveGameNow to window:', err);
     }
     
     // Add event listener for manual save trigger
     const handleManualSaveTrigger = () => {
-      console.log('Manual save trigger received, saving game state');
       saveGameState();
     };
     window.addEventListener('manual-save-trigger', handleManualSaveTrigger);
@@ -919,10 +840,8 @@ export default function GameInterface() {
     const checkPendingSaves = () => {
       // Check for CPU upgrade save
       if (localStorage.getItem('pendingCpuUpgradeSave') === 'true') {
-        console.log('Found pending CPU upgrade save, triggering save');
         const pendingCost = localStorage.getItem('pendingCpuUpgradeCost');
         if (pendingCost) {
-          console.log('Found pending CPU cost:', pendingCost);
           const newCost = parseFloat(pendingCost);
           if (!isNaN(newCost)) {
             // Force update the state before saving
@@ -930,7 +849,6 @@ export default function GameInterface() {
               ...state,
               cpuCost: newCost
             }));
-            console.log('Forced CPU cost update to:', newCost);
           }
         }
         saveGameState();
@@ -940,12 +858,10 @@ export default function GameInterface() {
       
       // Check for Memory upgrade save
       if (localStorage.getItem('pendingMemoryUpgradeSave') === 'true') {
-        console.log('Found pending Memory upgrade save, triggering save');
         const pendingCost = localStorage.getItem('pendingMemoryCost');
         const pendingMax = localStorage.getItem('pendingMemoryMax');
         
         if (pendingCost) {
-          console.log('Found pending Memory cost:', pendingCost);
           const newCost = parseFloat(pendingCost);
           if (!isNaN(newCost)) {
             // Force update the state before saving
@@ -953,12 +869,10 @@ export default function GameInterface() {
               ...state,
               memoryCost: newCost
             }));
-            console.log('Forced Memory cost update to:', newCost);
           }
         }
         
         if (pendingMax) {
-          console.log('Found pending Memory max:', pendingMax);
           const newMax = parseFloat(pendingMax);
           if (!isNaN(newMax)) {
             // Force update the state before saving
@@ -966,7 +880,6 @@ export default function GameInterface() {
               ...state,
               memoryMax: newMax
             }));
-            console.log('Forced Memory max update to:', newMax);
           }
         }
         
@@ -978,7 +891,6 @@ export default function GameInterface() {
       
       // Check for OPs upgrade save
       if (localStorage.getItem('pendingOpsUpgradeSave') === 'true') {
-        console.log('Found pending OPs upgrade save, triggering save');
         saveGameState();
         localStorage.removeItem('pendingOpsUpgradeSave');
         localStorage.removeItem('pendingOpsUpgradeId');
@@ -986,7 +898,6 @@ export default function GameInterface() {
       
       // Check for Creativity upgrade save
       if (localStorage.getItem('pendingCreativityUpgradeSave') === 'true') {
-        console.log('Found pending Creativity upgrade save, triggering save');
         saveGameState();
         localStorage.removeItem('pendingCreativityUpgradeSave');
         localStorage.removeItem('pendingCreativityUpgradeId');
@@ -994,17 +905,14 @@ export default function GameInterface() {
       
       // Check for Mega-Clipper purchase save
       if (localStorage.getItem('pendingMegaClipperSave') === 'true') {
-        console.log('Found pending Mega-Clipper save, triggering save');
         saveGameState();
         localStorage.removeItem('pendingMegaClipperSave');
       }
       
       // Check for pending Space Upgrade save
       if (localStorage.getItem('pendingSpaceUpgradeSave') === 'true') {
-        console.log('Found pending Space Upgrade save, triggering save');
         const upgradeId = localStorage.getItem('pendingSpaceUpgradeId');
         if (upgradeId) {
-          console.log(`Found pending Space Upgrade ID: ${upgradeId}`);
         }
         saveGameState();
         localStorage.removeItem('pendingSpaceUpgradeSave');
@@ -1013,11 +921,9 @@ export default function GameInterface() {
       
       // Check for OPs usage update
       if (localStorage.getItem('pendingOpsUpdate') === 'true') {
-        console.log('Found pending OPs usage update, triggering save');
         const pendingOpsCurrent = localStorage.getItem('pendingOpsCurrent');
         
         if (pendingOpsCurrent) {
-          console.log('Found pending OPs current value:', pendingOpsCurrent);
           const currentOps = parseFloat(pendingOpsCurrent);
           if (!isNaN(currentOps)) {
             // Force update the state before saving
@@ -1025,7 +931,6 @@ export default function GameInterface() {
               ...state,
               ops: currentOps
             }));
-            console.log('Forced OPs update to:', currentOps);
           }
         }
         
@@ -1036,16 +941,12 @@ export default function GameInterface() {
       
       // Check for pending research purchase
       if (localStorage.getItem('pendingResearchSave') === 'true') {
-        console.log('Found pending research purchase save, triggering save');
         const researchId = localStorage.getItem('pendingResearchId');
         if (researchId) {
-          console.log(`Found pending research ID: ${researchId}`);
           
           // Verify it's actually in the unlocked research
           const unlockedResearch = useGameStore.getState().unlockedResearch;
           if (Array.isArray(unlockedResearch) && !unlockedResearch.includes(researchId)) {
-            console.warn(`Research ${researchId} not found in unlocked research!`);
-            console.log('This could indicate a sync issue - attempting to force it');
             
             // Create updated unlocked research list
             const updatedResearch = [...unlockedResearch, researchId];
@@ -1056,9 +957,7 @@ export default function GameInterface() {
               unlockedResearch: updatedResearch
             }));
             
-            console.log(`Forced research ${researchId} into unlocked research`);
           } else {
-            console.log(`Research ${researchId} already in unlocked research`);
           }
         }
         
@@ -1139,15 +1038,12 @@ export default function GameInterface() {
           // Make sure money and paperclip price are properly parsed
           const loadedMoney = typeof data.money === 'number' ? data.money : 0;
           const loadedPaperclipPrice = typeof data.paperclipPrice === 'number' ? data.paperclipPrice : 0.25;
-          console.log("Initial load - money value:", loadedMoney);
-          console.log("Initial load - paperclip price:", loadedPaperclipPrice);
           
           // Calculate time passed since last save for offline progress
           const lastSavedTime = data.lastSaved ? new Date(data.lastSaved) : new Date();
           const currentTime = new Date();
           const timeDiffInSeconds = Math.floor((currentTime.getTime() - lastSavedTime.getTime()) / 1000);
           
-          console.log(`Time since last save: ${timeDiffInSeconds} seconds`);
           
           // Only apply offline progress if more than 5 seconds have passed
           let offlineProgressApplied = false;
@@ -1220,43 +1116,21 @@ export default function GameInterface() {
               offlineProgress.stockMarketReturns = botReturns;
             }
             
-            console.log('Offline progress calculated:', offlineProgress);
           }
           
           // Log auto wire buyer status from database
-          console.log("Initial load - auto wire buyer status:", data.autoWireBuyer);
-          console.log("Initial load - auto wire buyer cost:", data.autoWireBuyerCost);
           
           // Log stock market status from database
-          console.log("Initial load - stock market unlocked:", data.stockMarketUnlocked);
           
           // Log market demand upgrade status from database
-          console.log("Initial load - market demand level:", data.marketDemandLevel);
-          console.log("Initial load - market demand upgrade cost:", data.marketDemandUpgradeCost);
-          console.log("Initial load - max demand:", data.maxDemand);
           
           // Log metrics unlock status from database
-          console.log("Initial load - metrics unlocked:", data.metricsUnlocked);
-          console.log("Initial load - total paperclips made:", data.totalPaperclipsMade);
           
           // Log wire spool upgrade data from database
-          console.log("Initial load - spool size level:", data.spoolSizeLevel);
-          console.log("Initial load - spool size upgrade cost:", data.spoolSizeUpgradeCost);
-          console.log("Initial load - wire per spool:", data.wirePerSpool);
           
           // Log advanced resources from database
-          console.log("Initial load - trust level:", data.trustLevel);
-          console.log("Initial load - next trust at:", data.nextTrustAt);
-          console.log("Initial load - ops:", data.ops, "/", data.opsMax);
-          console.log("Initial load - creativity:", data.creativity);
-          console.log("Initial load - creativity unlocked:", data.creativityUnlocked);
           
           // Log computational upgrades from database explicitly
-          console.log("Initial load - CPU Level:", data.cpuLevel);
-          console.log("Initial load - CPU Cost:", data.cpuCost);
-          console.log("Initial load - Memory Max:", data.memoryMax);
-          console.log("Initial load - Memory Cost:", data.memoryCost);
-          console.log("Initial load - Memory Regen Rate:", data.memoryRegenRate);
           
           // Log upgradeCosts from database
           try {
@@ -1265,14 +1139,9 @@ export default function GameInterface() {
               const parsedUpgradeCosts = typeof data.upgradeCosts === 'object' 
                 ? data.upgradeCosts 
                 : JSON.parse(data.upgradeCosts);
-              console.log("Initial load - upgradeCosts:", parsedUpgradeCosts);
             } else {
-              console.log("Initial load - upgradeCosts not found in loaded data");
             }
           } catch (err) {
-            console.error("Error parsing upgradeCosts:", err);
-            console.error("Raw upgradeCosts data:", data.upgradeCosts);
-            console.error("Type of upgradeCosts:", typeof data.upgradeCosts);
           }
           
           // Let's simplify our approach and use the loaded data directly
@@ -1360,14 +1229,11 @@ export default function GameInterface() {
             // Add yomi with logging
             yomi: (() => {
               const yomiValue = parseFloat(data.yomi || 0) || 0;
-              console.log("Loading yomi from database:", yomiValue);
               return yomiValue;
             })(),
             // Use the already parsed purchasedTrustLevels from API response
             purchasedTrustLevels: Array.isArray(data.purchasedTrustLevels) ? data.purchasedTrustLevels : [],
-            // Extra debug log for purchasedTrustLevels (without using console.log in spread)
             // Log separately for type safety
-            ...(() => { console.log(`Loading purchasedTrustLevels:`, data.purchasedTrustLevels); return {}; })(),
             // Use the already parsed unlockedTrustAbilities from API response
             unlockedTrustAbilities: Array.isArray(data.unlockedTrustAbilities) ? data.unlockedTrustAbilities : [],
             ops: data.ops || 50, // Ensure this matches the 50 OPs per memory default
@@ -1376,7 +1242,6 @@ export default function GameInterface() {
             creativityUnlocked: data.creativityUnlocked || false,
             // Ensure unlockedOpsUpgrades is properly parsed from JSON or initialized as empty array
             unlockedOpsUpgrades: (() => {
-              console.log("Raw unlockedOpsUpgrades:", data.unlockedOpsUpgrades);
               if (Array.isArray(data.unlockedOpsUpgrades)) {
                 return data.unlockedOpsUpgrades;
               } else if (typeof data.unlockedOpsUpgrades === 'string') {
@@ -1386,7 +1251,6 @@ export default function GameInterface() {
                     return parsed;
                   }
                 } catch (err) {
-                  console.error("Error parsing unlockedOpsUpgrades:", err);
                 }
               }
               return [];
@@ -1408,8 +1272,6 @@ export default function GameInterface() {
               };
               
               // Try to parse upgradeCosts from data with detailed logging
-              console.log("CRITICAL DEBUG: Raw upgradeCosts from API response:", data.upgradeCosts);
-              console.log("CRITICAL DEBUG: typeof upgradeCosts:", typeof data.upgradeCosts);
               
               // Track the source of the data for debugging
               let dataSource = "default";
@@ -1419,7 +1281,6 @@ export default function GameInterface() {
                 try {
                   // If it's already an object, use it directly
                   if (typeof data.upgradeCosts === 'object' && !Array.isArray(data.upgradeCosts)) {
-                    console.log("CRITICAL: upgradeCosts is already an object:", data.upgradeCosts);
                     dataSource = "direct object";
                     
                     // Copy values, ensuring they are numbers
@@ -1435,7 +1296,6 @@ export default function GameInterface() {
                     try {
                       const parsed = JSON.parse(data.upgradeCosts);
                       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-                        console.log("CRITICAL: Successfully parsed upgradeCosts from string:", parsed);
                         dataSource = "parsed string";
                         
                         // Copy values, ensuring they are numbers
@@ -1447,26 +1307,20 @@ export default function GameInterface() {
                         });
                       }
                     } catch (parseErr) {
-                      console.error("Error parsing upgradeCosts as JSON:", parseErr);
-                      console.error("Raw string value:", data.upgradeCosts);
                       dataSource = "error fallback - string parse failed";
                     }
                   }
                 } catch (err) {
-                  console.error("Error processing upgradeCosts:", err);
                   dataSource = "error fallback";
                 }
               }
               
               // Log the final costs for each upgrade explicitly for debugging
-              console.log(`CRITICAL: Final upgradeCosts (source: ${dataSource}):`);
               Object.entries(parsedCosts).forEach(([key, value]) => {
-                console.log(`- ${key}: ${value}`);
               });
               
               // Always ensure parallelProcessing has a value
               if (!parsedCosts.parallelProcessing || isNaN(parsedCosts.parallelProcessing)) {
-                console.log("CRITICAL: parallelProcessing cost is missing or invalid, setting to default");
                 parsedCosts.parallelProcessing = defaultCosts.parallelProcessing;
               }
               
@@ -1474,40 +1328,32 @@ export default function GameInterface() {
             })(),
             // Ensure unlockedCreativityUpgrades is properly parsed from JSON or initialized as empty array
             unlockedCreativityUpgrades: (() => {
-              console.log("Raw unlockedCreativityUpgrades:", data.unlockedCreativityUpgrades);
               
               let parsedCreativityUpgrades: string[] = [];
               
               try {
                 // If it's already an array, use it directly
                 if (Array.isArray(data.unlockedCreativityUpgrades)) {
-                  console.log("unlockedCreativityUpgrades is already an array");
                   parsedCreativityUpgrades = [...data.unlockedCreativityUpgrades];
                 }
                 // If it's a string, try to parse it
                 else if (typeof data.unlockedCreativityUpgrades === 'string') {
-                  console.log("Parsing unlockedCreativityUpgrades from string");
                   try {
                     const parsed = JSON.parse(data.unlockedCreativityUpgrades);
                     if (Array.isArray(parsed)) {
                       parsedCreativityUpgrades = [...parsed];
                     } else {
-                      console.warn("Parsed unlockedCreativityUpgrades is not an array:", parsed);
                     }
                   } catch (err) {
-                    console.error("Error parsing unlockedCreativityUpgrades string:", err);
                   }
                 } else {
-                  console.warn("unlockedCreativityUpgrades is neither an array nor a string:", typeof data.unlockedCreativityUpgrades);
                 }
                 
                 // Deduplicate the array to ensure each upgrade only appears once
                 parsedCreativityUpgrades = [...new Set(parsedCreativityUpgrades)];
                 
                 // Log final array for debugging
-                console.log("Final unlockedCreativityUpgrades:", parsedCreativityUpgrades);
               } catch (err) {
-                console.error("Error processing unlockedCreativityUpgrades:", err);
               }
               
               return parsedCreativityUpgrades;
@@ -1529,36 +1375,29 @@ export default function GameInterface() {
             // Space Combat fields with logging
             honor: (() => {
               const honorValue = parseFloat(data.honor || 0) || 0;
-              console.log("Loading honor from database:", honorValue);
               return honorValue;
             })(),
             battlesWon: (() => {
               const battlesWonValue = parseInt(data.battlesWon || 0) || 0;
-              console.log("Loading battlesWon from database:", battlesWonValue);
               return battlesWonValue;
             })(),
             autoBattleEnabled: (() => {
               const enabled = Boolean(data.autoBattleEnabled);
-              console.log("Loading autoBattleEnabled from database:", enabled);
               return enabled;
             })(),
             autoBattleUnlocked: (() => {
               const unlocked = Boolean(data.autoBattleUnlocked);
-              console.log("Loading autoBattleUnlocked from database:", unlocked);
               return unlocked;
             })(),
             battleDifficulty: (() => {
               const difficulty = parseFloat(data.battleDifficulty || 1) || 1;
-              console.log("Loading battleDifficulty from database:", difficulty);
               return difficulty;
             })(),
             aerogradePaperclips: (() => {
               const amount = parseFloat(data.aerogradePaperclips || 0) || 0;
-              console.log("Loading aerogradePaperclips from database:", amount);
               return amount;
             })(),
             unlockedSpaceUpgrades: (() => {
-              console.log("Loading unlockedSpaceUpgrades from database:", data.unlockedSpaceUpgrades);
               // Check if it's already an array
               if (Array.isArray(data.unlockedSpaceUpgrades)) {
                 return data.unlockedSpaceUpgrades;
@@ -1572,7 +1411,6 @@ export default function GameInterface() {
                   }
                 }
               } catch (err) {
-                console.error("Error parsing unlockedSpaceUpgrades:", err);
               }
               // Default to empty array if parsing fails
               return [];
@@ -1627,7 +1465,6 @@ export default function GameInterface() {
           
           // If space age is unlocked, ensure autoclippers are 0
           if (gameData.spaceAgeUnlocked) {
-            console.log("Space Age is unlocked, ensuring autoclippers are disabled");
             useGameStore.setState({
               autoclippers: 0,
               megaClippers: 0,
@@ -1639,11 +1476,9 @@ export default function GameInterface() {
           // Display offline progress notification if applicable
           if (offlineProgressApplied) {
             // This could be implemented with a toast notification or modal
-            console.log("Offline progress applied:", offlineProgress);
           }
         }
       } catch (error) {
-        console.error('Failed to load game state:', error);
       } finally {
         setLoading(false);
       }
@@ -1707,9 +1542,6 @@ export default function GameInterface() {
   ];
   
   // Debug log for unlockable features
-  // console.log("Stock market unlocked status:", stockMarketUnlocked);
-  // console.log("Space Age unlocked status:", spaceAgeUnlocked);
-  // console.log("Metrics unlocked status:", metricsUnlocked);
 
   // Render page content based on currentPage
   const renderPage = () => {

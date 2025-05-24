@@ -7,7 +7,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { email, password } = body;
     
-    console.log("Direct auth API: Checking credentials for", email);
     
     if (!email || !password) {
       return NextResponse.json(
@@ -22,19 +21,15 @@ export async function POST(req: Request) {
     });
     
     if (!user || !user.password) {
-      console.log(`User not found: ${email}`);
       return NextResponse.json(
         { success: false, message: "User not found or no password set" },
         { status: 404 }
       );
     }
     
-    console.log(`Found user: ${user.name} (${user.id})`);
-    console.log(`Stored password hash: ${user.password.substring(0, 20)}...`);
     
     // Compare password
     const isValid = await bcrypt.compare(password, user.password);
-    console.log("Direct auth API: Password valid?", isValid);
     
     if (!isValid) {
       return NextResponse.json(
@@ -54,7 +49,6 @@ export async function POST(req: Request) {
       }
     });
   } catch (error) {
-    console.error("Direct auth API error:", error);
     return NextResponse.json(
       { 
         success: false, 
