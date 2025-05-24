@@ -66,7 +66,7 @@ export default function Header() {
                 
                 {/* Dropdown menu */}
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 py-1 ring-1 ring-black ring-opacity-5">
+                  <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 py-1 ring-1 ring-black ring-opacity-5">
                     <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-2 text-sm text-gray-700 dark:text-gray-200">
                       Signed in as<br />
                       <span className="font-medium">{session.user?.email}</span>
