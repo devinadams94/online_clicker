@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { GameState } from "@/types/game";
 
 export async function POST(req: Request) {
@@ -311,7 +311,7 @@ export async function POST(req: Request) {
           unlockedSpaceUpgrades: (() => {
             console.log("Space upgrades received from client:", body.unlockedSpaceUpgrades);
             
-            let upgradesList = [];
+            let upgradesList: string[] = [];
             
             try {
               // Handle different possible formats of the incoming data
@@ -408,7 +408,7 @@ export async function POST(req: Request) {
             // Handle different possible formats of the incoming data
             if (Array.isArray(body.purchasedTrustLevels)) {
               // Map each level to a number to ensure consistent type
-              levelsToSave = body.purchasedTrustLevels.map(level => Number(level));
+              levelsToSave = body.purchasedTrustLevels.map((level: any) => Number(level));
               console.log("Converted array data to numbers for purchasedTrustLevels");
             } else if (typeof body.purchasedTrustLevels === 'string') {
               try {
@@ -416,7 +416,7 @@ export async function POST(req: Request) {
                 const parsed = JSON.parse(body.purchasedTrustLevels);
                 if (Array.isArray(parsed)) {
                   // Map each level to a number to ensure consistent type
-                  levelsToSave = parsed.map(level => Number(level));
+                  levelsToSave = parsed.map((level: any) => Number(level));
                   console.log("Parsed string data and converted to numbers for purchasedTrustLevels");
                 } else {
                   console.error("Parsed purchasedTrustLevels is not an array");
@@ -432,7 +432,7 @@ export async function POST(req: Request) {
             }
             
             // Filter out any NaN values from the conversion
-            levelsToSave = levelsToSave.filter(level => !isNaN(level));
+            levelsToSave = levelsToSave.filter((level: any) => !isNaN(level));
             console.log("Filtered purchasedTrustLevels:", levelsToSave);
             
             const jsonString = JSON.stringify(levelsToSave);
@@ -483,7 +483,7 @@ export async function POST(req: Request) {
             console.log("Creativity upgrades received from client:", body.unlockedCreativityUpgrades);
             console.log("Creativity upgrades type:", typeof body.unlockedCreativityUpgrades);
             
-            let upgradesList = [];
+            let upgradesList: string[] = [];
             
             try {
               // Handle different possible formats of the incoming data
@@ -524,7 +524,7 @@ export async function POST(req: Request) {
             console.log("Upgrade costs type:", typeof body.upgradeCosts);
             
             // Default costs as fallback
-            const defaultCosts = {
+            const defaultCosts: { [key: string]: number } = {
               'parallelProcessing': 15,
               'quantumAlgorithms': 30,
               'neuralOptimization': 50,
@@ -627,13 +627,13 @@ export async function POST(req: Request) {
       
       // Create a detailed error response
       const errorDetails = {
-        message: `Database error: ${err.message || 'Unknown SQL error'}`,
+        message: `Database error: ${err instanceof Error ? err.message : 'Unknown SQL error'}`,
         error: true,
         timestamp: new Date().toISOString(),
         details: {
-          name: err.name,
-          code: (err as any).code,
-          errno: (err as any).errno
+          name: err instanceof Error ? err.name : 'UnknownError',
+          code: err instanceof Error ? (err as any).code : undefined,
+          errno: err instanceof Error ? (err as any).errno : undefined
         }
       };
       

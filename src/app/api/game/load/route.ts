@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 export async function GET() {
   try {
@@ -54,7 +54,7 @@ export async function GET() {
     console.log("- Bot intelligence level:", gameState.botIntelligence);
     console.log("- Bot intelligence level type:", typeof gameState.botIntelligence);
     console.log("- Bot intelligence truthy check:", Boolean(gameState.botIntelligence));
-    console.log("- Bot intelligence parsed as int:", parseInt(gameState.botIntelligence));
+    console.log("- Bot intelligence parsed as int:", parseInt(String(gameState.botIntelligence)));
     console.log("- Bot intelligence upgrade cost:", gameState.botIntelligenceCost);
     console.log("- Bot trading budget:", gameState.botTradingBudget);
     console.log("- Bot trading profit:", gameState.botTradingProfit);
@@ -94,8 +94,8 @@ export async function GET() {
     console.log("- Raw unlockedTrustAbilities:", gameState.unlockedTrustAbilities);
     
     // Parse trust-related arrays with error handling and explicit type conversion
-    let parsedPurchasedTrustLevels = [];
-    let parsedUnlockedTrustAbilities = [];
+    let parsedPurchasedTrustLevels: number[] = [];
+    let parsedUnlockedTrustAbilities: string[] = [];
     
     try {
       // Parse purchasedTrustLevels and ensure consistent number format
@@ -124,9 +124,9 @@ export async function GET() {
     }
     
     // Parse Ops and Creativity upgrades
-    let parsedOpsUpgrades = [];
-    let parsedCreativityUpgrades = [];
-    let parsedUpgradeCosts = {
+    let parsedOpsUpgrades: string[] = [];
+    let parsedCreativityUpgrades: string[] = [];
+    let parsedUpgradeCosts: { [key: string]: number } = {
       // Default costs for upgrades if not found in database
       'parallelProcessing': 15,
       'quantumAlgorithms': 30,
@@ -265,7 +265,7 @@ export async function GET() {
     }
     
     // Parse space upgrades
-    let parsedSpaceUpgrades = [];
+    let parsedSpaceUpgrades: string[] = [];
     
     try {
       console.log("- Raw unlockedSpaceUpgrades from database:", gameState.unlockedSpaceUpgrades);

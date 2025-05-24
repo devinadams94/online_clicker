@@ -282,6 +282,8 @@ export default function GameInterface() {
   const { data: session } = useSession();
   const [phaserFailed, setPhaserFailed] = useState(false);
   const [justUnlockedSpaceAge, setJustUnlockedSpaceAge] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { 
     tick,
     marketTick,
@@ -336,6 +338,20 @@ export default function GameInterface() {
     return () => {
       window.removeEventListener('phaser-load-error', handlePhaserError);
       clearTimeout(timeoutId);
+    };
+  }, []);
+  
+  // Effect to handle mobile menu click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -1791,40 +1807,112 @@ export default function GameInterface() {
     }
   };
 
+  // Filter navigation items into primary and secondary groups
+  const primaryNavItems = navItems.filter(item => 
+    item.id === 'game' || item.id === 'upgrades' || item.id === 'research'
+  );
+  
+  const secondaryNavItems = navItems.filter(item => 
+    item.id !== 'game' && item.id !== 'upgrades' && item.id !== 'research'
+  );
+  
   return (
     <>
       {/* Navigation bar */}
-      <div className="bg-gray-800 text-white mb-4">
+      <div className="bg-gray-800 text-white mb-4 sticky top-0 z-10 shadow-md">
         <div className="container mx-auto px-4">
-          <nav className="flex space-x-4 py-3">
-            {navItems.map(item => {
-              // Hide Stock Market tab if it's not unlocked
-              if (item.requireStockUnlock && !stockMarketUnlocked) {
-                return null;
-              }
+          <nav className="flex justify-between items-center py-3">
+            {/* Left side - Primary navigation items */}
+            <div className="flex space-x-1 md:space-x-4">
+              {primaryNavItems.map(item => {
+                return (
+                  <button
+                    key={item.id}
+                    className={`px-2 md:px-3 py-1 rounded-md text-sm md:text-base ${currentPage === item.id ? 'bg-primary-600' : 'hover:bg-gray-700'}`}
+                    onClick={() => setCurrentPage(item.id)}
+                  >
+                    {item.name}
+                  </button>
+                );
+              })}
+            </div>
+            
+            {/* Right side - Secondary navigation and mobile menu button */}
+            <div className="flex items-center">
+              {/* Desktop view - Show secondary nav items directly */}
+              <div className="hidden md:flex md:space-x-4">
+                {secondaryNavItems.map(item => {
+                  // Hide Stock Market tab if it's not unlocked
+                  if (item.requireStockUnlock && !stockMarketUnlocked) return null;
+                  
+                  // Hide Metrics tab if it's not unlocked
+                  if (item.requireMetricsUnlock && !metricsUnlocked) return null;
+                  
+                  // Hide Space Age tab if it's not unlocked
+                  if (item.requireSpaceUnlock && !spaceAgeUnlocked) return null;
+                  
+                  return (
+                    <button
+                      key={item.id}
+                      className={`px-3 py-1 rounded-md ${currentPage === item.id ? 'bg-primary-600' : 'hover:bg-gray-700'}`}
+                      onClick={() => setCurrentPage(item.id)}
+                    >
+                      {item.name}
+                      {item.id === 'space' && <span className="ml-1 text-blue-300">🚀</span>}
+                      {item.id === 'prestige' && <span className="ml-1 text-yellow-300">⭐</span>}
+                    </button>
+                  );
+                })}
+              </div>
               
-              // Hide Metrics tab if it's not unlocked
-              if (item.requireMetricsUnlock && !metricsUnlocked) {
-                return null;
-              }
-              
-              // Hide Space Age tab if it's not unlocked
-              if (item.requireSpaceUnlock && !spaceAgeUnlocked) {
-                return null;
-              }
-              
-              return (
-                <button
-                  key={item.id}
-                  className={`px-3 py-1 rounded-md ${currentPage === item.id ? 'bg-primary-600' : 'hover:bg-gray-700'}`}
-                  onClick={() => setCurrentPage(item.id)}
+              {/* Mobile view - Menu button and dropdown */}
+              <div className="md:hidden" ref={mobileMenuRef}>
+                <button 
+                  className="p-2 rounded-md bg-gray-700 hover:bg-gray-600 focus:outline-none"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  aria-expanded={mobileMenuOpen}
+                  aria-haspopup="true"
                 >
-                  {item.name}
-                  {item.id === 'space' && <span className="ml-1 text-blue-300">🚀</span>}
-                  {item.id === 'prestige' && <span className="ml-1 text-yellow-300">⭐</span>}
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                  </svg>
                 </button>
-              );
-            })}
+                
+                {mobileMenuOpen && (
+                  <div className="absolute right-4 mt-2 w-48 bg-gray-800 rounded-md shadow-lg z-10 py-1 ring-1 ring-black ring-opacity-5">
+                    {secondaryNavItems.map(item => {
+                      // Hide Stock Market tab if it's not unlocked
+                      if (item.requireStockUnlock && !stockMarketUnlocked) return null;
+                      
+                      // Hide Metrics tab if it's not unlocked
+                      if (item.requireMetricsUnlock && !metricsUnlocked) return null;
+                      
+                      // Hide Space Age tab if it's not unlocked
+                      if (item.requireSpaceUnlock && !spaceAgeUnlocked) return null;
+                      
+                      return (
+                        <button
+                          key={item.id}
+                          className={`block w-full text-left px-4 py-2 text-sm ${
+                            currentPage === item.id 
+                              ? 'bg-primary-600 text-white' 
+                              : 'text-gray-200 hover:bg-gray-700'
+                          }`}
+                          onClick={() => {
+                            setCurrentPage(item.id);
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          {item.name}
+                          {item.id === 'space' && <span className="ml-1 text-blue-300">🚀</span>}
+                          {item.id === 'prestige' && <span className="ml-1 text-yellow-300">⭐</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           </nav>
         </div>
       </div>
