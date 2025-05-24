@@ -117,8 +117,6 @@ interface GameStore extends GameState {
   buildSolarArrayBulk: (amount: number) => void;
   buildBatteryBulk: (amount: number) => void;
   
-  // Debug functions
-  addAerogradePaperclips: (amount: number) => void;
   
   // Space upgrade purchase functions
   buySpaceUpgrade: (id: string, cost: number) => void;

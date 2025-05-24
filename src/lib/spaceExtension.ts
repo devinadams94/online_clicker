@@ -1205,16 +1205,4 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
     });
   },
 
-  // Debug function to add aerograde paperclips
-  addAerogradePaperclips: (amount: number) => {
-    const state = get();
-    
-    if (!state.spaceAgeUnlocked) {
-      return;
-    }
-    
-    set({
-      aerogradePaperclips: (state.aerogradePaperclips || 0) + amount
-    });
-  }
 });

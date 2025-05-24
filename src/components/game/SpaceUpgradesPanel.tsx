@@ -29,7 +29,6 @@ export default function SpaceUpgradesPanel() {
     buildBattery,
     buildSolarArrayBulk,
     buildBatteryBulk,
-    addAerogradePaperclips,
     unlockedSpaceUpgrades,
     unlockedMoneySpaceUpgrades,
     unlockedOpsSpaceUpgrades,
@@ -1034,15 +1033,6 @@ export default function SpaceUpgradesPanel() {
           Energy Production: {formatLargeNumber(energyPerSecond || 0)}/sec | Storage: {formatLargeNumber(energy || 0)}/{formatLargeNumber(maxEnergy || 0)}
         </div>
 
-        {/* Debug Button */}
-        <div className="mt-3 text-center">
-          <button
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-medium"
-            onClick={() => addAerogradePaperclips(1000000)}
-          >
-            🐛 DEBUG: Add 1M Aerograde
-          </button>
-        </div>
       </div>
       
       <div className="space-y-2">
