@@ -73,21 +73,16 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-    async redirect({ url, baseUrl }) {
-      // If we're on the production domain, redirect to paper-clips.com
-      if (baseUrl.includes('paper-clips.com')) {
-        if (url.startsWith('/')) {
-          return `https://paper-clips.com${url}`;
-        }
-        if (url.startsWith('https://paper-clips.com')) {
-          return url;
-        }
-        return 'https://paper-clips.com/';
+    async redirect({ url, baseUrl: _baseUrl }) {
+      // Always redirect to paper-clips.com for consistency
+      if (url.startsWith('/')) {
+        return `https://paper-clips.com${url}`;
       }
-      // For development, use the default behavior
-      if (url.startsWith('/')) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
+      if (url.startsWith('https://paper-clips.com')) {
+        return url;
+      }
+      // Default to paper-clips.com home page
+      return 'https://paper-clips.com/';
     }
   },
   debug: true,
