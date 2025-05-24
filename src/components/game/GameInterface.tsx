@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import useGameStore from "@/lib/gameStore";
+import { GameState } from "@/types/game";
 
 // Note: Space functions are now imported directly from spaceExtension.ts in the gameStore
 // This function is now just a placeholder for backward compatibility
@@ -630,7 +631,7 @@ export default function GameInterface() {
       console.log("Trust upgrades before save - purchasedTrustLevels:", purchasedTrustLevels);
       console.log("Trust upgrades before save - unlockedTrustAbilities:", unlockedTrustAbilities);
       
-      const gameData = {
+      const gameData: { [key: string]: any } = {
         // Resources
         paperclips,
         money,
@@ -725,7 +726,7 @@ export default function GameInterface() {
         nextTrustAt,
         ops,
         opsMax,
-        yomi: parseFloat(yomi) || 0, // Add yomi with validation to ensure it's a number
+        yomi: String(typeof yomi === 'string' ? parseFloat(yomi) || 0 : (yomi || 0)), // Handle both string and number types
         creativity,
         creativityUnlocked,
         unlockedOpsUpgrades: JSON.stringify(unlockedOpsUpgrades),
@@ -786,12 +787,14 @@ export default function GameInterface() {
         metricsUnlocked,
         
         // Space Combat Fields
-        honor: parseFloat(honor) || 0, // Validate honor is a number
-        battlesWon: parseInt(battlesWon) || 0, // Validate battlesWon is a number
+        honor: String(typeof honor === 'string' ? parseFloat(honor) || 0 : (honor || 0)), // Handle both string and number types
+        battlesWon: String(typeof battlesWon === 'string' ? parseInt(battlesWon) || 0 : (battlesWon || 0)), // Handle both string and number types
         autoBattleEnabled: Boolean(autoBattleEnabled), // Ensure boolean
         autoBattleUnlocked: Boolean(autoBattleUnlocked), // Ensure boolean
-        battleDifficulty: parseFloat(battleDifficulty) || 1, // Validate battleDifficulty with default
-        aerogradePaperclips: parseFloat(useGameStore.getState().aerogradePaperclips) || 0, // Add aerogradePaperclips
+        battleDifficulty: String(typeof battleDifficulty === 'string' ? parseFloat(battleDifficulty) || 1 : (battleDifficulty || 1)), // Handle both string and number types
+        aerogradePaperclips: String(typeof useGameStore.getState().aerogradePaperclips === 'string' ? 
+            parseFloat(String(useGameStore.getState().aerogradePaperclips)) || 0 : 
+            (useGameStore.getState().aerogradePaperclips || 0)), // Handle both string and number types
         unlockedSpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedSpaceUpgrades || []) // Add space upgrades
       };
       
@@ -885,7 +888,7 @@ export default function GameInterface() {
         try {
           console.log('window.saveGameNow called directly');
           await saveGameState();
-          return true;
+          // Don't return anything (void return type)
         } catch (err) {
           console.error('Error in window.saveGameNow:', err);
           throw err;
@@ -1263,7 +1266,9 @@ export default function GameInterface() {
             console.error("Type of upgradeCosts:", typeof data.upgradeCosts);
           }
           
-          setGameState({
+          // Let's simplify our approach and use the loaded data directly
+          // with a few required defaults to satisfy TypeScript
+          const gameData: Partial<GameState> = {
             // Resources
             paperclips: (data.paperclips || 0) + offlineProgress.paperclipsProduced - offlineProgress.paperclipsSold,
             money: loadedMoney + offlineProgress.salesRevenue,
@@ -1351,8 +1356,9 @@ export default function GameInterface() {
             })(),
             // Use the already parsed purchasedTrustLevels from API response
             purchasedTrustLevels: Array.isArray(data.purchasedTrustLevels) ? data.purchasedTrustLevels : [],
-            // Extra debug log for purchasedTrustLevels
-            ...(console.log(`Loading purchasedTrustLevels:`, data.purchasedTrustLevels) || {}),
+            // Extra debug log for purchasedTrustLevels (without using console.log in spread)
+            // Log separately for type safety
+            ...(() => { console.log(`Loading purchasedTrustLevels:`, data.purchasedTrustLevels); return {}; })(),
             // Use the already parsed unlockedTrustAbilities from API response
             unlockedTrustAbilities: Array.isArray(data.unlockedTrustAbilities) ? data.unlockedTrustAbilities : [],
             ops: data.ops || 50, // Ensure this matches the 50 OPs per memory default
@@ -1380,7 +1386,7 @@ export default function GameInterface() {
             // Process upgradeCosts with enhanced parsing and validation
             upgradeCosts: (() => {
               // Default costs as fallback
-              const defaultCosts = {
+              const defaultCosts: { [key: string]: number } = {
                 'parallelProcessing': 15,
                 'quantumAlgorithms': 30,
                 'neuralOptimization': 50,
@@ -1398,7 +1404,7 @@ export default function GameInterface() {
               
               // Track the source of the data for debugging
               let dataSource = "default";
-              let parsedCosts = { ...defaultCosts };
+              let parsedCosts: { [key: string]: number } = { ...defaultCosts };
               
               if (data.upgradeCosts) {
                 try {
@@ -1461,7 +1467,7 @@ export default function GameInterface() {
             unlockedCreativityUpgrades: (() => {
               console.log("Raw unlockedCreativityUpgrades:", data.unlockedCreativityUpgrades);
               
-              let parsedCreativityUpgrades = [];
+              let parsedCreativityUpgrades: string[] = [];
               
               try {
                 // If it's already an array, use it directly
@@ -1574,8 +1580,41 @@ export default function GameInterface() {
             },
             
             // Store offline progress for display
-            offlineProgress: offlineProgressApplied ? offlineProgress : null
-          });
+            offlineProgress: offlineProgressApplied ? offlineProgress : null,
+            // Don't add any more fields here to avoid duplicates
+          };
+          
+          // Add required fields to satisfy TypeScript
+          gameData.prestigeLevel = 0;
+          gameData.prestigePoints = 0;
+          gameData.lifetimePaperclips = data.totalPaperclipsMade || 0;
+          gameData.prestigeRewards = {
+            productionMultiplier: 1,
+            researchMultiplier: 1,
+            wireEfficiency: 1,
+            startingMoney: 0,
+            clickMultiplier: 1
+          };
+          
+          // Required space fields with defaults
+          gameData.spaceMatter = 0;
+          gameData.spaceOre = 0;
+          gameData.spaceWire = 0;
+          gameData.totalSpaceMatter = 0;
+          gameData.discoveredPlanets = [];
+          gameData.currentPlanetIndex = 0;
+          gameData.discoveredCelestialBodies = [];
+          gameData.opsProductionMultiplier = 1;
+          
+          // Add other required fields to satisfy the GameState interface
+          gameData.droneReplicationEnabled = false;
+          gameData.droneReplicationCostPerDrone = 1000;
+          gameData.botRiskThreshold = 0.2;
+          gameData.stockMarketLastUpdate = new Date();
+          gameData.stockTrendData = {};
+          
+          // Apply the game state using type assertion - we're adding defaults for missing fields
+          setGameState(gameData as GameState);
           
           // Display offline progress notification if applicable
           if (offlineProgressApplied) {

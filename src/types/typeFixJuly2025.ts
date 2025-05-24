@@ -12,20 +12,52 @@ declare global {
     getExtension?: (name: string) => any;
   }
   
-  // Add saveGameNow to Window interface
+  // Add saveGameNow and other properties to Window interface
   interface Window {
     saveGameNow?: () => Promise<void>;
+    PHASER_LOADING?: boolean;
+    PHASER_LOADED?: boolean;
+    __ZUSTAND_STORE__?: {
+      getState: () => any;
+      subscribe: (callback: () => void) => () => void;
+    };
+    __pendingCpuUpgrade?: {
+      cost: number;
+      level: number;
+      timestamp: number;
+    };
+    __pendingMemoryUpgrade?: {
+      cost: number;
+      max: number;
+      timestamp: number;
+    };
+    __pendingOpsUpdate?: {
+      current: number;
+      max: number;
+      timestamp: number;
+    };
+    clickPaperclip?: () => void;
   }
 }
 
-// Fix for Zustand persist - uncomment when needed
-/*
-declare module 'zustand/middleware' {
-  export function persist<T>(
-    config: (set: any, get: any, api: any) => T,
-    options: any
-  ): (set: any, get: any, api: any) => T;
+// Add types for GameStoreFunctions with space-related properties
+declare module '@/lib/gameStore' {
+  interface GameStoreFunctions {
+    // Properties that might be missing
+    miningEfficiency?: number;
+    droneEfficiency?: number;
+    factoryEfficiency?: number;
+    explorationSpeed?: number;
+    nanobotRepairEnabled?: boolean;
+    honor?: number;
+    battlesWon?: number;
+    autoBattleEnabled?: boolean;
+    autoBattleUnlocked?: boolean;
+    battleDifficulty?: number;
+    aerogradePaperclips?: number;
+    unlockedSpaceUpgrades?: string[];
+    autoDrones?: boolean;
+  }
 }
-*/
 
 export {};

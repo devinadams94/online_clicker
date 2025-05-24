@@ -1,6 +1,11 @@
 // Space-related extensions for the game store
-import { GameStore } from './gameStore';
-import { Planet, CelestialBody } from '@/types/game';
+import type { GameState } from '@/types/game';
+import { Planet, CelestialBody, SpaceStats } from '@/types/game';
+
+// Type for partial GameStore functions
+interface GameStoreFunctions {
+  [key: string]: any;
+}
 
 // Helper function to generate a random planet name
 const generatePlanetName = (): string => {
@@ -92,7 +97,7 @@ const generateCelestialBodyDescription = (type: string): string => {
   return typeDescriptions[Math.floor(Math.random() * typeDescriptions.length)];
 };
 
-export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
+export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get: () => GameState): GameStoreFunctions => ({
   // Switch to a different planet
   switchPlanet: (planetIndex: number) => {
     const state = get();
@@ -355,7 +360,7 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
       const droneReplicationCost = state.droneReplicationCostPerDrone || 1000; // Default cost per drone
       
       // Get bodies that are being harvested
-      const harvestedBodies = updatedCelestialBodies.filter(body => body.isBeingHarvested);
+      const harvestedBodies = updatedCelestialBodies.filter((body: CelestialBody) => body.isBeingHarvested);
       
       // Process each harvested body
       harvestedBodies.forEach(body => {
@@ -565,7 +570,7 @@ export const addSpaceFunctions = (set: any, get: any): Partial<GameStore> => ({
     
     // Get the count of this upgrade already purchased (for repeatable upgrades)
     const unlockedSpaceUpgrades = state.unlockedSpaceUpgrades || [];
-    const purchaseCount = unlockedSpaceUpgrades.filter(upgradeId => upgradeId === id).length;
+    const purchaseCount = unlockedSpaceUpgrades.filter((upgradeId: string) => upgradeId === id).length;
     
     // Deduct Aerograde paperclips and add upgrade to unlocked list
     set({

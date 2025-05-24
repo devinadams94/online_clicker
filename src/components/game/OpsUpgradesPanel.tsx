@@ -32,7 +32,7 @@ export default function OpsUpgradesPanel() {
   
   // Pre-calculate costs for all upgrades to ensure consistency
   // Use useEffect to get costs from game state or calculate them if not available
-  const [upgradeCosts, setUpgradeCosts] = useState({});
+  const [upgradeCosts, setUpgradeCosts] = useState<{ [key: string]: number }>({}); 
   
   // Check localStorage for non-repeatable upgrades purchase on component mount
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function OpsUpgradesPanel() {
 
   useEffect(() => {
     // Initialize with default costs
-    const newCosts = {};
+    const newCosts: { [key: string]: number } = {};
     
     // Set default values first
     opsUpgradeItems.forEach(upgrade => {

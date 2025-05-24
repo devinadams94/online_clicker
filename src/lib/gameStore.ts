@@ -137,9 +137,10 @@ interface GameStore extends GameState {
   toggleFloatingText: () => void;
 }
 
+// Use type assertion to work around zustand persist typing issue
 const useGameStore = create<GameStore>(
-  persist(
-    (set, get) => ({
+  (persist as any)(
+    (set: (state: Partial<GameState>) => void, get: () => GameState) => ({
       // Add space functions from spaceExtension.ts
       ...addSpaceFunctions(set, get),
       
@@ -314,7 +315,7 @@ const useGameStore = create<GameStore>(
       },
 
       // Click to generate paperclips with multiplier (consumes wire)
-      clickPaperclip: () => set((state) => {
+      clickPaperclip: () => set((state: GameState) => {
         // Check if there's enough wire
         if (state.wire < 1) {
           return state; // Not enough wire
@@ -340,7 +341,7 @@ const useGameStore = create<GameStore>(
 
       // Buy autoclipper upgrade (using money instead of paperclips)
       buyAutoclipper: () => 
-        set((state) => {
+        set((state: GameState) => {
           // Check if player has enough money
           if (state.money < state.autoclipper_cost) {
             return state;
@@ -434,7 +435,7 @@ const useGameStore = create<GameStore>(
         
       // Buy click multiplier upgrade (using money instead of paperclips)
       buyClickMultiplier: () => 
-        set((state) => {
+        set((state: GameState) => {
           const multiplierCost = Math.floor(50 * Math.pow(2, state.clickMultiplier - 1));
           
           // Check if player has enough money
@@ -450,7 +451,7 @@ const useGameStore = create<GameStore>(
       
       // Set the paperclip price (player controlled)
       setClipPrice: (price: number) => 
-        set((state) => {
+        set((state: GameState) => {
           // Ensure price isn't negative or unreasonably high
           const safePrice = Math.max(0.01, Math.min(price, 1));
           return { paperclipPrice: safePrice };
@@ -458,7 +459,7 @@ const useGameStore = create<GameStore>(
       
       // Sell paperclips based on current demand and price
       sellPaperclips: () => 
-        set((state) => {
+        set((state: GameState) => {
           // Calculate current demand based on price and market conditions
           const demand = calculateDemand(
             state.paperclipPrice,
@@ -514,7 +515,7 @@ const useGameStore = create<GameStore>(
       
       // Update market conditions (called periodically)
       updateMarket: () => 
-        set((state) => {
+        set((state: GameState) => {
           const newTrend = updateMarketTrend(state.marketTrend);
           const newSeasonal = updateSeasonalMultiplier(getDayOfYear());
           
@@ -527,7 +528,7 @@ const useGameStore = create<GameStore>(
         
       // Upgrade market demand to increase maximum demand and unlock $1.00 pricing
       upgradeMarketDemand: () =>
-        set((state) => {
+        set((state: GameState) => {
           // Check if player has enough money
           if (state.money < state.marketDemandUpgradeCost) {
             return state;
@@ -568,7 +569,7 @@ const useGameStore = create<GameStore>(
 
       // Production tick - generates paperclips (consumes wire)
       tick: () => 
-        set((state) => {
+        set((state: GameState) => {
           // First handle auto wire buying if enabled and wire is low
           let updatedState = { ...state };
           
@@ -634,7 +635,7 @@ const useGameStore = create<GameStore>(
         
       // Buy a spool of wire (with dynamic pricing)
       buyWireSpool: () =>
-        set((state) => {
+        set((state: GameState) => {
           // Check if player has enough money
           if (state.money < state.spoolCost) {
             return state;
@@ -668,7 +669,7 @@ const useGameStore = create<GameStore>(
         
       // Buy auto wire buyer upgrade
       buyAutoWireBuyer: () =>
-        set((state) => {
+        set((state: GameState) => {
           // Check if player has enough money
           if (state.money < state.autoWireBuyerCost || state.autoWireBuyer) {
             return state;
@@ -682,7 +683,7 @@ const useGameStore = create<GameStore>(
         
       // Upgrade spool size - increases wire per spool
       upgradeSpoolSize: () =>
-        set((state) => {
+        set((state: GameState) => {
           // Check if player has enough money
           if (state.money < state.spoolSizeUpgradeCost) {
             return state;
@@ -710,7 +711,7 @@ const useGameStore = create<GameStore>(
         
       // Unlock metrics dashboard for $500
       unlockMetrics: () =>
-        set((state) => {
+        set((state: GameState) => {
           // Check if player has enough money and metrics not already unlocked
           if (state.money < 500 || state.metricsUnlocked) {
             return state;
@@ -865,7 +866,7 @@ const useGameStore = create<GameStore>(
         
       // Upgrade space stat
       upgradeStat: (stat: string, cost: number) => 
-        set((state) => {
+        set((state: GameState) => {
           // Skip if space age not unlocked
           if (!state.spaceAgeUnlocked) {
             return state;
@@ -895,7 +896,7 @@ const useGameStore = create<GameStore>(
         
       // Unlock combat with OPs
       unlockCombat: () => 
-        set((state) => {
+        set((state: GameState) => {
           // Skip if combat already unlocked or space age not unlocked
           if (state.spaceStats.combat || !state.spaceAgeUnlocked) {
             return state;
@@ -954,7 +955,7 @@ const useGameStore = create<GameStore>(
 
       // Visual effect settings
       setParticleIntensity: (intensity: number) => 
-        set((state) => ({ 
+        set((state: GameState) => ({ 
           visualFX: { 
             ...state.visualFX, 
             particleIntensity: intensity 
@@ -962,7 +963,7 @@ const useGameStore = create<GameStore>(
         })),
         
       toggleClickAnimations: () => 
-        set((state) => ({ 
+        set((state: GameState) => ({ 
           visualFX: { 
             ...state.visualFX, 
             clickAnimations: !state.visualFX.clickAnimations 
@@ -970,7 +971,7 @@ const useGameStore = create<GameStore>(
         })),
         
       toggleFloatingText: () => 
-        set((state) => ({ 
+        set((state: GameState) => ({ 
           visualFX: { 
             ...state.visualFX, 
             floatingText: !state.visualFX.floatingText 
@@ -983,7 +984,7 @@ const useGameStore = create<GameStore>(
         
       // Research methods
       generateResearchPoints: () => 
-        set((state) => {
+        set((state: GameState) => {
           // Apply prestige research multiplier
           const researchMultiplier = state.prestigeRewards?.researchMultiplier || 1;
           
@@ -996,7 +997,7 @@ const useGameStore = create<GameStore>(
         }),
         
       buyResearch: (id: string) => 
-        set((state) => {
+        set((state: GameState) => {
           // Skip if already unlocked
           if (state.unlockedResearch.includes(id)) {
             return state;
@@ -1183,7 +1184,7 @@ const useGameStore = create<GameStore>(
       
       // Stock Market methods
       unlockStockMarket: () => 
-        set((state) => {
+        set((state: GameState) => {
           // Check if player has enough money to unlock
           if (state.money < 50000) {
             return state;
@@ -1196,7 +1197,7 @@ const useGameStore = create<GameStore>(
         }),
         
       buyTradingBot: () => 
-        set((state) => {
+        set((state: GameState) => {
           // Check if player has enough money
           if (state.money < state.tradingBotCost) {
             return state;
@@ -1214,7 +1215,7 @@ const useGameStore = create<GameStore>(
         }),
         
       upgradeBotIntelligence: () =>
-        set((state) => {
+        set((state: GameState) => {
           // Check if player has enough money
           if (state.money < state.botIntelligenceCost) {
             return state;
@@ -1250,7 +1251,7 @@ const useGameStore = create<GameStore>(
         }),
         
       setBotTradingBudget: (amount: number) =>
-        set((state) => {
+        set((state: GameState) => {
           // Validate inputs
           const safeAmount = Math.max(0, Number(amount) || 0);
           
@@ -1275,7 +1276,7 @@ const useGameStore = create<GameStore>(
         }),
         
       withdrawBotTradingBudget: (amount: number) =>
-        set((state) => {
+        set((state: GameState) => {
           // Validate inputs
           const safeAmount = Math.max(0, Number(amount) || 0);
           
@@ -1295,7 +1296,7 @@ const useGameStore = create<GameStore>(
         
       // Set the risk threshold for trading bots (0.1=10%, 0.2=20%, 0.3=30%)
       setBotRiskThreshold: (threshold: number) =>
-        set((state) => {
+        set((state: GameState) => {
           // Validate inputs - ensure threshold is between 0.1 and 0.3
           const safeThreshold = Math.max(0.1, Math.min(0.3, Number(threshold) || 0.1));
           
@@ -1307,7 +1308,7 @@ const useGameStore = create<GameStore>(
         }),
         
       botAutoTrade: () =>
-        set((state) => {
+        set((state: GameState) => {
           // Attempt to use the enhanced trading algorithm from the separate module
           let useAdvancedAlgorithm = false;
           let tradingAlgorithm;
@@ -1439,7 +1440,7 @@ const useGameStore = create<GameStore>(
             // Default to selling if we have a portfolio
             if (hasPortfolio) {
               // Advanced multi-factor analysis for identifying buying opportunities
-              const stocksWithBuyOpportunities = stocks.filter(stock => {
+              const stocksWithBuyOpportunities = stocks.filter((stock: Stock) => {
                 // Get price history for this stock
                 const history = state.stockPriceHistory[stock.id] || [];
                 
@@ -1449,18 +1450,18 @@ const useGameStore = create<GameStore>(
                 }
                 
                 // Calculate multiple timeframe moving averages for better trend analysis
-                const shortMA = history.slice(-3).reduce((sum, price) => sum + price, 0) / 3;
+                const shortMA = history.slice(-3).reduce((sum: number, price: number) => sum + price, 0) / 3;
                 
                 // Use medium MA if we have enough history
                 let mediumMA = shortMA;
                 if (history.length >= 5) {
-                  mediumMA = history.slice(-5).reduce((sum, price) => sum + price, 0) / 5;
+                  mediumMA = history.slice(-5).reduce((sum: number, price: number) => sum + price, 0) / 5;
                 }
                 
                 // Use long MA if we have enough history
                 let longMA = mediumMA;
                 if (history.length >= 10) {
-                  longMA = history.slice(-10).reduce((sum, price) => sum + price, 0) / 10;
+                  longMA = history.slice(-10).reduce((sum: number, price: number) => sum + price, 0) / 10;
                 }
                 
                 // Multi-factor opportunity scoring system
@@ -1549,10 +1550,10 @@ const useGameStore = create<GameStore>(
                 // Analyze market conditions before first purchase
                 let strongBuySignals = 0;
                 
-                stocks.forEach(stock => {
+                stocks.forEach((stock: Stock) => {
                   const history = state.stockPriceHistory[stock.id] || [];
                   if (history.length >= 5) {
-                    const avgPrice = history.slice(-5).reduce((sum, price) => sum + price, 0) / 5;
+                    const avgPrice = history.slice(-5).reduce((sum: number, price: number) => sum + price, 0) / 5;
                     // Price at least 3% below average is a strong buy signal
                     if (stock.price < avgPrice * 0.97) {
                       strongBuySignals++;
@@ -1832,8 +1833,8 @@ const useGameStore = create<GameStore>(
               if (updatedPortfolio.length > 0) {
                 // Rank holdings by potential profit/loss and trend detection
                 const rankedHoldings = [...updatedPortfolio].sort((a, b) => {
-                  const stockA = stocks.find(s => s.id === a.stockId);
-                  const stockB = stocks.find(s => s.id === b.stockId);
+                  const stockA = stocks.find((s: Stock) => s.id === a.stockId);
+                  const stockB = stocks.find((s: Stock) => s.id === b.stockId);
                   
                   if (!stockA || !stockB) return 0;
                   
@@ -1917,7 +1918,7 @@ const useGameStore = create<GameStore>(
                 
                 // Pick a holding - more intelligent bots make better selling decisions
                 const holdingToSell = rankedHoldings[0];
-                const stock = stocks.find(s => s.id === holdingToSell.stockId);
+                const stock = stocks.find((s: Stock) => s.id === holdingToSell.stockId);
                 
                 if (stock) {
                   // Calculate quantity to sell (partial sells for large holdings)
@@ -2113,8 +2114,8 @@ const useGameStore = create<GameStore>(
           } // End of for loop for multiple trades
           
           // Calculate new portfolio value
-          const newPortfolioValue = updatedState.stockPortfolio.reduce((total, holding) => {
-            const stockPrice = stocks.find(s => s.id === holding.stockId)?.price || holding.averagePurchasePrice;
+          const newPortfolioValue = updatedState.stockPortfolio.reduce((total: number, holding: StockHolding) => {
+            const stockPrice = stocks.find((s: Stock) => s.id === holding.stockId)?.price || holding.averagePurchasePrice;
             return total + (holding.quantity * stockPrice);
           }, 0);
           
@@ -2134,7 +2135,7 @@ const useGameStore = create<GameStore>(
         }),
         
       investInStockMarket: (amount: number) => 
-        set((state) => {
+        set((state: GameState) => {
           // Check if player has enough money
           if (state.money < amount) {
             return state;
@@ -2147,7 +2148,7 @@ const useGameStore = create<GameStore>(
         }),
         
       generateStockReturns: () => 
-        set((state) => {
+        set((state: GameState) => {
           // Skip if no investment or bots
           if (state.stockMarketInvestment <= 0 || state.tradingBots <= 0) {
             return state;
@@ -2334,9 +2335,9 @@ const useGameStore = create<GameStore>(
       
       // Buy stock
       buyStock: (stockId: string, quantity: number) => 
-        set((state) => {
+        set((state: GameState) => {
           const stocks = get().getStocks();
-          const stock = stocks.find(s => s.id === stockId);
+          const stock = stocks.find((s: Stock) => s.id === stockId);
           
           if (!stock) {
             console.error(`Stock ${stockId} not found`);
@@ -2382,7 +2383,7 @@ const useGameStore = create<GameStore>(
           
           // Calculate new portfolio value
           const newPortfolioValue = newPortfolio.reduce((total, holding) => {
-            const stockPrice = stocks.find(s => s.id === holding.stockId)?.price || holding.averagePurchasePrice;
+            const stockPrice = stocks.find((s: Stock) => s.id === holding.stockId)?.price || holding.averagePurchasePrice;
             return total + (holding.quantity * stockPrice);
           }, 0);
           
@@ -2397,9 +2398,9 @@ const useGameStore = create<GameStore>(
         
       // Sell stock
       sellStock: (stockId: string, quantity: number) => 
-        set((state) => {
+        set((state: GameState) => {
           const stocks = get().getStocks();
-          const stock = stocks.find(s => s.id === stockId);
+          const stock = stocks.find((s: Stock) => s.id === stockId);
           
           if (!stock) {
             console.error(`Stock ${stockId} not found`);
@@ -2436,7 +2437,7 @@ const useGameStore = create<GameStore>(
           
           // Calculate new portfolio value
           const newPortfolioValue = newPortfolio.reduce((total, holding) => {
-            const stockPrice = stocks.find(s => s.id === holding.stockId)?.price || holding.averagePurchasePrice;
+            const stockPrice = stocks.find((s: Stock) => s.id === holding.stockId)?.price || holding.averagePurchasePrice;
             return total + (holding.quantity * stockPrice);
           }, 0);
           
@@ -2458,13 +2459,13 @@ const useGameStore = create<GameStore>(
         
       // Update stock prices
       updateStockPrices: () => 
-        set((state) => {
+        set((state: GameState) => {
           const stocks = get().getStocks();
           let newPriceHistory = { ...state.stockPriceHistory };
           const now = new Date();
           
           // Update each stock's price based on its trend and volatility
-          const updatedStocks = stocks.map(stock => {
+          const updatedStocks = stocks.map((stock: Stock) => {
             // Clone the stock object to modify it
             let updatedStock = { ...stock };
             const currentTrendDuration = now.getTime() - stock.trendStartTime.getTime();
@@ -2551,13 +2552,13 @@ const useGameStore = create<GameStore>(
           
           // Calculate new portfolio value
           const newPortfolioValue = state.stockPortfolio.reduce((total, holding) => {
-            const stockPrice = updatedStocks.find(s => s.id === holding.stockId)?.price || holding.averagePurchasePrice;
+            const stockPrice = updatedStocks.find((s: Stock) => s.id === holding.stockId)?.price || holding.averagePurchasePrice;
             return total + (holding.quantity * stockPrice);
           }, 0);
           
           // Create updated stockTrendData to persist stock trends
-          const newStockTrendData = {};
-          updatedStocks.forEach(stock => {
+          const newStockTrendData: Record<string, any> = {};
+          updatedStocks.forEach((stock: Stock) => {
             // Only store trend data for stocks with active trends
             if (stock.trendDirection !== 0) {
               newStockTrendData[stock.id] = {
@@ -2583,7 +2584,7 @@ const useGameStore = create<GameStore>(
         const stocks = get().getStocks();
         
         return state.stockPortfolio.reduce((total, holding) => {
-          const stockPrice = stocks.find(s => s.id === holding.stockId)?.price || holding.averagePurchasePrice;
+          const stockPrice = stocks.find((s: Stock) => s.id === holding.stockId)?.price || holding.averagePurchasePrice;
           return total + (holding.quantity * stockPrice);
         }, 0);
       },
@@ -2857,7 +2858,7 @@ const useGameStore = create<GameStore>(
       },
         
       regenerateMemory: () => 
-        set((state) => {
+        set((state: GameState) => {
           // Calculate how much memory to regenerate based on CPU level
           const regenAmount = state.memoryRegenRate / 10; // Divide by 10 because this runs 10 times per second
           const newMemory = Math.min(state.memory + regenAmount, state.memoryMax);
@@ -2879,7 +2880,7 @@ const useGameStore = create<GameStore>(
         }
         
         // Use the memory
-        set((state) => ({
+        set((state: GameState) => ({
           memory: state.memory - amount
         }));
         
@@ -2898,7 +2899,7 @@ const useGameStore = create<GameStore>(
         }
         
         // Use the OPs
-        set((state) => ({
+        set((state: GameState) => ({
           ops: state.ops - amount
         }));
         
@@ -2997,7 +2998,7 @@ const useGameStore = create<GameStore>(
           // Computational efficiency upgrades
           case 'parallelProcessing':
             // Count previous purchases to determine effect scaling
-            const processingCount = state.unlockedOpsUpgrades.filter(id => id === 'parallelProcessing').length;
+            const processingCount = state.unlockedOpsUpgrades.filter((id: string) => id === 'parallelProcessing').length;
             // Base effect + 50% more for each previous purchase
             const cpuIncrease = 1 * (1 + (processingCount * 0.5));
             const opsIncrease = 50 * (1 + (processingCount * 0.5));
@@ -3008,7 +3009,7 @@ const useGameStore = create<GameStore>(
             
           case 'quantumAlgorithms':
             // Count previous purchases to determine effect scaling
-            const algorithmCount = state.unlockedOpsUpgrades.filter(id => id === 'quantumAlgorithms').length;
+            const algorithmCount = state.unlockedOpsUpgrades.filter((id: string) => id === 'quantumAlgorithms').length;
             // Base effect + 50% more for each previous purchase
             const researchMultiplier = 1.5 * (1 + (algorithmCount * 0.5));
             
@@ -3017,7 +3018,7 @@ const useGameStore = create<GameStore>(
             
           case 'neuralOptimization':
             // Count previous purchases to determine effect scaling
-            const neuralCount = state.unlockedOpsUpgrades.filter(id => id === 'neuralOptimization').length;
+            const neuralCount = state.unlockedOpsUpgrades.filter((id: string) => id === 'neuralOptimization').length;
             // Base effect + 50% more for each previous purchase
             const prodMultiplier = 1.25 * (1 + (neuralCount * 0.5));
             
@@ -3291,7 +3292,7 @@ const useGameStore = create<GameStore>(
         const state = get();
         if (state.cpuLevel >= 30) {
           const yomiRate = (state.memory + state.cpuLevel) * 0.005 / 10; // Divide by 10 because this runs 10 times per second
-          set((state) => ({
+          set((state: GameState) => ({
             yomi: state.yomi + yomiRate
           }));
         }
@@ -3299,7 +3300,7 @@ const useGameStore = create<GameStore>(
       
       // Trust tick - generates trust based on total paperclips made
       trustTick: () => 
-        set((state) => {
+        set((state: GameState) => {
           // Check if player has reached the next trust threshold
           if (state.totalPaperclipsMade < state.nextTrustAt) {
             return state; // Not enough paperclips made yet
@@ -3323,7 +3324,7 @@ const useGameStore = create<GameStore>(
         
       // OPs tick - generates OPs based on memory and CPU and scales production multiplier
       opsTick: () => 
-        set((state) => {
+        set((state: GameState) => {
           // Calculate OPs generation rate based on CPU level (10x faster than original)
           const opsRate = (state.cpuLevel * 1.0) / 10; // 1.0 per CPU level per second (10x the original 0.1) - Divided by 10 because this runs 10 times per second
           
@@ -3356,8 +3357,8 @@ const useGameStore = create<GameStore>(
             if (creativityUnlocked && !state.creativityUnlocked) {
               console.log("Creativity unlocked! OPs Max capacity reached 5000");
               // Force immediate save to persist the unlocked state
-              if (typeof window !== 'undefined' && window.saveGameNow) {
-                setTimeout(() => window.saveGameNow(), 100);
+              if (typeof window !== 'undefined' && typeof window.saveGameNow === 'function') {
+                setTimeout(() => (window.saveGameNow as Function)(), 100);
               }
             }
             
@@ -3475,7 +3476,7 @@ const useGameStore = create<GameStore>(
 
       // Reset game state
       resetGame: () => 
-        set((state) => ({
+        set((state: GameState) => ({
           // Preserve authentication, user data, and prestige info
           userId: state.userId,
           isAuthenticated: state.isAuthenticated,
@@ -3615,8 +3616,8 @@ const useGameStore = create<GameStore>(
         })),
     }),
     {
-      name: (state) => `paperclip-game-storage-${state.userId || 'guest'}`,
-      partialize: (state) => ({
+      name: (state: GameState) => `paperclip-game-storage-${state.userId || 'guest'}`,
+      partialize: (state: GameState) => ({
         // User identification (included so userId is part of persisted state)
         userId: state.userId,
         isAuthenticated: state.isAuthenticated,

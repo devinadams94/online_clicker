@@ -167,9 +167,11 @@ export default function SpaceCombatPanel() {
           });
           
           // If found an enemy, adjust direction towards it
-          if (nearestEnemy) {
-            const dx = nearestEnemy.x - ship.x;
-            const dy = nearestEnemy.y - ship.y;
+          if (nearestEnemy !== null) {
+            // Type assertion to ensure TypeScript knows this is a Ship
+            const enemy = nearestEnemy as Ship;
+            const dx = enemy.x - ship.x;
+            const dy = enemy.y - ship.y;
             const magnitude = Math.sqrt(dx * dx + dy * dy) || 1;
             
             // Update direction with some randomness

@@ -16,6 +16,9 @@ export default function TrustUpgradesPanel() {
     spaceAgeUnlocked
   } = useGameStore();
   
+  // Convert purchasedTrustLevels to an array of numbers
+  const purchasedLevelsAsNumbers = purchasedTrustLevels.map(level => Number(level));
+  
   const [expanded, setExpanded] = useState(false);
 
   // Trust upgrade levels with costs that scale by 5x each level
@@ -114,11 +117,7 @@ export default function TrustUpgradesPanel() {
               // Enhanced check for purchased status using multiple comparison methods
               const levelAsNumber = Number(upgrade.level);
               const levelAsString = String(upgrade.level);
-              const isPurchased = 
-                purchasedTrustLevels.includes(levelAsNumber) || 
-                purchasedTrustLevels.includes(levelAsString) ||
-                purchasedTrustLevels.some(l => Number(l) === levelAsNumber) ||
-                purchasedTrustLevels.some(l => String(l) === levelAsString);
+              const isPurchased = purchasedLevelsAsNumbers.includes(levelAsNumber);
               
               return (
                 <div 
@@ -155,11 +154,7 @@ export default function TrustUpgradesPanel() {
                         // Check if the level is already purchased using multiple methods
                         const levelAsNumber = Number(upgrade.level);
                         const levelAsString = String(upgrade.level);
-                        const isAlreadyPurchased = 
-                          purchasedTrustLevels.includes(levelAsNumber) || 
-                          purchasedTrustLevels.includes(levelAsString) ||
-                          purchasedTrustLevels.some(l => Number(l) === levelAsNumber) ||
-                          purchasedTrustLevels.some(l => String(l) === levelAsString);
+                        const isAlreadyPurchased = purchasedLevelsAsNumbers.includes(levelAsNumber);
                         
                         if (isAlreadyPurchased) {
                           // Force refresh the UI to show the purchase status

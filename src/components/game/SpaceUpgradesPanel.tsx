@@ -35,7 +35,7 @@ export default function SpaceUpgradesPanel() {
       effectValue: 1.5,
       icon: '🏭',
       repeatable: true, // Made repeatable
-      repeatCountDisplay: (count) => `Lvl ${count}`,
+      repeatCountDisplay: (count: number) => `Lvl ${count}`,
       costMultiplier: 2.5 // Cost increases by 2.5x each purchase
     },
     {
@@ -47,7 +47,7 @@ export default function SpaceUpgradesPanel() {
       effectValue: 1.25,
       icon: '🤖',
       repeatable: true, // Made repeatable
-      repeatCountDisplay: (count) => `Lvl ${count}`,
+      repeatCountDisplay: (count: number) => `Lvl ${count}`,
       costMultiplier: 2.0 // Cost increases by 2x each purchase
     },
     {
@@ -109,7 +109,7 @@ export default function SpaceUpgradesPanel() {
       effectValue: 1.5,
       icon: '🛡️',
       repeatable: true,
-      repeatCountDisplay: (count) => `Lvl ${count}`,
+      repeatCountDisplay: (count: number) => `Lvl ${count}`,
       costMultiplier: 2.0 // Cost increases by 2x each purchase
     },
     {
@@ -131,7 +131,7 @@ export default function SpaceUpgradesPanel() {
       effectValue: 2.0,
       icon: '🧠',
       repeatable: true,
-      repeatCountDisplay: (count) => `Lvl ${count}`,
+      repeatCountDisplay: (count: number) => `Lvl ${count}`,
       costMultiplier: 2.2 // Cost increases by 2.2x each purchase
     }
   ];
@@ -168,7 +168,7 @@ export default function SpaceUpgradesPanel() {
       <div className="space-y-2">
         {upgradeDefinitions.map(upgrade => {
           // Count how many times this upgrade has been purchased (for repeatable upgrades)
-          const purchaseCount = unlockedSpaceUpgrades?.filter(id => id === upgrade.id).length || 0;
+          const purchaseCount = unlockedSpaceUpgrades?.filter((id: string) => id === upgrade.id).length || 0;
           const isUnlocked = purchaseCount > 0;
           const isRepeatable = upgrade.repeatable === true;
           
@@ -230,7 +230,7 @@ export default function SpaceUpgradesPanel() {
                   <p>{upgrade.description}</p>
                   {isRepeatable && isUnlocked && (
                     <p className="text-blue-300 mt-1">
-                      Level {purchaseCount}{purchaseCount > 1 ? ` (${(upgrade.effectValue - 1) * 100 * purchaseCount}% total bonus)` : ''}
+                      Level {purchaseCount}{purchaseCount > 1 ? ` (${(Number(upgrade.effectValue) - 1) * 100 * purchaseCount}% total bonus)` : ''}
                     </p>
                   )}
                   {(!isUnlocked || isRepeatable) && !canAfford && (

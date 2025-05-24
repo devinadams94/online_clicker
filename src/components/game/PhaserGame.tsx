@@ -51,8 +51,8 @@ export default function PhaserGame() {
             
             // Force garbage collection on WebGL context
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-            if (gl) {
-              gl.getExtension('WEBGL_lose_context')?.loseContext();
+            if (gl && 'getExtension' in gl) {
+              (gl as WebGLRenderingContext).getExtension('WEBGL_lose_context')?.loseContext();
             }
           }
         });
