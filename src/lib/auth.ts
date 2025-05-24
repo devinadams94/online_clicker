@@ -58,6 +58,7 @@ export const authOptions: NextAuthOptions = {
   secret: NEXTAUTH_SECRET,
   pages: {
     signIn: "/login",
+    signOut: "/",
   },
   callbacks: {
     async session({ session, token }) {
@@ -71,6 +72,22 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
       }
       return token;
+    },
+    async redirect({ url, baseUrl }) {
+      // If we're on the production domain, redirect to paper-clips.com
+      if (baseUrl.includes('paper-clips.com')) {
+        if (url.startsWith('/')) {
+          return `https://paper-clips.com${url}`;
+        }
+        if (url.startsWith('https://paper-clips.com')) {
+          return url;
+        }
+        return 'https://paper-clips.com/';
+      }
+      // For development, use the default behavior
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
+      if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     }
   },
   debug: true,

@@ -104,7 +104,12 @@ export default function Header() {
                     {/* Account Actions */}
                     <div className="border-t border-gray-200 dark:border-gray-700">
                       <button
-                        onClick={() => signOut({ callbackUrl: "/" })}
+                        onClick={() => {
+                          const domain = typeof window !== 'undefined' && window.location.hostname.includes('paper-clips.com') 
+                            ? "https://paper-clips.com/" 
+                            : "/";
+                          signOut({ callbackUrl: domain });
+                        }}
                         className="flex w-full items-center text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
