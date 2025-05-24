@@ -60,7 +60,7 @@ export default function ResourcesPanel() {
         
         <div className="card bg-white dark:bg-gray-800 p-3">
           <div className="text-sm text-gray-600 dark:text-gray-400">Per Second</div>
-          <div className="text-2xl font-bold">{clicks_per_second.toFixed(1)}</div>
+          <div className="text-2xl font-bold">{(clicks_per_second / 10).toFixed(1)}</div>
         </div>
       </div>
       

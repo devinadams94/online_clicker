@@ -64,7 +64,7 @@ export default function ProductionMetricsPanel() {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Production Rate</p>
-              <p className="font-medium">{formatNumber(clicks_per_second)}/sec</p>
+              <p className="font-medium">{formatNumber(clicks_per_second / 10)}/sec</p>
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Revenue Rate</p>

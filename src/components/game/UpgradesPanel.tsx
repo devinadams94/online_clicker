@@ -120,7 +120,7 @@ export default function UpgradesPanel() {
             <h3 className="text-lg font-semibold mb-2">Autoclippers</h3>
             <div className="flex justify-between text-sm mb-2">
               <span>Owned: {autoclippers}</span>
-              <span>Production: {clicks_per_second.toFixed(1)}/sec</span>
+              <span>Production: {(clicks_per_second / 10).toFixed(1)}/sec</span>
             </div>
             <p className="text-sm mb-4">
               Autoclippers make paperclips for you automatically at a rate of 1 clip per second each.
