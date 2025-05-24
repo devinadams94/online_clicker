@@ -149,6 +149,7 @@ export interface GameState {
   creativityUnlocked: boolean;
   unlockedOpsUpgrades: string[];
   unlockedCreativityUpgrades: string[];
+  unlockedMemoryUpgrades: string[]; // Track purchased memory upgrades
   upgradeCosts: Record<string, number>; // Store the costs of upgrades
   
   // Unlockable Features
@@ -157,6 +158,7 @@ export interface GameState {
   // Space Age
   spaceAgeUnlocked: boolean;
   spaceStats: SpaceStats;
+  unlockedSpaceResearch: string[];
   
   // Meta
   lastSaved?: Date;

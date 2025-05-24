@@ -131,17 +131,17 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
       return;
     }
     
-    // Changed to use regular paperclips instead of Aerograde paperclips
-    const probeCost = 50000;
+    // Use aerograde paperclips for probes (5 aerograde = 50,000 regular)
+    const probeCost = 5;
     
-    if (state.paperclips < probeCost) {
+    if ((state.aerogradePaperclips || 0) < probeCost) {
       return;
     }
     
-    // Create new probe and deduct paperclips
+    // Create new probe and deduct aerograde paperclips
     set({
       probes: state.probes + 1,
-      paperclips: state.paperclips - probeCost
+      aerogradePaperclips: (state.aerogradePaperclips || 0) - probeCost
     });
   },
   
@@ -149,8 +149,13 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
   spaceTick: () => {
     const state = get();
     
-    // Skip if space age not unlocked or no probes
-    if (!state.spaceAgeUnlocked || state.probes <= 0) {
+    // Skip if space age not unlocked
+    if (!state.spaceAgeUnlocked) {
+      return;
+    }
+    
+    // Skip most processing if no probes
+    if (state.probes <= 0) {
       return;
     }
     
@@ -231,21 +236,32 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
     const wireConsumed = actualPaperclipsProduced;
     
     // Probe self-replication - create new probes based on self-replication stat
-    // Add randomness to probe self-replication - each probe has a chance to replicate based on the stat
-    // This is separate from the exponential growth
+    // Use statistical approach instead of looping through each probe for better performance
     let newProbes = 0;
-    const replicationChance = Math.min(0.05, state.spaceStats.selfReplication * 0.005); // Cap at 5% per tick
+    // Greatly reduced replication chance - was 0.005, now 0.0001 (50x slower)
+    const replicationChance = Math.min(0.001, state.spaceStats.selfReplication * 0.0001); // Cap at 0.1% per tick
     
-    // Each probe has a chance to replicate each tick
-    for (let i = 0; i < state.probes; i++) {
-      if (Math.random() < replicationChance) {
+    // Calculate expected new probes statistically instead of looping
+    if (state.probes > 100) {
+      // For large numbers, use statistical expectation
+      newProbes = Math.floor(state.probes * replicationChance);
+      // Add some randomness
+      if (Math.random() < (state.probes * replicationChance) % 1) {
         newProbes++;
+      }
+    } else {
+      // For small numbers, keep the loop
+      for (let i = 0; i < state.probes; i++) {
+        if (Math.random() < replicationChance) {
+          newProbes++;
+        }
       }
     }
     
     // Add a small base rate of probe replication based on self-replication stat
     // This provides a small but steady growth rate
-    newProbes += Math.floor(state.probes * state.spaceStats.selfReplication * 0.0005);
+    // Reduced from 0.0005 to 0.00001 (50x slower)
+    newProbes += Math.floor(state.probes * state.spaceStats.selfReplication * 0.00001);
     
     // Calculate exploration rate based on probes, speed and exploration stats, with exploration speed multiplier
     const explorationRate = 
@@ -359,11 +375,12 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
       // Set drone replication cost if not already set
       const droneReplicationCost = state.droneReplicationCostPerDrone || 1000; // Default cost per drone
       
-      // Get bodies that are being harvested
-      const harvestedBodies = updatedCelestialBodies.filter((body: CelestialBody) => body.isBeingHarvested);
-      
-      // Process each harvested body
-      harvestedBodies.forEach(body => {
+      // Get bodies that are being harvested - only if we have celestial bodies
+      if (updatedCelestialBodies.length > 0) {
+        const harvestedBodies = updatedCelestialBodies.filter((body: CelestialBody) => body.isBeingHarvested);
+        
+        // Process each harvested body
+        harvestedBodies.forEach(body => {
         // Determine how many resources can be harvested this tick
         const resourceExtractor = state.unlockedSpaceUpgrades?.includes('resourceExtraction') ? 3 : 1;
         const miningRate = 0.05 * resourceExtractor; // 5% of resources per tick, tripled with extractor
@@ -400,51 +417,60 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
           }
         }
       });
+      }
     }
     
-    // Apply all changes
-    set({
-      // Update probes count with self-replication (only probes self-replicate)
-      probes: state.probes + newProbes,
-      
-      // Update harvester counts
-      wireHarvesters: newWireHarvesters,
-      oreHarvesters: newOreHarvesters,
-      ...(state.autoDrones ? {
-        factories: factoriesNew,
-      } : {}),
-      
-      // Initialize drone replication cost if not set
-      droneReplicationCostPerDrone: state.droneReplicationCostPerDrone || 1000,
-      droneReplicationEnabled: state.droneReplicationEnabled || false,
-      
-      // Update space resource values - ensure values are initialized properly
-      spaceMatter: currentSpaceMatter - actualOreMined,
-      spaceOre: Math.max(0, availableOre - oreConsumed),
-      spaceWire: Math.max(0, availableWire - wireConsumed),
-      
-      // Update planets and celestial bodies
-      discoveredPlanets: updatedPlanets,
-      currentPlanetIndex: currentPlanetIndex,
-      discoveredCelestialBodies: updatedCelestialBodies,
-      
-      // Update resource productions (per second values)
-      // These were being multiplied by 10 but not actually being used as per-second values
-      // Fixed to correctly represent the per-second production
-      spaceWirePerSecond: actualWireProduced,
-      spaceOrePerSecond: actualOreMined,
-      spacePaperclipsPerSecond: actualPaperclipsProduced,
-      
-      // Add produced paperclips to global total and track Aerograde paperclips
-      paperclips: state.paperclips + actualPaperclipsProduced,
-      aerogradePaperclips: (state.aerogradePaperclips || 0) + actualPaperclipsProduced - 
-        // Deduct Aerograde paperclips used for drone replication
+    // Only update state if something actually changed
+    const updates: Partial<GameState> = {};
+    
+    // Update probes if changed
+    if (newProbes > 0) {
+      updates.probes = state.probes + newProbes;
+    }
+    
+    // Update harvesters if changed
+    if (newWireHarvesters !== wireHarvestersNew) {
+      updates.wireHarvesters = newWireHarvesters;
+    }
+    if (newOreHarvesters !== oreHarvestersNew) {
+      updates.oreHarvesters = newOreHarvesters;
+    }
+    
+    // Update resources if changed
+    if (actualOreMined > 0) {
+      updates.spaceMatter = currentSpaceMatter - actualOreMined;
+      updates.spaceOre = Math.max(0, availableOre - oreConsumed);
+      updates.spaceOrePerSecond = actualOreMined;
+    }
+    if (actualWireProduced > 0) {
+      updates.spaceWire = Math.max(0, availableWire - wireConsumed);
+      updates.spaceWirePerSecond = actualWireProduced;
+    }
+    if (actualPaperclipsProduced > 0) {
+      updates.spacePaperclipsPerSecond = actualPaperclipsProduced;
+      updates.paperclips = state.paperclips + actualPaperclipsProduced;
+      updates.aerogradePaperclips = (state.aerogradePaperclips || 0) + actualPaperclipsProduced - 
         (resourcesHarvested && state.droneReplicationEnabled ? 
-          ((newWireHarvesters - wireHarvestersNew) + (newOreHarvesters - oreHarvestersNew)) * (state.droneReplicationCostPerDrone || 1000) : 0),
-      
-      // Update universe exploration (cap at 100%)
-      universeExplored: newUniverseExplored
-    });
+          ((newWireHarvesters - wireHarvestersNew) + (newOreHarvesters - oreHarvestersNew)) * (state.droneReplicationCostPerDrone || 1000) : 0);
+    }
+    
+    // Update planets/bodies only if changed
+    if (updatedPlanets.length !== discoveredPlanets.length || currentPlanet?.matter !== currentSpaceMatter) {
+      updates.discoveredPlanets = updatedPlanets;
+    }
+    if (updatedCelestialBodies.length !== (state.discoveredCelestialBodies || []).length) {
+      updates.discoveredCelestialBodies = updatedCelestialBodies;
+    }
+    
+    // Update exploration if changed
+    if (newUniverseExplored !== state.universeExplored) {
+      updates.universeExplored = newUniverseExplored;
+    }
+    
+    // Only call set if there are actual updates
+    if (Object.keys(updates).length > 0) {
+      set(updates);
+    }
   },
   
   // Update space age upgrade stat function to use yomi instead of trust
@@ -665,7 +691,7 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
     }
   },
 
-  // Launch a new wire harvester drone - costs 100,000 paperclips, scaling by 5% per purchase
+  // Launch a new wire harvester drone - costs 10 aerograde paperclips, scaling by 1.25% per purchase
   launchWireHarvester: () => {
     const state = get();
     
@@ -674,23 +700,23 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
       return;
     }
     
-    // Calculate cost (starting at 100,000 + 5% per existing harvester)
-    const baseCost = 100000;
-    const scaleFactor = Math.pow(1.05, state.wireHarvesters); // 5% exponential growth
+    // Calculate cost (starting at 10 aerograde + 1.25% per existing harvester)
+    const baseCost = 10;
+    const scaleFactor = Math.pow(1.0125, state.wireHarvesters); // 1.25% exponential growth (reduced from 5%)
     const currentCost = Math.floor(baseCost * scaleFactor);
     
-    if (state.paperclips < currentCost) {
+    if ((state.aerogradePaperclips || 0) < currentCost) {
       return;
     }
     
-    // Create new harvester and deduct paperclips
+    // Create new harvester and deduct aerograde paperclips
     set({
       wireHarvesters: state.wireHarvesters + 1,
-      paperclips: state.paperclips - currentCost
+      aerogradePaperclips: (state.aerogradePaperclips || 0) - currentCost
     });
   },
   
-  // Launch a new ore harvester drone - costs 100,000 paperclips, scaling by 5% per purchase
+  // Launch a new ore harvester drone - costs 10 aerograde paperclips, scaling by 1.25% per purchase
   launchOreHarvester: () => {
     const state = get();
     
@@ -699,23 +725,23 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
       return;
     }
     
-    // Calculate cost (starting at 100,000 + 5% per existing harvester)
-    const baseCost = 100000;
-    const scaleFactor = Math.pow(1.05, state.oreHarvesters); // 5% exponential growth
+    // Calculate cost (starting at 10 aerograde + 1.25% per existing harvester)
+    const baseCost = 10;
+    const scaleFactor = Math.pow(1.0125, state.oreHarvesters); // 1.25% exponential growth (reduced from 5%)
     const currentCost = Math.floor(baseCost * scaleFactor);
     
-    if (state.paperclips < currentCost) {
+    if ((state.aerogradePaperclips || 0) < currentCost) {
       return;
     }
     
-    // Create new harvester and deduct paperclips
+    // Create new harvester and deduct aerograde paperclips
     set({
       oreHarvesters: state.oreHarvesters + 1,
-      paperclips: state.paperclips - currentCost
+      aerogradePaperclips: (state.aerogradePaperclips || 0) - currentCost
     });
   },
   
-  // Build a new space factory - costs 1,000,000 paperclips, scaling by 5% per purchase
+  // Build a new space factory - costs 100 aerograde paperclips, scaling by 1.25% per purchase
   buildFactory: () => {
     const state = get();
     
@@ -724,19 +750,19 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
       return;
     }
     
-    // Calculate cost (starting at 1,000,000 + 5% per existing factory)
-    const baseCost = 1000000;
-    const scaleFactor = Math.pow(1.05, state.factories); // 5% exponential growth
+    // Calculate cost (starting at 100 aerograde + 1.25% per existing factory)
+    const baseCost = 100;
+    const scaleFactor = Math.pow(1.0125, state.factories); // 1.25% exponential growth (reduced from 5%)
     const currentCost = Math.floor(baseCost * scaleFactor);
     
-    if (state.paperclips < currentCost) {
+    if ((state.aerogradePaperclips || 0) < currentCost) {
       return;
     }
     
-    // Create new factory and deduct paperclips
+    // Create new factory and deduct aerograde paperclips
     set({
       factories: state.factories + 1,
-      paperclips: state.paperclips - currentCost
+      aerogradePaperclips: (state.aerogradePaperclips || 0) - currentCost
     });
   },
   

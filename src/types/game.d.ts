@@ -154,6 +154,7 @@ export interface GameState {
   creativityUnlocked: boolean;
   unlockedOpsUpgrades: string[];
   unlockedCreativityUpgrades: string[];
+  unlockedMemoryUpgrades: string[]; // Track purchased memory upgrades
   unlockedSpaceUpgrades?: string[];
   upgradeCosts: Record<string, number>; // Store the costs of upgrades
   

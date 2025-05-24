@@ -186,6 +186,41 @@ export async function GET() {
       parsedCreativityUpgrades = [];
     }
     
+    // Parse memory upgrades with validation
+    let parsedMemoryUpgrades: string[] = [];
+    try {
+      console.log("Processing unlockedMemoryUpgrades...");
+      console.log("- Raw unlockedMemoryUpgrades from database:", gameState.unlockedMemoryUpgrades);
+      
+      if (gameState.unlockedMemoryUpgrades) {
+        try {
+          const parsed = JSON.parse(gameState.unlockedMemoryUpgrades);
+          
+          // Validate the parsed result
+          if (Array.isArray(parsed)) {
+            // Filter out any non-string values and ensure uniqueness
+            parsedMemoryUpgrades = [...new Set(parsed.filter(item => typeof item === 'string'))];
+            console.log("- Successfully parsed unlockedMemoryUpgrades:", parsedMemoryUpgrades);
+          } else {
+            console.warn("- Parsed unlockedMemoryUpgrades is not an array:", parsed);
+            parsedMemoryUpgrades = [];
+          }
+        } catch (parseErr) {
+          console.error("- Error parsing unlockedMemoryUpgrades JSON:", parseErr);
+          parsedMemoryUpgrades = [];
+        }
+      } else {
+        console.log("- No unlockedMemoryUpgrades found in database");
+        parsedMemoryUpgrades = [];
+      }
+      
+      console.log("- Final unlockedMemoryUpgrades to return:", parsedMemoryUpgrades);
+    } catch (err) {
+      console.error("- Error in unlockedMemoryUpgrades processing:", err);
+      console.error("- Raw value:", gameState.unlockedMemoryUpgrades);
+      parsedMemoryUpgrades = [];
+    }
+    
     // Parse upgrade costs with enhanced validation and error handling
     try {
       console.log("Raw upgradeCosts from database:", gameState.upgradeCosts);
@@ -311,6 +346,7 @@ export async function GET() {
       unlockedTrustAbilities: parsedUnlockedTrustAbilities,
       unlockedOpsUpgrades: parsedOpsUpgrades,
       unlockedCreativityUpgrades: parsedCreativityUpgrades,
+      unlockedMemoryUpgrades: parsedMemoryUpgrades,
       // Add the parsed upgrade costs
       upgradeCosts: parsedUpgradeCosts,
       // Add space age fields with defaults

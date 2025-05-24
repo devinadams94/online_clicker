@@ -30,7 +30,11 @@ export default function UpgradesPanel() {
     productionMultiplier,
     buyMegaClipper,
     opsProductionMultiplier,
-    prestigeRewards
+    prestigeRewards,
+    memory,
+    memoryMax,
+    buyMemoryUpgrade,
+    unlockedMemoryUpgrades
   } = useGameStore();
 
   const [showSettings, setShowSettings] = useState(false);
@@ -52,6 +56,46 @@ export default function UpgradesPanel() {
   
   // Stock market unlock cost
   const stockMarketCost = 50000;
+  
+  // Memory upgrades definitions
+  const memoryUpgrades = [
+    { 
+      id: 'efficientProcessing', 
+      name: 'Efficient Processing', 
+      cost: 2, 
+      description: 'Increase memory regeneration rate by 20%' 
+    },
+    { 
+      id: 'parallelThinking', 
+      name: 'Parallel Thinking', 
+      cost: 3, 
+      description: 'Double OPs production rate' 
+    },
+    { 
+      id: 'quantumMemory', 
+      name: 'Quantum Memory', 
+      cost: 5, 
+      description: 'Increase memory capacity by 50%' 
+    },
+    { 
+      id: 'neuralCache', 
+      name: 'Neural Cache', 
+      cost: 4, 
+      description: 'Boost research speed by 50%' 
+    },
+    { 
+      id: 'hyperThreading', 
+      name: 'Hyper-Threading', 
+      cost: 6, 
+      description: 'Add +2 to production multiplier' 
+    },
+    { 
+      id: 'memoryOverclock', 
+      name: 'Memory Overclock', 
+      cost: 8, 
+      description: 'Triple memory regeneration rate' 
+    }
+  ];
   
   // Check if player has enough money to buy upgrades
   const canBuyAutoclipper = money >= autoclipper_cost;
@@ -289,6 +333,50 @@ export default function UpgradesPanel() {
               </div>
             )}
           </div>
+          
+          {/* Memory Upgrades Section */}
+          {memory > 0 && (
+            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <h3 className="text-lg font-semibold mb-2">Memory Upgrades</h3>
+              <div className="flex justify-between text-sm mb-2">
+                <span>Current Memory: {memory.toFixed(1)}/{memoryMax}</span>
+              </div>
+              <div className="space-y-2 mt-3">
+                {memoryUpgrades.map(upgrade => {
+                  const isUnlocked = unlockedMemoryUpgrades.includes(upgrade.id);
+                  const canAfford = memory >= upgrade.cost;
+                  
+                  return (
+                    <div 
+                      key={upgrade.id} 
+                      className={`p-2 rounded-lg border ${isUnlocked 
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                        : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'}`}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <h4 className="font-medium text-sm">{upgrade.name}</h4>
+                        <span className={`text-sm ${canAfford ? 'text-blue-600 font-bold' : 'text-gray-500'}`}>
+                          {upgrade.cost} Memory
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{upgrade.description}</p>
+                      {isUnlocked ? (
+                        <span className="text-green-600 text-xs">✓ Purchased</span>
+                      ) : (
+                        <button
+                          className={`w-full btn btn-sm ${canAfford ? 'btn-primary' : 'bg-gray-300 cursor-not-allowed'} text-xs`}
+                          onClick={() => buyMemoryUpgrade(upgrade.id, upgrade.cost)}
+                          disabled={!canAfford}
+                        >
+                          Purchase
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

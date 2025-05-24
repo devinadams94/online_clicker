@@ -27,6 +27,7 @@ import SpaceStatsPanel from "./SpaceStatsPanel";
 import SpaceLaunchPanel from "./SpaceLaunchPanel";
 import SpaceResourcesPanel from "./SpaceResourcesPanel";
 import SpaceUpgradesPanel from "./SpaceUpgradesPanel";
+import SpaceResearchPanel from "./SpaceResearchPanel";
 import SpaceCombatPanel from "./SpaceCombatPanel";
 import SpaceControlPanel from "./SpaceControlPanel";
 import PrestigePanel from "./PrestigePanel";
@@ -362,19 +363,27 @@ export default function GameInterface() {
   // Tick function to update the game state every 100ms
   useEffect(() => {
     const interval = setInterval(() => {
-      tick();          // Production tick (generates paperclips)
-      marketTick();    // Market tick (sells paperclips)
-      researchTick();  // Research tick (generates research points)
-      stockMarketTick(); // Stock market tick (generates returns)
-      statsTick();     // Stats tick (regenerates memory)
-      
-      // Call spaceTick if it exists
-      if (typeof spaceTick === 'function') {
-        spaceTick();   // Space tick (handles probes and space resources)
+      // If space age is unlocked, only run space-related ticks
+      if (spaceAgeUnlocked) {
+        // Only run space tick and stats tick (for memory regen)
+        statsTick();     // Stats tick (regenerates memory)
+        stockMarketTick(); // Stock market tick (bots continue trading in space age)
+        
+        // Call spaceTick if it exists
+        if (typeof spaceTick === 'function') {
+          spaceTick();   // Space tick (handles probes and space resources)
+        }
+      } else {
+        // Run normal game ticks only if space age is not unlocked
+        tick();          // Production tick (generates paperclips)
+        marketTick();    // Market tick (sells paperclips)
+        researchTick();  // Research tick (generates research points)
+        stockMarketTick(); // Stock market tick (generates returns)
+        statsTick();     // Stats tick (regenerates memory)
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [tick, marketTick, researchTick, stockMarketTick, statsTick, spaceTick]);
+  }, [tick, marketTick, researchTick, stockMarketTick, statsTick, spaceTick, spaceAgeUnlocked]);
 
   // Save game state periodically
   const saveGameState = useCallback(async () => {
@@ -1616,6 +1625,17 @@ export default function GameInterface() {
           // Apply the game state using type assertion - we're adding defaults for missing fields
           setGameState(gameData as GameState);
           
+          // If space age is unlocked, ensure autoclippers are 0
+          if (gameData.spaceAgeUnlocked) {
+            console.log("Space Age is unlocked, ensuring autoclippers are disabled");
+            useGameStore.setState({
+              autoclippers: 0,
+              megaClippers: 0,
+              clicks_per_second: 0,
+              productionMultiplier: 0
+            });
+          }
+          
           // Display offline progress notification if applicable
           if (offlineProgressApplied) {
             // This could be implemented with a toast notification or modal
@@ -1676,18 +1696,20 @@ export default function GameInterface() {
   // Navigation items
   const navItems = [
     { id: 'game', name: 'Game', always: true },
-    { id: 'upgrades', name: 'Upgrades', always: true },
-    { id: 'research', name: 'Research', always: true },
+    { id: 'upgrades', name: 'Upgrades', hideWhenSpaceUnlocked: true },
+    { id: 'research', name: 'Research', hideWhenSpaceUnlocked: true },
     { id: 'metrics', name: 'Metrics', requireMetricsUnlock: true },
     { id: 'stock', name: 'Stock Market', requireStockUnlock: true },
     { id: 'space', name: 'Space Age', requireSpaceUnlock: true },
+    { id: 'spaceupgrades', name: 'Space Upgrades', requireSpaceUnlock: true },
+    { id: 'spaceresearch', name: 'Space Research', requireSpaceUnlock: true },
     { id: 'prestige', name: 'Prestige', always: true }
   ];
   
   // Debug log for unlockable features
-  console.log("Stock market unlocked status:", stockMarketUnlocked);
-  console.log("Space Age unlocked status:", spaceAgeUnlocked);
-  console.log("Metrics unlocked status:", metricsUnlocked);
+  // console.log("Stock market unlocked status:", stockMarketUnlocked);
+  // console.log("Space Age unlocked status:", spaceAgeUnlocked);
+  // console.log("Metrics unlocked status:", metricsUnlocked);
 
   // Render page content based on currentPage
   const renderPage = () => {
@@ -1738,7 +1760,6 @@ export default function GameInterface() {
               {/* Space stats panel - takes 1/3 of the width */}
               <div>
                 <SpaceStatsPanel />
-                <SpaceUpgradesPanel />
               </div>
             </div>
           </div>
@@ -1820,9 +1841,108 @@ export default function GameInterface() {
           </div>
         );
         
+      case 'spaceupgrades':
+        if (!spaceAgeUnlocked) {
+          // Redirect to game page if space age is not unlocked
+          setTimeout(() => {
+            setCurrentPage('game');
+          }, 0);
+          
+          return (
+            <div className="min-h-screen p-4 bg-gray-900 text-white flex flex-col items-center justify-center">
+              <div className="text-6xl mb-4">🔒</div>
+              <h1 className="text-3xl font-bold mb-4 text-red-400">Space Age Not Unlocked</h1>
+              <p className="text-gray-300 mb-6 max-w-xl text-center">
+                You need to unlock the Space Age upgrade first.
+              </p>
+              <button 
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                onClick={() => setCurrentPage('game')}
+              >
+                Return to Game
+              </button>
+            </div>
+          );
+        }
+        
+        return (
+          <div className="min-h-screen p-4 bg-gray-900 text-white">
+            <h1 className="text-3xl font-bold mb-6 text-blue-400">Space Upgrades</h1>
+            <p className="text-gray-300 mb-6 max-w-4xl">
+              Enhance your space capabilities with advanced technologies and upgrades.
+            </p>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main upgrade panels - takes 2/3 of the width */}
+              <div className="lg:col-span-2">
+                <SpaceUpgradesPanel />
+              </div>
+              
+              {/* Stats panels - takes 1/3 of the width */}
+              <div className="space-y-6">
+                <SpaceStatsPanel />
+                <StatsPanel />
+              </div>
+            </div>
+          </div>
+        );
+        
+      case 'spaceresearch':
+        if (!spaceAgeUnlocked) {
+          // Redirect to game page if space age is not unlocked
+          setTimeout(() => {
+            setCurrentPage('game');
+          }, 0);
+          
+          return (
+            <div className="min-h-screen p-4 bg-gray-900 text-white flex flex-col items-center justify-center">
+              <div className="text-6xl mb-4">🔒</div>
+              <h1 className="text-3xl font-bold mb-4 text-red-400">Space Age Not Unlocked</h1>
+              <p className="text-gray-300 mb-6 max-w-xl text-center">
+                You need to unlock the Space Age upgrade first.
+              </p>
+              <button 
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                onClick={() => setCurrentPage('game')}
+              >
+                Return to Game
+              </button>
+            </div>
+          );
+        }
+        
+        return (
+          <div className="min-h-screen p-4 bg-gray-900 text-white">
+            <h1 className="text-3xl font-bold mb-6 text-blue-400">Space Research</h1>
+            <p className="text-gray-300 mb-6 max-w-4xl">
+              Unlock advanced space technologies to enhance your cosmic empire.
+            </p>
+            
+            <div className="max-w-6xl mx-auto">
+              <SpaceResearchPanel />
+            </div>
+          </div>
+        );
+        
       case 'game':
       default:
-        // Regular UI (no special space age content here anymore, just standard game UI)
+        // If space age is unlocked, redirect to space page
+        if (spaceAgeUnlocked) {
+          // Automatically switch to space page
+          setTimeout(() => {
+            setCurrentPage('space');
+          }, 0);
+          return (
+            <div className="flex min-h-screen items-center justify-center">
+              <div className="text-center">
+                <div className="animate-pulse h-32 w-32 bg-secondary-200 rounded-full mb-4 mx-auto"></div>
+                <p className="text-gray-500">Entering Space Age...</p>
+              </div>
+            </div>
+          );
+        }
+        
+        // Regular UI for pre-space age
         return (
           <div className="flex flex-col md:flex-row min-h-screen p-4 gap-4">
             <div className="flex-1 flex flex-col gap-4">
@@ -1864,6 +1984,9 @@ export default function GameInterface() {
             {/* Left side - Primary navigation items */}
             <div className="flex space-x-1 md:space-x-4">
               {primaryNavItems.map(item => {
+                // Hide items when space age is unlocked if specified
+                if (item.hideWhenSpaceUnlocked && spaceAgeUnlocked) return null;
+                
                 return (
                   <button
                     key={item.id}
@@ -1881,6 +2004,9 @@ export default function GameInterface() {
               {/* Desktop view - Show secondary nav items directly */}
               <div className="hidden md:flex md:space-x-4">
                 {secondaryNavItems.map(item => {
+                  // Hide items when space age is unlocked if specified
+                  if (item.hideWhenSpaceUnlocked && spaceAgeUnlocked) return null;
+                  
                   // Hide Stock Market tab if it's not unlocked
                   if (item.requireStockUnlock && !stockMarketUnlocked) return null;
                   
@@ -1920,6 +2046,9 @@ export default function GameInterface() {
                 {mobileMenuOpen && (
                   <div className="absolute right-4 mt-2 w-48 bg-gray-800 rounded-md shadow-lg z-10 py-1 ring-1 ring-black ring-opacity-5">
                     {secondaryNavItems.map(item => {
+                      // Hide items when space age is unlocked if specified
+                      if (item.hideWhenSpaceUnlocked && spaceAgeUnlocked) return null;
+                      
                       // Hide Stock Market tab if it's not unlocked
                       if (item.requireStockUnlock && !stockMarketUnlocked) return null;
                       

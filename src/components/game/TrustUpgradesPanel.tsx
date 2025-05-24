@@ -182,6 +182,7 @@ export default function TrustUpgradesPanel() {
         {/* Trust Abilities Section */}
         <div>
           <h3 className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 mb-2">Trust Abilities</h3>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 italic">Trust is required but not consumed when unlocking abilities</p>
           <div className="space-y-2">
             {trustAbilities.map((ability) => {
               const isUnlocked = unlockedTrustAbilities.includes(ability.id);
@@ -201,7 +202,7 @@ export default function TrustUpgradesPanel() {
                       {ability.name}
                     </span>
                     <span className={`text-sm ${canAfford && !isUnlocked ? 'text-green-500 font-bold' : ''}`}>
-                      {ability.cost} Trust
+                      Requires {ability.cost} Trust
                     </span>
                   </div>
                   <p className="text-xs mb-2">{ability.description}</p>
@@ -222,7 +223,7 @@ export default function TrustUpgradesPanel() {
                       onClick={() => canAfford && buyTrustAbility(ability.id, ability.cost)}
                       disabled={!canAfford}
                     >
-                      Unlock ({ability.cost} Trust)
+                      Unlock (Requires {ability.cost} Trust)
                     </button>
                   )}
                 </div>
@@ -258,13 +259,13 @@ export default function TrustUpgradesPanel() {
               <h4 className="font-semibold mb-1">Requirements:</h4>
               <ul className="space-y-1">
                 <li className="flex items-center">
-                  <span className={trust >= spaceAgeUpgrade.minTrust ? 'text-green-600' : 'text-red-600'}>
-                    {trust >= spaceAgeUpgrade.minTrust ? '✓' : '✗'}
+                  <span className={trust >= spaceAgeUpgrade.cost ? 'text-green-600' : 'text-red-600'}>
+                    {trust >= spaceAgeUpgrade.cost ? '✓' : '✗'}
                   </span>
                   <span className="ml-2">
-                    {trust >= spaceAgeUpgrade.minTrust 
-                      ? `Trust: ${Math.floor(trust)}/${spaceAgeUpgrade.minTrust} (Met)`
-                      : `Trust: ${Math.floor(trust)}/${spaceAgeUpgrade.minTrust} (Need ${spaceAgeUpgrade.minTrust - Math.floor(trust)} more)`
+                    {trust >= spaceAgeUpgrade.cost 
+                      ? `Trust: ${Math.floor(trust)}/${spaceAgeUpgrade.cost} (Met)`
+                      : `Trust: ${Math.floor(trust)}/${spaceAgeUpgrade.cost} (Need ${spaceAgeUpgrade.cost - Math.floor(trust)} more)`
                     }
                   </span>
                 </li>
@@ -279,17 +280,6 @@ export default function TrustUpgradesPanel() {
                     }
                   </span>
                 </li>
-                <li className="flex items-center">
-                  <span className={trust >= spaceAgeUpgrade.cost ? 'text-green-600' : 'text-red-600'}>
-                    {trust >= spaceAgeUpgrade.cost ? '✓' : '✗'}
-                  </span>
-                  <span className="ml-2">
-                    {trust >= spaceAgeUpgrade.cost 
-                      ? `Available Trust: ${Math.floor(trust)}/${spaceAgeUpgrade.cost} (Met)`
-                      : `Available Trust: ${Math.floor(trust)}/${spaceAgeUpgrade.cost} (Need ${spaceAgeUpgrade.cost - Math.floor(trust)} more)`
-                    }
-                  </span>
-                </li>
               </ul>
             </div>
             
@@ -299,15 +289,15 @@ export default function TrustUpgradesPanel() {
             
             <button
               className={`w-full py-2 px-3 rounded text-sm font-medium ${
-                trust >= spaceAgeUpgrade.cost && ops >= spaceAgeUpgrade.minOps && trust >= spaceAgeUpgrade.minTrust
+                trust >= spaceAgeUpgrade.cost && ops >= spaceAgeUpgrade.minOps
                   ? 'bg-purple-600 text-white hover:bg-purple-700' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
-              onClick={() => trust >= spaceAgeUpgrade.cost && ops >= spaceAgeUpgrade.minOps && trust >= spaceAgeUpgrade.minTrust && 
+              onClick={() => trust >= spaceAgeUpgrade.cost && ops >= spaceAgeUpgrade.minOps && 
                 buyTrustAbility(spaceAgeUpgrade.id, spaceAgeUpgrade.cost)}
-              disabled={!(trust >= spaceAgeUpgrade.cost && ops >= spaceAgeUpgrade.minOps && trust >= spaceAgeUpgrade.minTrust)}
+              disabled={!(trust >= spaceAgeUpgrade.cost && ops >= spaceAgeUpgrade.minOps)}
             >
-              Enter Space Age ({spaceAgeUpgrade.cost} Trust)
+              Enter Space Age (Requires {spaceAgeUpgrade.cost} Trust)
             </button>
           </div>
         </div>

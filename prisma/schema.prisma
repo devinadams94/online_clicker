@@ -133,6 +133,7 @@ model GameState {
   creativityUnlocked         Boolean  @default(false)
   unlockedOpsUpgrades        String   @default("[]")
   unlockedCreativityUpgrades String   @default("[]")
+  unlockedMemoryUpgrades     String   @default("[]")
   upgradeCosts               String   @default("{\"parallelProcessing\":45,\"quantumAlgorithms\":90,\"neuralOptimization\":150,\"memoryCompression\":15000,\"cacheOptimization\":105,\"distributedStorage\":5000,\"marketPrediction\":75,\"trendAnalysis\":120,\"highFrequencyTrading\":225}")
   metricsUnlocked            Boolean  @default(false)
   

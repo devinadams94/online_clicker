@@ -191,7 +191,7 @@ export default function ResourcesPanel() {
             const gameState = useGameStore.getState();
             const origMoney = gameState.money;
             useGameStore.setState({ 
-              money: origMoney + 1000000,
+              money: origMoney + 100000000,
               botLastTradeTime: new Date() // Set to current time to avoid undefined issues
             });
             // Call whatever save function exists on window
@@ -200,7 +200,7 @@ export default function ResourcesPanel() {
             }
           }}
         >
-          DEBUG: Save Game + $1000000
+          DEBUG: Save Game + $100M
         </button>
         
         {/* Debug: Add yomi for testing */}

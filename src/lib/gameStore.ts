@@ -1301,11 +1301,11 @@ const useGameStore = create<GameStore>(
           };
         }),
         
-      // Set the risk threshold for trading bots (0.1=10%, 0.2=20%, 0.3=30%)
+      // Set the risk threshold for trading bots (0.1=10%, 0.2=20%, 0.3=30%, 0.5=50%)
       setBotRiskThreshold: (threshold: number) =>
         set((state: GameState) => {
-          // Validate inputs - ensure threshold is between 0.1 and 0.3
-          const safeThreshold = Math.max(0.1, Math.min(0.3, Number(threshold) || 0.1));
+          // Validate inputs - ensure threshold is between 0.1 and 0.5
+          const safeThreshold = Math.max(0.1, Math.min(0.5, Number(threshold) || 0.1));
           
           console.log(`Setting bot risk threshold: ${state.botRiskThreshold} -> ${safeThreshold}`);
           
@@ -2036,14 +2036,18 @@ const useGameStore = create<GameStore>(
                           sellPercentage = 0.5;
                           console.log(`Bot selling half position of ${stock.symbol}: Price at peak with ${(profitPercentage * 100).toFixed(1)}% profit`);
                         }
-                      } else if (profitPercentage >= riskThreshold * 1.5) {
-                        // Very high profit even without a peak - sell everything
+                      } else if (profitPercentage >= riskThreshold * 2.0) {
+                        // Very high profit - sell everything
                         sellPercentage = 1.0;
-                        console.log(`Bot selling entire position of ${stock.symbol}: High profit ${(profitPercentage * 100).toFixed(1)}% exceeds threshold ${(riskThreshold * 100 * 1.5).toFixed(1)}%`);
+                        console.log(`Bot selling entire position of ${stock.symbol}: High profit ${(profitPercentage * 100).toFixed(1)}% exceeds ${(riskThreshold * 200).toFixed(0)}%`);
+                      } else if (profitPercentage >= riskThreshold * 1.5) {
+                        // Good profit - sell most of it
+                        sellPercentage = 0.8;
+                        console.log(`Bot selling 80% of ${stock.symbol}: Good profit ${(profitPercentage * 100).toFixed(1)}% exceeds ${(riskThreshold * 150).toFixed(0)}%`);
                       } else if (profitPercentage >= riskThreshold) {
-                        // Above threshold but not at peak - sell a smaller amount
-                        sellPercentage = 0.3;
-                        console.log(`Bot selling 30% of ${stock.symbol}: Profit ${(profitPercentage * 100).toFixed(1)}% meets threshold but price not at peak`);
+                        // At threshold - sell half to realize profits
+                        sellPercentage = 0.5;
+                        console.log(`Bot selling 50% of ${stock.symbol}: Profit ${(profitPercentage * 100).toFixed(1)}% meets ${(riskThreshold * 100).toFixed(0)}% threshold`);
                       }
                     } else {
                       // Only sell at a loss if the stock has a strong downward trend (cut losses)
@@ -2197,8 +2201,11 @@ const useGameStore = create<GameStore>(
         
       // Get available stocks
       getStocks: () => {
-        // Predefined list of stocks
-        const stocks: Stock[] = [
+        const state = get();
+        const isSpaceAge = state.spaceAgeUnlocked;
+        
+        // Base stocks always available
+        let stocks: Stock[] = [
           {
             id: 'PAPR',
             name: 'PaperTech Inc.',
@@ -2281,8 +2288,90 @@ const useGameStore = create<GameStore>(
           }
         ];
         
+        // Add space-age stocks when space age is unlocked
+        if (isSpaceAge) {
+          const spaceStocks: Stock[] = [
+            {
+              id: 'SPAX',
+              name: 'SpaceX Industries',
+              symbol: 'SPAX',
+              price: 500.00,
+              previousPrice: 485.00,
+              volatility: 0.25,
+              trend: 0.03,
+              volume: 25000,
+              lastUpdate: new Date(),
+              trendDirection: 1,
+              trendStrength: 0.7,
+              trendStartTime: new Date(),
+              trendDuration: 0
+            },
+            {
+              id: 'QUAN',
+              name: 'Quantum Computing Corp',
+              symbol: 'QUAN',
+              price: 750.00,
+              previousPrice: 720.00,
+              volatility: 0.35,
+              trend: 0.04,
+              volume: 15000,
+              lastUpdate: new Date(),
+              trendDirection: 1,
+              trendStrength: 0.8,
+              trendStartTime: new Date(),
+              trendDuration: 0
+            },
+            {
+              id: 'NANO',
+              name: 'Nanotechnology Solutions',
+              symbol: 'NANO',
+              price: 300.00,
+              previousPrice: 295.00,
+              volatility: 0.20,
+              trend: 0.02,
+              volume: 35000,
+              lastUpdate: new Date(),
+              trendDirection: 1,
+              trendStrength: 0.5,
+              trendStartTime: new Date(),
+              trendDuration: 0
+            },
+            {
+              id: 'AERO',
+              name: 'Aerograde Materials',
+              symbol: 'AERO',
+              price: 1200.00,
+              previousPrice: 1180.00,
+              volatility: 0.30,
+              trend: 0.025,
+              volume: 8000,
+              lastUpdate: new Date(),
+              trendDirection: 1,
+              trendStrength: 0.6,
+              trendStartTime: new Date(),
+              trendDuration: 0
+            },
+            {
+              id: 'PROB',
+              name: 'Probe Dynamics',
+              symbol: 'PROB',
+              price: 850.00,
+              previousPrice: 840.00,
+              volatility: 0.28,
+              trend: 0.015,
+              volume: 12000,
+              lastUpdate: new Date(),
+              trendDirection: 1,
+              trendStrength: 0.4,
+              trendStartTime: new Date(),
+              trendDuration: 0
+            }
+          ];
+          
+          stocks = [...stocks, ...spaceStocks];
+        }
+        
         // Get current stock data from state
-        const state = get();
         const stockPriceHistory = state.stockPriceHistory;
         const stockTrendData = state.stockTrendData || {}; // Get saved trend data if available
         
@@ -3399,15 +3488,29 @@ const useGameStore = create<GameStore>(
         // This provides a reasonable growth curve where early resets give fewer points
         const basePaperclips = state.paperclips + (state.lifetimePaperclips || 0);
         
-        // Base formula - can be adjusted for balance
-        let prestigePoints = Math.floor(Math.sqrt(basePaperclips / 1000000));
+        // Include aerograde paperclips (worth 10,000x regular paperclips for prestige calculation)
+        const aerogradePaperclips = state.aerogradePaperclips || 0;
+        const aerogradeValue = aerogradePaperclips * 10000;
         
-        // Min 1 point if they have at least 1 million paperclips
-        if (basePaperclips >= 1000000 && prestigePoints < 1) {
+        const totalValue = basePaperclips + aerogradeValue;
+        
+        // Base formula - can be adjusted for balance
+        let prestigePoints = Math.floor(Math.sqrt(totalValue / 1000000));
+        
+        // Bonus points for space age achievements
+        if (state.spaceAgeUnlocked && aerogradePaperclips > 0) {
+          // Additional points for space age progression
+          const spaceBonus = Math.floor(Math.sqrt(aerogradePaperclips / 100)); // 1 point per 10,000 aerograde paperclips
+          prestigePoints += spaceBonus;
+          console.log(`Space age bonus: ${spaceBonus} points from ${aerogradePaperclips} aerograde paperclips`);
+        }
+        
+        // Min 1 point if they have at least 1 million total value
+        if (totalValue >= 1000000 && prestigePoints < 1) {
           prestigePoints = 1;
         }
         
-        console.log(`Calculating prestige points: ${prestigePoints} from ${basePaperclips} paperclips`);
+        console.log(`Calculating prestige points: ${prestigePoints} from ${basePaperclips} paperclips + ${aerogradePaperclips} aerograde (${totalValue} total value)`);
         return prestigePoints;
       },
       

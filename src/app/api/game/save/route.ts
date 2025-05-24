@@ -518,6 +518,43 @@ export async function POST(req: Request) {
             
             return JSON.stringify(upgradesList);
           })(),
+          // Save memory upgrades with validation
+          unlockedMemoryUpgrades: (() => {
+            console.log("Memory upgrades received from client:", body.unlockedMemoryUpgrades);
+            console.log("Memory upgrades type:", typeof body.unlockedMemoryUpgrades);
+            
+            let upgradesList: string[] = [];
+            
+            try {
+              // Handle different data types
+              if (Array.isArray(body.unlockedMemoryUpgrades)) {
+                console.log("Processing unlockedMemoryUpgrades as direct array");
+                upgradesList = [...body.unlockedMemoryUpgrades];
+              } else if (typeof body.unlockedMemoryUpgrades === 'string') {
+                // Try to parse as JSON
+                try {
+                  const parsed = JSON.parse(body.unlockedMemoryUpgrades);
+                  if (Array.isArray(parsed)) {
+                    console.log("Processing unlockedMemoryUpgrades as parsed string");
+                    upgradesList = [...parsed];
+                  } else {
+                    console.warn("Parsed unlockedMemoryUpgrades is not an array, using empty array");
+                  }
+                } catch (err) {
+                  console.error("Failed to parse unlockedMemoryUpgrades string:", err);
+                }
+              } else {
+                console.warn("unlockedMemoryUpgrades is neither array nor string, using empty array");
+              }
+              
+              const result = JSON.stringify(upgradesList);
+              console.log("Final unlockedMemoryUpgrades string to save:", result);
+              return result;
+            } catch (err) {
+              console.error("Error processing unlockedMemoryUpgrades:", err);
+              return '[]';
+            }
+          })(),
           // Save upgrade costs with enhanced validation and preprocessing
           upgradeCosts: (() => {
             console.log("Upgrade costs received from client:", body.upgradeCosts);

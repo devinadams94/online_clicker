@@ -19,7 +19,8 @@ export default function SpaceLaunchPanel() {
     launchOreHarvester,
     buildFactory,
     spaceAgeUnlocked,
-    paperclips
+    paperclips,
+    aerogradePaperclips
   } = useGameStore();
   
   // Format numbers with appropriate suffixes
@@ -35,7 +36,7 @@ export default function SpaceLaunchPanel() {
   const calculateBulkCost = (baseCost: number, currentCount: number, amount: number) => {
     let totalCost = 0;
     for (let i = 0; i < amount; i++) {
-      const scaleFactor = Math.pow(1.05, currentCount + i);
+      const scaleFactor = Math.pow(1.0125, currentCount + i); // Changed from 1.05 to 1.0125
       totalCost += Math.floor(baseCost * scaleFactor);
     }
     return totalCost;
@@ -56,17 +57,17 @@ export default function SpaceLaunchPanel() {
   // Bulk purchase functions
   const bulkLaunchWireHarvesters = (amount: number) => {
     // Check if player can afford the bulk purchase
-    const baseCost = 100000; // Base cost for wire harvesters
+    const baseCost = 10; // Base cost for wire harvesters in aerograde
     const totalCost = calculateBulkCost(baseCost, wireHarvesters, amount);
     
-    if (paperclips < totalCost) {
+    if ((aerogradePaperclips || 0) < totalCost) {
       return;
     }
     
     // Update state directly with the new count and reduced paperclips
     useGameStore.setState({
       wireHarvesters: wireHarvesters + amount,
-      paperclips: paperclips - totalCost
+      aerogradePaperclips: (aerogradePaperclips || 0) - totalCost
     });
     
     // Save the game state
@@ -75,17 +76,17 @@ export default function SpaceLaunchPanel() {
   
   const bulkLaunchOreHarvesters = (amount: number) => {
     // Check if player can afford the bulk purchase
-    const baseCost = 100000; // Base cost for ore harvesters
+    const baseCost = 10; // Base cost for ore harvesters in aerograde
     const totalCost = calculateBulkCost(baseCost, oreHarvesters, amount);
     
-    if (paperclips < totalCost) {
+    if ((aerogradePaperclips || 0) < totalCost) {
       return;
     }
     
     // Update state directly with the new count and reduced paperclips
     useGameStore.setState({
       oreHarvesters: oreHarvesters + amount,
-      paperclips: paperclips - totalCost
+      aerogradePaperclips: (aerogradePaperclips || 0) - totalCost
     });
     
     // Save the game state
@@ -94,17 +95,17 @@ export default function SpaceLaunchPanel() {
   
   const bulkBuildFactories = (amount: number) => {
     // Check if player can afford the bulk purchase
-    const baseCost = 1000000; // Base cost for factories
+    const baseCost = 100; // Base cost for factories in aerograde
     const totalCost = calculateBulkCost(baseCost, factories, amount);
     
-    if (paperclips < totalCost) {
+    if ((aerogradePaperclips || 0) < totalCost) {
       return;
     }
     
     // Update state directly with the new count and reduced paperclips
     useGameStore.setState({
       factories: factories + amount,
-      paperclips: paperclips - totalCost
+      aerogradePaperclips: (aerogradePaperclips || 0) - totalCost
     });
     
     // Save the game state
@@ -127,20 +128,20 @@ export default function SpaceLaunchPanel() {
   
   // Calculate current costs with 5% scaling per purchase
   const getWireHarvesterCost = () => {
-    const baseCost = 100000;
-    const scaleFactor = Math.pow(1.05, wireHarvesters);
+    const baseCost = 10; // 10 aerograde
+    const scaleFactor = Math.pow(1.0125, wireHarvesters);
     return Math.floor(baseCost * scaleFactor);
   };
   
   const getOreHarvesterCost = () => {
-    const baseCost = 100000;
-    const scaleFactor = Math.pow(1.05, oreHarvesters);
+    const baseCost = 10; // 10 aerograde
+    const scaleFactor = Math.pow(1.0125, oreHarvesters);
     return Math.floor(baseCost * scaleFactor);
   };
   
   const getFactoryCost = () => {
-    const baseCost = 1000000;
-    const scaleFactor = Math.pow(1.05, factories);
+    const baseCost = 100; // 100 aerograde
+    const scaleFactor = Math.pow(1.0125, factories);
     return Math.floor(baseCost * scaleFactor);
   };
   
@@ -195,22 +196,22 @@ export default function SpaceLaunchPanel() {
         </div>
         <p className="text-xs text-gray-300 mb-3">
           Automated spacecraft that explore the universe and self-replicate based on your exploration and self-replication stats.
-          <span className="block mt-1 font-semibold text-cyan-300">Cost: 50,000 paperclips</span>
+          <span className="block mt-1 font-semibold text-cyan-300">Cost: 5 aerograde paperclips</span>
         </p>
         <button
           className={`w-full py-2 px-3 rounded ${
-            paperclips >= 50000 
+            (aerogradePaperclips || 0) >= 5 
               ? 'bg-cyan-600 hover:bg-cyan-700 text-white' 
               : 'bg-gray-600 text-gray-300 cursor-not-allowed'
           }`}
           onClick={() => makeProbe()}
-          disabled={paperclips < 50000}
+          disabled={(aerogradePaperclips || 0) < 5}
         >
           Launch Probe
         </button>
-        {paperclips < 50000 && (
+        {(aerogradePaperclips || 0) < 5 && (
           <p className="text-xs text-red-400 mt-2 text-center">
-            Not enough paperclips (have {formatNumber(paperclips)}/50,000)
+            Not enough aerograde paperclips (have {formatNumber(aerogradePaperclips || 0)}/5)
           </p>
         )}
       </div>
@@ -223,46 +224,46 @@ export default function SpaceLaunchPanel() {
         <div className="mb-3">
           <div className="flex justify-between items-center mb-1">
             <span className="text-sm">Space Wire Production Drone</span>
-            <span className="text-xs text-blue-300">Cost: {formatNumber(getWireHarvesterCost())} paperclips</span>
+            <span className="text-xs text-blue-300">Cost: {formatNumber(getWireHarvesterCost())} aerograde</span>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <button
               className={`py-2 px-3 rounded text-sm ${
-                paperclips >= getWireHarvesterCost() 
+                (aerogradePaperclips || 0) >= getWireHarvesterCost() 
                   ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                   : 'bg-gray-600 text-gray-300 cursor-not-allowed'
               }`}
               onClick={() => launchWireHarvester()}
-              disabled={paperclips < getWireHarvesterCost()}
+              disabled={(aerogradePaperclips || 0) < getWireHarvesterCost()}
             >
               Launch 1
             </button>
             <button
               className={`py-2 px-3 rounded text-sm ${
-                paperclips >= calculateBulkCost(100000, wireHarvesters, 100)
+                (aerogradePaperclips || 0) >= calculateBulkCost(10, wireHarvesters, 100)
                   ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                   : 'bg-gray-600 text-gray-300 cursor-not-allowed'
               }`}
               onClick={() => bulkLaunchWireHarvesters(100)}
-              disabled={paperclips < calculateBulkCost(100000, wireHarvesters, 100)}
+              disabled={(aerogradePaperclips || 0) < calculateBulkCost(10, wireHarvesters, 100)}
             >
               Launch 100
             </button>
             <button
               className={`py-2 px-3 rounded text-sm ${
-                paperclips >= calculateBulkCost(100000, wireHarvesters, 1000)
+                (aerogradePaperclips || 0) >= calculateBulkCost(10, wireHarvesters, 1000)
                   ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                   : 'bg-gray-600 text-gray-300 cursor-not-allowed'
               }`}
               onClick={() => bulkLaunchWireHarvesters(1000)}
-              disabled={paperclips < calculateBulkCost(100000, wireHarvesters, 1000)}
+              disabled={(aerogradePaperclips || 0) < calculateBulkCost(10, wireHarvesters, 1000)}
             >
               Launch 1000
             </button>
           </div>
-          {paperclips < getWireHarvesterCost() && (
+          {(aerogradePaperclips || 0) < getWireHarvesterCost() && (
             <p className="text-xs text-red-400 mt-1 text-center">
-              Need {formatNumber(getWireHarvesterCost() - paperclips)} more paperclips
+              Need {formatNumber(getWireHarvesterCost() - (aerogradePaperclips || 0))} more aerograde
             </p>
           )}
         </div>
@@ -271,46 +272,46 @@ export default function SpaceLaunchPanel() {
         <div className="mb-3">
           <div className="flex justify-between items-center mb-1">
             <span className="text-sm">Ore Harvester Drone</span>
-            <span className="text-xs text-amber-300">Cost: {formatNumber(getOreHarvesterCost())} paperclips</span>
+            <span className="text-xs text-amber-300">Cost: {formatNumber(getOreHarvesterCost())} aerograde</span>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <button
               className={`py-2 px-3 rounded text-sm ${
-                paperclips >= getOreHarvesterCost() 
+                (aerogradePaperclips || 0) >= getOreHarvesterCost() 
                   ? 'bg-amber-600 hover:bg-amber-700 text-white' 
                   : 'bg-gray-600 text-gray-300 cursor-not-allowed'
               }`}
               onClick={() => launchOreHarvester()}
-              disabled={paperclips < getOreHarvesterCost()}
+              disabled={(aerogradePaperclips || 0) < getOreHarvesterCost()}
             >
               Launch 1
             </button>
             <button
               className={`py-2 px-3 rounded text-sm ${
-                paperclips >= calculateBulkCost(100000, oreHarvesters, 100)
+                (aerogradePaperclips || 0) >= calculateBulkCost(10, oreHarvesters, 100)
                   ? 'bg-amber-600 hover:bg-amber-700 text-white' 
                   : 'bg-gray-600 text-gray-300 cursor-not-allowed'
               }`}
               onClick={() => bulkLaunchOreHarvesters(100)}
-              disabled={paperclips < calculateBulkCost(100000, oreHarvesters, 100)}
+              disabled={(aerogradePaperclips || 0) < calculateBulkCost(10, oreHarvesters, 100)}
             >
               Launch 100
             </button>
             <button
               className={`py-2 px-3 rounded text-sm ${
-                paperclips >= calculateBulkCost(100000, oreHarvesters, 1000)
+                (aerogradePaperclips || 0) >= calculateBulkCost(10, oreHarvesters, 1000)
                   ? 'bg-amber-600 hover:bg-amber-700 text-white' 
                   : 'bg-gray-600 text-gray-300 cursor-not-allowed'
               }`}
               onClick={() => bulkLaunchOreHarvesters(1000)}
-              disabled={paperclips < calculateBulkCost(100000, oreHarvesters, 1000)}
+              disabled={(aerogradePaperclips || 0) < calculateBulkCost(10, oreHarvesters, 1000)}
             >
               Launch 1000
             </button>
           </div>
-          {paperclips < getOreHarvesterCost() && (
+          {(aerogradePaperclips || 0) < getOreHarvesterCost() && (
             <p className="text-xs text-red-400 mt-1 text-center">
-              Need {formatNumber(getOreHarvesterCost() - paperclips)} more paperclips
+              Need {formatNumber(getOreHarvesterCost() - (aerogradePaperclips || 0))} more aerograde
             </p>
           )}
         </div>
@@ -319,46 +320,46 @@ export default function SpaceLaunchPanel() {
         <div>
           <div className="flex justify-between items-center mb-1">
             <span className="text-sm">Space Factory</span>
-            <span className="text-xs text-purple-300">Cost: {formatNumber(getFactoryCost())} paperclips</span>
+            <span className="text-xs text-purple-300">Cost: {formatNumber(getFactoryCost())} aerograde</span>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <button
               className={`py-2 px-3 rounded text-sm ${
-                paperclips >= getFactoryCost() 
+                (aerogradePaperclips || 0) >= getFactoryCost() 
                   ? 'bg-purple-600 hover:bg-purple-700 text-white' 
                   : 'bg-gray-600 text-gray-300 cursor-not-allowed'
               }`}
               onClick={() => buildFactory()}
-              disabled={paperclips < getFactoryCost()}
+              disabled={(aerogradePaperclips || 0) < getFactoryCost()}
             >
               Build 1
             </button>
             <button
               className={`py-2 px-3 rounded text-sm ${
-                paperclips >= calculateBulkCost(1000000, factories, 100)
+                (aerogradePaperclips || 0) >= calculateBulkCost(100, factories, 100)
                   ? 'bg-purple-600 hover:bg-purple-700 text-white' 
                   : 'bg-gray-600 text-gray-300 cursor-not-allowed'
               }`}
               onClick={() => bulkBuildFactories(100)}
-              disabled={paperclips < calculateBulkCost(1000000, factories, 100)}
+              disabled={(aerogradePaperclips || 0) < calculateBulkCost(100, factories, 100)}
             >
               Build 100
             </button>
             <button
               className={`py-2 px-3 rounded text-sm ${
-                paperclips >= calculateBulkCost(1000000, factories, 1000)
+                (aerogradePaperclips || 0) >= calculateBulkCost(100, factories, 1000)
                   ? 'bg-purple-600 hover:bg-purple-700 text-white' 
                   : 'bg-gray-600 text-gray-300 cursor-not-allowed'
               }`}
               onClick={() => bulkBuildFactories(1000)}
-              disabled={paperclips < calculateBulkCost(1000000, factories, 1000)}
+              disabled={(aerogradePaperclips || 0) < calculateBulkCost(100, factories, 1000)}
             >
               Build 1000
             </button>
           </div>
-          {paperclips < getFactoryCost() && (
+          {(aerogradePaperclips || 0) < getFactoryCost() && (
             <p className="text-xs text-red-400 mt-1 text-center">
-              Need {formatNumber(getFactoryCost() - paperclips)} more paperclips
+              Need {formatNumber(getFactoryCost() - (aerogradePaperclips || 0))} more aerograde
             </p>
           )}
         </div>

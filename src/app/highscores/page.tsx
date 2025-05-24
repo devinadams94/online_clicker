@@ -9,6 +9,7 @@ interface ScoreEntry {
   username: string;
   isCurrentUser: boolean;
   paperclips: number;
+  aerogradePaperclips: number;
   prestigeLevel: number;
   lastUpdated: string;
 }
@@ -29,6 +30,7 @@ export default function HighscoresPage() {
           username: "paperclipMaster",
           isCurrentUser: false,
           paperclips: 9876543210,
+          aerogradePaperclips: 1234567890,
           prestigeLevel: 12,
           lastUpdated: "2025-05-20"
         },
@@ -37,6 +39,7 @@ export default function HighscoresPage() {
           username: "clipinator",
           isCurrentUser: false,
           paperclips: 8765432109,
+          aerogradePaperclips: 987654321,
           prestigeLevel: 10,
           lastUpdated: "2025-05-19"
         },
@@ -45,6 +48,7 @@ export default function HighscoresPage() {
           username: session?.user?.name || session?.user?.email?.split('@')[0] || "current-user",
           isCurrentUser: true,
           paperclips: 7654321098,
+          aerogradePaperclips: 876543210,
           prestigeLevel: 8,
           lastUpdated: "2025-05-22"
         },
@@ -53,6 +57,7 @@ export default function HighscoresPage() {
           username: "paperWizard",
           isCurrentUser: false,
           paperclips: 6543210987,
+          aerogradePaperclips: 765432109,
           prestigeLevel: 7,
           lastUpdated: "2025-05-18"
         },
@@ -61,6 +66,7 @@ export default function HighscoresPage() {
           username: "clipsUnlimited",
           isCurrentUser: false,
           paperclips: 5432109876,
+          aerogradePaperclips: 654321098,
           prestigeLevel: 6,
           lastUpdated: "2025-05-21"
         },
@@ -69,6 +75,7 @@ export default function HighscoresPage() {
           username: "clipGoat",
           isCurrentUser: false,
           paperclips: 4321098765,
+          aerogradePaperclips: 543210987,
           prestigeLevel: 5,
           lastUpdated: "2025-05-17"
         },
@@ -77,6 +84,7 @@ export default function HighscoresPage() {
           username: "paperclipEmpire",
           isCurrentUser: false,
           paperclips: 3210987654,
+          aerogradePaperclips: 432109876,
           prestigeLevel: 4,
           lastUpdated: "2025-05-16"
         },
@@ -85,6 +93,7 @@ export default function HighscoresPage() {
           username: "infiniteClips",
           isCurrentUser: false,
           paperclips: 2109876543,
+          aerogradePaperclips: 321098765,
           prestigeLevel: 3,
           lastUpdated: "2025-05-15"
         },
@@ -93,6 +102,7 @@ export default function HighscoresPage() {
           username: "clickerKing",
           isCurrentUser: false,
           paperclips: 1098765432,
+          aerogradePaperclips: 210987654,
           prestigeLevel: 2,
           lastUpdated: "2025-05-14"
         },
@@ -101,6 +111,7 @@ export default function HighscoresPage() {
           username: "clipHoarder",
           isCurrentUser: false,
           paperclips: 987654321,
+          aerogradePaperclips: 109876543,
           prestigeLevel: 1,
           lastUpdated: "2025-05-13"
         }
@@ -152,6 +163,7 @@ export default function HighscoresPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Player</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Paperclips</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aerograde</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Prestige</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last Updated</th>
                   </tr>
@@ -183,6 +195,9 @@ export default function HighscoresPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {entry.paperclips.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {entry.aerogradePaperclips.toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {entry.prestigeLevel}
