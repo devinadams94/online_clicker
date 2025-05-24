@@ -7,10 +7,16 @@ export default function SpaceStatsPanel() {
   const {
     yomi,
     ops,
+    probes,
     spaceStats,
     upgradeStat: originalUpgradeStat,
     unlockCombat: originalUnlockCombat,
-    spaceAgeUnlocked
+    spaceAgeUnlocked,
+    // Defection system fields
+    enemyShips,
+    defectionRate,
+    totalProbesLost,
+    defectionEvents
   } = useGameStore();
   
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -200,6 +206,67 @@ export default function SpaceStatsPanel() {
       <h2 className="text-lg font-bold mb-4 flex items-center">
         <span className="text-xl mr-2">🌌</span> Space Age Stats
       </h2>
+      
+      {/* Probe Defection Status */}
+      {probes > 0 && (
+        <div className="mb-4 p-3 bg-red-900/20 border border-red-700 rounded">
+          <div 
+            className="flex justify-between items-center cursor-pointer" 
+            onClick={() => toggleSection('defection')}
+          >
+            <h3 className="font-medium text-red-300 flex items-center">
+              <span className="mr-2">⚠️</span>
+              Probe Defection Status
+            </h3>
+            <span className="text-xs text-red-400">
+              {expandedSection === 'defection' ? '▼' : '▶'}
+            </span>
+          </div>
+          
+          {expandedSection === 'defection' && (
+            <div className="mt-3 space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-gray-400">Active Probes:</span>
+                  <span className="ml-2 text-white">{probes.toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-red-400">Enemy Ships:</span>
+                  <span className="ml-2 text-red-300">{(enemyShips || 0).toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Defection Rate:</span>
+                  <span className="ml-2 text-yellow-300">{((defectionRate || 0.001) * 100).toFixed(3)}%</span>
+                </div>
+                <div>
+                  <span className="text-red-400">Total Lost:</span>
+                  <span className="ml-2 text-red-300">{(totalProbesLost || 0).toLocaleString()}</span>
+                </div>
+              </div>
+              
+              {defectionEvents && defectionEvents.length > 0 && (
+                <div className="mt-3">
+                  <h4 className="text-xs font-medium text-red-300 mb-2">Recent Events:</h4>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {defectionEvents.slice(0, 5).map((event, index) => (
+                      <div key={index} className="text-xs p-2 bg-red-900/30 rounded border-l-2 border-red-600">
+                        <div className="text-red-200">{event.description}</div>
+                        <div className="text-gray-500 text-xs mt-1">
+                          {new Date(event.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-2 text-xs text-gray-400 italic">
+                Probe defection increases with probe count. Enemy ships attack remaining probes.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       
       <div className="space-y-3">
         {statDefinitions.map(stat => {

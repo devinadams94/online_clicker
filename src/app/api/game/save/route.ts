@@ -180,6 +180,31 @@ export async function POST(req: Request) {
       const battleDifficulty = parseFloat(body.battleDifficulty || 1) || 1;
       const aerogradePaperclips = parseFloat(body.aerogradePaperclips || 0) || 0;
       
+      // Energy system fields
+      const solarArrays = parseFloat(body.solarArrays || 0) || 0;
+      const batteries = parseFloat(body.batteries || 0) || 0;
+      const energy = parseFloat(body.energy || 0) || 0;
+      const maxEnergy = parseFloat(body.maxEnergy || 0) || 0;
+      const energyPerSecond = parseFloat(body.energyPerSecond || 0) || 0;
+      
+      // Space upgrade bonus fields
+      const spaceInfrastructureBonus = parseFloat(body.spaceInfrastructureBonus || 1) || 1;
+      const passiveIncomeRate = parseFloat(body.passiveIncomeRate || 0) || 0;
+      const opsGenerationRate = parseFloat(body.opsGenerationRate || 0) || 0;
+      const creativityBonus = parseFloat(body.creativityBonus || 1) || 1;
+      const costReductionBonus = parseFloat(body.costReductionBonus || 1) || 1;
+      const diplomacyBonus = parseFloat(body.diplomacyBonus || 1) || 1;
+      const miningEfficiency = parseFloat(body.miningEfficiency || 1) || 1;
+      const droneEfficiency = parseFloat(body.droneEfficiency || 1) || 1;
+      const factoryEfficiency = parseFloat(body.factoryEfficiency || 1) || 1;
+      const explorationSpeed = parseFloat(body.explorationSpeed || 1) || 1;
+      const nanobotRepairEnabled = Boolean(body.nanobotRepairEnabled);
+      
+      // Probe defection system fields
+      const enemyShips = parseFloat(body.enemyShips || 0) || 0;
+      const defectionRate = parseFloat(body.defectionRate || 0.001) || 0.001;
+      const totalProbesLost = parseFloat(body.totalProbesLost || 0) || 0;
+      
       console.log("OPs Max being saved:", opsMax);
       console.log("Current OPs being saved:", ops);
       console.log("Yomi being saved:", yomi);
@@ -193,6 +218,14 @@ export async function POST(req: Request) {
       console.log("- Battle Difficulty:", battleDifficulty);
       console.log("- Auto Battle Enabled:", Boolean(body.autoBattleEnabled));
       console.log("- Auto Battle Unlocked:", Boolean(body.autoBattleUnlocked));
+      
+      // Log energy system fields
+      console.log("Energy system fields being saved:");
+      console.log("- Solar Arrays:", solarArrays);
+      console.log("- Batteries:", batteries);
+      console.log("- Energy:", energy);
+      console.log("- Max Energy:", maxEnergy);
+      console.log("- Energy Per Second:", energyPerSecond);
       
       // Extra debug logs for computational costs
       console.log(`CRITICAL SAVING - CPU COST: ${cpuCost}`);
@@ -235,6 +268,25 @@ export async function POST(req: Request) {
             "megaClipperCost" = ${megaClipperCost},
             "megaClippersUnlocked" = ${megaClippersUnlocked ? 1 : 0},
             "productionMultiplier" = ${productionMultiplier},
+            "solarArrays" = ${solarArrays},
+            "batteries" = ${batteries},
+            "energy" = ${energy},
+            "maxEnergy" = ${maxEnergy},
+            "energyPerSecond" = ${energyPerSecond},
+            "spaceInfrastructureBonus" = ${spaceInfrastructureBonus},
+            "passiveIncomeRate" = ${passiveIncomeRate},
+            "opsGenerationRate" = ${opsGenerationRate},
+            "creativityBonus" = ${creativityBonus},
+            "costReductionBonus" = ${costReductionBonus},
+            "diplomacyBonus" = ${diplomacyBonus},
+            "miningEfficiency" = ${miningEfficiency},
+            "droneEfficiency" = ${droneEfficiency},
+            "factoryEfficiency" = ${factoryEfficiency},
+            "explorationSpeed" = ${explorationSpeed},
+            "nanobotRepairEnabled" = ${nanobotRepairEnabled ? 1 : 0},
+            "enemyShips" = ${enemyShips},
+            "defectionRate" = ${defectionRate},
+            "totalProbesLost" = ${totalProbesLost},
             "lastSaved" = CURRENT_TIMESTAMP
         WHERE "userId" = ${session.user.id}
       `;
@@ -343,6 +395,112 @@ export async function POST(req: Request) {
               return JSON.stringify(upgradesList);
             } catch (err) {
               console.error("Error processing unlockedSpaceUpgrades:", err);
+              return "[]";
+            }
+          })(),
+          
+          // Space upgrade tracking arrays
+          unlockedMoneySpaceUpgrades: (() => {
+            try {
+              if (Array.isArray(body.unlockedMoneySpaceUpgrades)) {
+                return JSON.stringify([...new Set(body.unlockedMoneySpaceUpgrades)]);
+              } else if (typeof body.unlockedMoneySpaceUpgrades === 'string') {
+                const parsed = JSON.parse(body.unlockedMoneySpaceUpgrades);
+                return Array.isArray(parsed) ? JSON.stringify([...new Set(parsed)]) : "[]";
+              }
+              return "[]";
+            } catch (err) {
+              console.error("Error processing unlockedMoneySpaceUpgrades:", err);
+              return "[]";
+            }
+          })(),
+          unlockedOpsSpaceUpgrades: (() => {
+            try {
+              if (Array.isArray(body.unlockedOpsSpaceUpgrades)) {
+                return JSON.stringify([...new Set(body.unlockedOpsSpaceUpgrades)]);
+              } else if (typeof body.unlockedOpsSpaceUpgrades === 'string') {
+                const parsed = JSON.parse(body.unlockedOpsSpaceUpgrades);
+                return Array.isArray(parsed) ? JSON.stringify([...new Set(parsed)]) : "[]";
+              }
+              return "[]";
+            } catch (err) {
+              console.error("Error processing unlockedOpsSpaceUpgrades:", err);
+              return "[]";
+            }
+          })(),
+          unlockedCreativitySpaceUpgrades: (() => {
+            try {
+              if (Array.isArray(body.unlockedCreativitySpaceUpgrades)) {
+                return JSON.stringify([...new Set(body.unlockedCreativitySpaceUpgrades)]);
+              } else if (typeof body.unlockedCreativitySpaceUpgrades === 'string') {
+                const parsed = JSON.parse(body.unlockedCreativitySpaceUpgrades);
+                return Array.isArray(parsed) ? JSON.stringify([...new Set(parsed)]) : "[]";
+              }
+              return "[]";
+            } catch (err) {
+              console.error("Error processing unlockedCreativitySpaceUpgrades:", err);
+              return "[]";
+            }
+          })(),
+          unlockedYomiSpaceUpgrades: (() => {
+            try {
+              if (Array.isArray(body.unlockedYomiSpaceUpgrades)) {
+                return JSON.stringify([...new Set(body.unlockedYomiSpaceUpgrades)]);
+              } else if (typeof body.unlockedYomiSpaceUpgrades === 'string') {
+                const parsed = JSON.parse(body.unlockedYomiSpaceUpgrades);
+                return Array.isArray(parsed) ? JSON.stringify([...new Set(parsed)]) : "[]";
+              }
+              return "[]";
+            } catch (err) {
+              console.error("Error processing unlockedYomiSpaceUpgrades:", err);
+              return "[]";
+            }
+          })(),
+          unlockedTrustSpaceUpgrades: (() => {
+            try {
+              if (Array.isArray(body.unlockedTrustSpaceUpgrades)) {
+                return JSON.stringify([...new Set(body.unlockedTrustSpaceUpgrades)]);
+              } else if (typeof body.unlockedTrustSpaceUpgrades === 'string') {
+                const parsed = JSON.parse(body.unlockedTrustSpaceUpgrades);
+                return Array.isArray(parsed) ? JSON.stringify([...new Set(parsed)]) : "[]";
+              }
+              return "[]";
+            } catch (err) {
+              console.error("Error processing unlockedTrustSpaceUpgrades:", err);
+              return "[]";
+            }
+          })(),
+          unlockedEnergySpaceUpgrades: (() => {
+            try {
+              if (Array.isArray(body.unlockedEnergySpaceUpgrades)) {
+                return JSON.stringify([...new Set(body.unlockedEnergySpaceUpgrades)]);
+              } else if (typeof body.unlockedEnergySpaceUpgrades === 'string') {
+                const parsed = JSON.parse(body.unlockedEnergySpaceUpgrades);
+                return Array.isArray(parsed) ? JSON.stringify([...new Set(parsed)]) : "[]";
+              }
+              return "[]";
+            } catch (err) {
+              console.error("Error processing unlockedEnergySpaceUpgrades:", err);
+              return "[]";
+            }
+          })(),
+          
+          // Probe defection system fields
+          enemyShips: parseFloat(body.enemyShips || 0),
+          defectionRate: parseFloat(body.defectionRate || 0.001),
+          lastDefectionTime: body.lastDefectionTime ? new Date(body.lastDefectionTime) : new Date(),
+          totalProbesLost: parseFloat(body.totalProbesLost || 0),
+          defectionEvents: (() => {
+            try {
+              if (Array.isArray(body.defectionEvents)) {
+                return JSON.stringify(body.defectionEvents);
+              } else if (typeof body.defectionEvents === 'string') {
+                const parsed = JSON.parse(body.defectionEvents);
+                return Array.isArray(parsed) ? JSON.stringify(parsed) : "[]";
+              }
+              return "[]";
+            } catch (err) {
+              console.error("Error processing defectionEvents:", err);
               return "[]";
             }
           })(),

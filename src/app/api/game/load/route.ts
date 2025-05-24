@@ -368,6 +368,24 @@ export async function GET() {
       battleDifficulty: gameState.battleDifficulty || 1,
       // Space resources
       aerogradePaperclips: gameState.aerogradePaperclips || 0,
+      
+      // Probe defection system
+      enemyShips: gameState.enemyShips || 0,
+      defectionRate: gameState.defectionRate || 0.001,
+      lastDefectionTime: gameState.lastDefectionTime || new Date(),
+      totalProbesLost: gameState.totalProbesLost || 0,
+      defectionEvents: (() => {
+        try {
+          if (typeof gameState.defectionEvents === 'string') {
+            return JSON.parse(gameState.defectionEvents);
+          }
+          return gameState.defectionEvents || [];
+        } catch (err) {
+          console.error("Error parsing defectionEvents:", err);
+          return [];
+        }
+      })(),
+      
       // Space upgrades
       unlockedSpaceUpgrades: parsedSpaceUpgrades
     };

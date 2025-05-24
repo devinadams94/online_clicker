@@ -343,7 +343,7 @@ export default function UpgradesPanel() {
               </div>
               <div className="space-y-2 mt-3">
                 {memoryUpgrades.map(upgrade => {
-                  const isUnlocked = unlockedMemoryUpgrades.includes(upgrade.id);
+                  const isUnlocked = Array.isArray(unlockedMemoryUpgrades) && unlockedMemoryUpgrades.includes(upgrade.id);
                   const canAfford = memory >= upgrade.cost;
                   
                   return (

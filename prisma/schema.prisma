@@ -156,6 +156,41 @@ model GameState {
   battleDifficulty           Float    @default(1)
   unlockedSpaceUpgrades      String   @default("[]")
   
+  // Space upgrade tracking fields
+  unlockedMoneySpaceUpgrades       String   @default("[]")
+  unlockedOpsSpaceUpgrades         String   @default("[]")
+  unlockedCreativitySpaceUpgrades  String   @default("[]")
+  unlockedYomiSpaceUpgrades        String   @default("[]")
+  unlockedTrustSpaceUpgrades       String   @default("[]")
+  unlockedEnergySpaceUpgrades      String   @default("[]")
+  
+  // Space upgrade bonuses
+  spaceInfrastructureBonus   Float    @default(1)
+  passiveIncomeRate          Float    @default(0)
+  opsGenerationRate          Float    @default(0)
+  creativityBonus            Float    @default(1)
+  costReductionBonus         Float    @default(1)
+  diplomacyBonus             Float    @default(1)
+  miningEfficiency           Float    @default(1)
+  droneEfficiency            Float    @default(1)
+  factoryEfficiency          Float    @default(1)
+  explorationSpeed           Float    @default(1)
+  nanobotRepairEnabled       Boolean  @default(false)
+  
+  // Probe defection system fields
+  enemyShips                 Float    @default(0)
+  defectionRate              Float    @default(0.001)
+  lastDefectionTime          DateTime @default(now())
+  totalProbesLost            Float    @default(0)
+  defectionEvents            String   @default("[]")
+  
+  // Energy System fields
+  solarArrays                Float    @default(0)
+  batteries                  Float    @default(0)
+  energy                     Float    @default(0)
+  maxEnergy                  Float    @default(0)
+  energyPerSecond            Float    @default(0)
+  
   lastSaved                  DateTime @default(now())
   lastPriceUpdate            DateTime @default(now())
   user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)

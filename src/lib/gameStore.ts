@@ -111,6 +111,24 @@ interface GameStore extends GameState {
   toggleAutoBattle: () => void;
   unlockAutoBattle: () => void;
   
+  // Energy infrastructure
+  buildSolarArray: () => void;
+  buildBattery: () => void;
+  buildSolarArrayBulk: (amount: number) => void;
+  buildBatteryBulk: (amount: number) => void;
+  
+  // Debug functions
+  addAerogradePaperclips: (amount: number) => void;
+  
+  // Space upgrade purchase functions
+  buySpaceUpgrade: (id: string, cost: number) => void;
+  buyMoneySpaceUpgrade: (id: string, cost: number) => void;
+  buyOpsSpaceUpgrade: (id: string, cost: number) => void;
+  buyCreativitySpaceUpgrade: (id: string, cost: number) => void;
+  buyYomiSpaceUpgrade: (id: string, cost: number) => void;
+  buyTrustSpaceUpgrade: (id: string, cost: number) => void;
+  buyEnergySpaceUpgrade: (id: string, cost: number) => void;
+  
   // Game loop
   tick: () => void;
   marketTick: () => void;
@@ -196,11 +214,49 @@ const useGameStore = create<GameStore>(
       spaceMatter: 6e30,      // Current available matter
       spaceOre: 0,            // Stored ore
       spaceWire: 0,           // Space wire (different from regular wire)
+      aerogradePaperclips: 0, // Space age premium currency
+      
+      // Probe defection system
+      enemyShips: 0,
+      defectionRate: 0.001, // 0.1% base defection chance per probe per tick
+      lastDefectionTime: new Date(),
+      totalProbesLost: 0,
+      defectionEvents: [],
+      
+      // Energy System
+      solarArrays: 0,
+      batteries: 0,
+      energy: 0,
+      maxEnergy: 0,
+      energyPerSecond: 0,
       // Space Combat
       autoBattleEnabled: false,    // Whether auto-battle is enabled
       autoBattleUnlocked: false,   // Whether auto-battle has been unlocked
       battlesWon: 0,               // Track number of battles won
       battleDifficulty: 1,         // Difficulty multiplier for battles
+      
+      // Space upgrade tracking arrays
+      unlockedSpaceUpgrades: [],
+      unlockedMoneySpaceUpgrades: [],
+      unlockedOpsSpaceUpgrades: [],
+      unlockedCreativitySpaceUpgrades: [],
+      unlockedYomiSpaceUpgrades: [],
+      unlockedTrustSpaceUpgrades: [],
+      unlockedEnergySpaceUpgrades: [],
+      
+      // Space upgrade bonuses
+      spaceInfrastructureBonus: 1,
+      passiveIncomeRate: 0,
+      opsGenerationRate: 0,
+      creativityBonus: 1,
+      costReductionBonus: 1,
+      diplomacyBonus: 1,
+      miningEfficiency: 1,
+      droneEfficiency: 1,
+      factoryEfficiency: 1,
+      explorationSpeed: 1,
+      nanobotRepairEnabled: false,
+      honor: 0,
       
       // OPs Production Multiplier (already defined above)
       creativityUnlocked: false,
@@ -3846,6 +3902,49 @@ const useGameStore = create<GameStore>(
         spaceMatter: state.spaceMatter,
         spaceOre: state.spaceOre,
         spaceWire: state.spaceWire,
+        aerogradePaperclips: state.aerogradePaperclips,
+        
+        // Probe defection system
+        enemyShips: state.enemyShips,
+        defectionRate: state.defectionRate,
+        lastDefectionTime: state.lastDefectionTime,
+        totalProbesLost: state.totalProbesLost,
+        defectionEvents: state.defectionEvents,
+        
+        // Space upgrade tracking
+        unlockedSpaceUpgrades: state.unlockedSpaceUpgrades,
+        unlockedMoneySpaceUpgrades: state.unlockedMoneySpaceUpgrades,
+        unlockedOpsSpaceUpgrades: state.unlockedOpsSpaceUpgrades,
+        unlockedCreativitySpaceUpgrades: state.unlockedCreativitySpaceUpgrades,
+        unlockedYomiSpaceUpgrades: state.unlockedYomiSpaceUpgrades,
+        unlockedTrustSpaceUpgrades: state.unlockedTrustSpaceUpgrades,
+        unlockedEnergySpaceUpgrades: state.unlockedEnergySpaceUpgrades,
+        
+        // Space upgrade bonuses
+        spaceInfrastructureBonus: state.spaceInfrastructureBonus,
+        passiveIncomeRate: state.passiveIncomeRate,
+        opsGenerationRate: state.opsGenerationRate,
+        creativityBonus: state.creativityBonus,
+        costReductionBonus: state.costReductionBonus,
+        diplomacyBonus: state.diplomacyBonus,
+        miningEfficiency: state.miningEfficiency,
+        droneEfficiency: state.droneEfficiency,
+        factoryEfficiency: state.factoryEfficiency,
+        explorationSpeed: state.explorationSpeed,
+        nanobotRepairEnabled: state.nanobotRepairEnabled,
+        honor: state.honor,
+        battlesWon: state.battlesWon,
+        autoBattleEnabled: state.autoBattleEnabled,
+        autoBattleUnlocked: state.autoBattleUnlocked,
+        battleDifficulty: state.battleDifficulty,
+        
+        // Energy System
+        solarArrays: state.solarArrays,
+        batteries: state.batteries,
+        energy: state.energy,
+        maxEnergy: state.maxEnergy,
+        energyPerSecond: state.energyPerSecond,
+        
         opsProductionMultiplier: state.opsProductionMultiplier,
         
         // Navigation

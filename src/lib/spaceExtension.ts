@@ -206,16 +206,34 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
     let oreHarvestersNew = state.oreHarvesters;
     let factoriesNew = state.factories;
     
-    // Calculate how much ore can be mined (limited by available matter)
+    // Energy management - generate energy from solar arrays
+    const energyGenerated = (state.solarArrays || 0) * 10; // 10 energy per solar array per tick
+    const currentEnergy = state.energy || 0;
+    const maxEnergy = state.maxEnergy || 0;
+    const newEnergyAmount = Math.min(currentEnergy + energyGenerated, maxEnergy);
+    
+    // Calculate energy consumption requirements
+    const energyPerDrone = 2; // Each drone (ore/wire harvester) costs 2 energy per tick
+    const energyPerFactory = 5; // Each factory costs 5 energy per tick
+    
+    const totalDrones = state.oreHarvesters + state.wireHarvesters;
+    const totalFactories = state.factories;
+    const totalEnergyRequired = (totalDrones * energyPerDrone) + (totalFactories * energyPerFactory);
+    
+    // Determine if we have enough energy for operations
+    const hasEnoughEnergy = newEnergyAmount >= totalEnergyRequired;
+    const energyEfficiency = hasEnoughEnergy ? 1.0 : Math.max(0, newEnergyAmount / totalEnergyRequired);
+    
+    // Calculate how much ore can be mined (limited by available matter and energy)
     // Base value is 1 ore per drone per second, multiplied by mining production stat and efficiency
     // Ore harvesters were not producing enough ore - increased base production significantly
-    const potentialOreMined = state.oreHarvesters * state.spaceStats.miningProduction * 1.0 * miningEfficiency * droneEfficiency;
+    const potentialOreMined = state.oreHarvesters * state.spaceStats.miningProduction * 1.0 * miningEfficiency * droneEfficiency * energyEfficiency;
     const actualOreMined = Math.min(potentialOreMined, currentSpaceMatter);
     
     // Convert ore to wire (1 wire per 1 ore)
     // Base value is 1 wire per drone per second, multiplied by wire production stat and efficiency
     // Wire harvesters were not producing enough wire - increased base production
-    const potentialWireProduced = state.wireHarvesters * state.spaceStats.wireProduction * 1.0 * droneEfficiency;
+    const potentialWireProduced = state.wireHarvesters * state.spaceStats.wireProduction * 1.0 * droneEfficiency * energyEfficiency;
     // Initialize spaceOre if it doesn't exist
     const currentOre = typeof state.spaceOre === 'number' ? state.spaceOre : 0;
     const availableOre = currentOre + actualOreMined;
@@ -228,7 +246,7 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
     const availableWire = currentWire + actualWireProduced;
     
     // Base value is 1 paperclip per factory per second, modified by factory production stat and efficiency
-    const potentialPaperclipsProduced = state.factories * state.spaceStats.factoryProduction * 1.0 * factoryEfficiency;
+    const potentialPaperclipsProduced = state.factories * state.spaceStats.factoryProduction * 1.0 * factoryEfficiency * energyEfficiency;
     // Each wire makes 1 paperclip
     const maxPaperclipsFromWire = availableWire;
     const actualPaperclipsProduced = Math.min(potentialPaperclipsProduced, maxPaperclipsFromWire);
@@ -262,6 +280,108 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
     // This provides a small but steady growth rate
     // Reduced from 0.0005 to 0.00001 (50x slower)
     newProbes += Math.floor(state.probes * state.spaceStats.selfReplication * 0.00001);
+    
+    // Probe defection and enemy ship system
+    let probesDefected = 0;
+    let probesDestroyed = 0;
+    let newEnemyShips = state.enemyShips || 0;
+    let defectionEvent = null;
+    
+    // Base defection rate increases with probe count (overcrowding effect)
+    const baseDefectionRate = state.defectionRate || 0.001;
+    const overcrowdingMultiplier = 1 + Math.log10(Math.max(1, state.probes)) * 0.1;
+    const adjustedDefectionRate = Math.min(0.05, baseDefectionRate * overcrowdingMultiplier); // Cap at 5%
+    
+    // Check for probe defections (only if we have probes)
+    if (state.probes > 0) {
+      // Calculate defections statistically for better performance
+      if (state.probes > 50) {
+        // For large numbers, use statistical expectation
+        const expectedDefections = state.probes * adjustedDefectionRate;
+        probesDefected = Math.floor(expectedDefections);
+        // Add randomness for fractional part
+        if (Math.random() < (expectedDefections % 1)) {
+          probesDefected++;
+        }
+      } else {
+        // For small numbers, check each probe
+        for (let i = 0; i < state.probes; i++) {
+          if (Math.random() < adjustedDefectionRate) {
+            probesDefected++;
+          }
+        }
+      }
+    }
+    
+    // Enemy ships attack remaining probes
+    if (newEnemyShips > 0 && state.probes > probesDefected) {
+      // Each enemy ship has a chance to destroy a probe each tick
+      const attackRate = 0.1; // 10% chance per enemy ship per tick
+      const remainingProbes = state.probes - probesDefected;
+      
+      if (newEnemyShips > 20) {
+        // Statistical approach for large numbers
+        const expectedDestructions = Math.min(remainingProbes, newEnemyShips * attackRate);
+        probesDestroyed = Math.floor(expectedDestructions);
+        if (Math.random() < (expectedDestructions % 1)) {
+          probesDestroyed++;
+        }
+      } else {
+        // Individual checks for smaller numbers
+        for (let i = 0; i < newEnemyShips && probesDestroyed < remainingProbes; i++) {
+          if (Math.random() < attackRate) {
+            probesDestroyed++;
+          }
+        }
+      }
+    }
+    
+    // Defected probes become enemy ships
+    newEnemyShips += probesDefected;
+    
+    // Create defection event if significant activity occurred
+    if (probesDefected > 0 || probesDestroyed > 0) {
+      const totalLoss = probesDefected + probesDestroyed;
+      let description = '';
+      
+      if (probesDefected > 0 && probesDestroyed > 0) {
+        description = `${probesDefected} probe(s) defected to enemy forces, ${probesDestroyed} probe(s) destroyed in combat. Enemy fleet grows stronger.`;
+      } else if (probesDefected > 0) {
+        description = `${probesDefected} probe(s) went rogue and joined enemy forces. Defection rate: ${(adjustedDefectionRate * 100).toFixed(2)}%`;
+      } else if (probesDestroyed > 0) {
+        description = `Enemy ships destroyed ${probesDestroyed} probe(s) in surprise attacks.`;
+      }
+      
+      defectionEvent = {
+        timestamp: new Date(),
+        probesDefected,
+        probesDestroyed,
+        description
+      };
+    }
+    
+    // Enemy ships occasionally get destroyed or leave (attrition)
+    if (newEnemyShips > 0) {
+      const attritionRate = 0.02; // 2% chance per enemy ship per tick
+      let enemiesLost = 0;
+      
+      if (newEnemyShips > 50) {
+        // Statistical approach
+        const expectedLosses = newEnemyShips * attritionRate;
+        enemiesLost = Math.floor(expectedLosses);
+        if (Math.random() < (expectedLosses % 1)) {
+          enemiesLost++;
+        }
+      } else {
+        for (let i = 0; i < newEnemyShips; i++) {
+          if (Math.random() < attritionRate) {
+            enemiesLost++;
+          }
+        }
+      }
+      
+      newEnemyShips = Math.max(0, newEnemyShips - enemiesLost);
+    }
     
     // Calculate exploration rate based on probes, speed and exploration stats, with exploration speed multiplier
     const explorationRate = 
@@ -423,9 +543,33 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
     // Only update state if something actually changed
     const updates: Partial<GameState> = {};
     
-    // Update probes if changed
-    if (newProbes > 0) {
-      updates.probes = state.probes + newProbes;
+    // Update energy
+    const energyConsumed = hasEnoughEnergy ? totalEnergyRequired : newEnergyAmount;
+    const finalEnergyAmount = newEnergyAmount - energyConsumed;
+    updates.energy = Math.max(0, finalEnergyAmount);
+    updates.energyPerSecond = energyGenerated;
+    
+    // Update probes considering new births, defections, and destructions
+    const totalProbeChange = newProbes - probesDefected - probesDestroyed;
+    if (totalProbeChange !== 0) {
+      updates.probes = Math.max(0, state.probes + totalProbeChange);
+    }
+    
+    // Update defection system fields
+    if (newEnemyShips !== state.enemyShips) {
+      updates.enemyShips = newEnemyShips;
+    }
+    
+    if (probesDefected > 0 || probesDestroyed > 0) {
+      updates.totalProbesLost = (state.totalProbesLost || 0) + probesDefected + probesDestroyed;
+      updates.lastDefectionTime = new Date();
+      
+      // Add defection event to history (keep last 50 events)
+      if (defectionEvent) {
+        const currentEvents = state.defectionEvents || [];
+        const updatedEvents = [defectionEvent, ...currentEvents].slice(0, 50);
+        updates.defectionEvents = updatedEvents;
+      }
     }
     
     // Update harvesters if changed
@@ -851,6 +995,236 @@ export const addSpaceFunctions = (set: (state: Partial<GameState>) => void, get:
         combat: 1
       },
       honor: 0 // Initialize honor resource
+    });
+  },
+
+  // Buy money-based space upgrades
+  buyMoneySpaceUpgrade: (id: string, cost: number) => {
+    const state = get();
+    
+    // Check if space age is unlocked
+    if (!state.spaceAgeUnlocked) {
+      return;
+    }
+    
+    // Check if player has enough money
+    if (state.money < cost) {
+      return;
+    }
+    
+    // Get the count of this upgrade already purchased (for repeatable upgrades)
+    const unlockedMoneySpaceUpgrades = state.unlockedMoneySpaceUpgrades || [];
+    const purchaseCount = unlockedMoneySpaceUpgrades.filter((upgradeId: string) => upgradeId === id).length;
+    
+    // Deduct money and add upgrade to unlocked list
+    set({
+      money: state.money - cost,
+      unlockedMoneySpaceUpgrades: [...unlockedMoneySpaceUpgrades, id]
+    });
+    
+    // Apply upgrade effects
+    switch (id) {
+      case 'spaceInfrastructure':
+        // 20% increase in all space operations per level
+        set({
+          spaceInfrastructureBonus: (state.spaceInfrastructureBonus || 1) * 1.2
+        });
+        break;
+      case 'tradingOutposts':
+        // Generate passive income - handled in game tick
+        set({
+          passiveIncomeRate: (state.passiveIncomeRate || 0) + 5000
+        });
+        break;
+      case 'researchStations':
+        // Generate operations points over time - handled in game tick
+        set({
+          opsGenerationRate: (state.opsGenerationRate || 0) + 50
+        });
+        break;
+      case 'quantumComputers':
+        // Double creativity generation
+        set({
+          creativityBonus: (state.creativityBonus || 1) * 2
+        });
+        break;
+      case 'energyHarvesters':
+        // Reduce all costs by 15%
+        set({
+          costReductionBonus: (state.costReductionBonus || 1) * 0.85
+        });
+        break;
+      case 'diplomacyNetwork':
+        // Reduce combat losses by 50%
+        set({
+          diplomacyBonus: (state.diplomacyBonus || 1) * 0.5
+        });
+        break;
+      default:
+        // No default action for unknown upgrade
+    }
+  },
+
+  // Buy OPs-based space upgrades
+  buyOpsSpaceUpgrade: (id: string, cost: number) => {
+    const state = get();
+    
+    if (!state.spaceAgeUnlocked || state.ops < cost) {
+      return;
+    }
+    
+    const unlockedOpsSpaceUpgrades = state.unlockedOpsSpaceUpgrades || [];
+    
+    set({
+      ops: state.ops - cost,
+      unlockedOpsSpaceUpgrades: [...unlockedOpsSpaceUpgrades, id]
+    });
+  },
+
+  // Buy Creativity-based space upgrades
+  buyCreativitySpaceUpgrade: (id: string, cost: number) => {
+    const state = get();
+    
+    if (!state.spaceAgeUnlocked || state.creativity < cost) {
+      return;
+    }
+    
+    const unlockedCreativitySpaceUpgrades = state.unlockedCreativitySpaceUpgrades || [];
+    
+    set({
+      creativity: state.creativity - cost,
+      unlockedCreativitySpaceUpgrades: [...unlockedCreativitySpaceUpgrades, id]
+    });
+  },
+
+  // Buy Yomi-based space upgrades
+  buyYomiSpaceUpgrade: (id: string, cost: number) => {
+    const state = get();
+    
+    if (!state.spaceAgeUnlocked || state.yomi < cost) {
+      return;
+    }
+    
+    const unlockedYomiSpaceUpgrades = state.unlockedYomiSpaceUpgrades || [];
+    
+    set({
+      yomi: state.yomi - cost,
+      unlockedYomiSpaceUpgrades: [...unlockedYomiSpaceUpgrades, id]
+    });
+  },
+
+  // Buy Trust-based space upgrades
+  buyTrustSpaceUpgrade: (id: string, cost: number) => {
+    const state = get();
+    
+    if (!state.spaceAgeUnlocked || state.trust < cost) {
+      return;
+    }
+    
+    const unlockedTrustSpaceUpgrades = state.unlockedTrustSpaceUpgrades || [];
+    
+    set({
+      trust: state.trust - cost,
+      unlockedTrustSpaceUpgrades: [...unlockedTrustSpaceUpgrades, id]
+    });
+  },
+
+  // Buy Energy-based space upgrades
+  buyEnergySpaceUpgrade: (id: string, cost: number) => {
+    const state = get();
+    
+    if (!state.spaceAgeUnlocked || state.energy < cost) {
+      return;
+    }
+    
+    const unlockedEnergySpaceUpgrades = state.unlockedEnergySpaceUpgrades || [];
+    
+    set({
+      energy: state.energy - cost,
+      unlockedEnergySpaceUpgrades: [...unlockedEnergySpaceUpgrades, id]
+    });
+  },
+
+  // Build solar array
+  buildSolarArray: () => {
+    const state = get();
+    
+    if (!state.spaceAgeUnlocked || (state.aerogradePaperclips || 0) < 1000) {
+      return;
+    }
+    
+    set({
+      aerogradePaperclips: (state.aerogradePaperclips || 0) - 1000,
+      solarArrays: (state.solarArrays || 0) + 1,
+      energyPerSecond: ((state.solarArrays || 0) + 1) * 10
+    });
+  },
+
+  // Build battery
+  buildBattery: () => {
+    const state = get();
+    
+    if (!state.spaceAgeUnlocked || (state.aerogradePaperclips || 0) < 500) {
+      return;
+    }
+    
+    set({
+      aerogradePaperclips: (state.aerogradePaperclips || 0) - 500,
+      batteries: (state.batteries || 0) + 1,
+      maxEnergy: ((state.batteries || 0) + 1) * 1000
+    });
+  },
+
+  // Build multiple solar arrays
+  buildSolarArrayBulk: (amount: number) => {
+    const state = get();
+    
+    if (!state.spaceAgeUnlocked) {
+      return;
+    }
+    
+    const totalCost = amount * 1000;
+    if ((state.aerogradePaperclips || 0) < totalCost) {
+      return;
+    }
+    
+    set({
+      aerogradePaperclips: (state.aerogradePaperclips || 0) - totalCost,
+      solarArrays: (state.solarArrays || 0) + amount,
+      energyPerSecond: ((state.solarArrays || 0) + amount) * 10
+    });
+  },
+
+  // Build multiple batteries
+  buildBatteryBulk: (amount: number) => {
+    const state = get();
+    
+    if (!state.spaceAgeUnlocked) {
+      return;
+    }
+    
+    const totalCost = amount * 500;
+    if ((state.aerogradePaperclips || 0) < totalCost) {
+      return;
+    }
+    
+    set({
+      aerogradePaperclips: (state.aerogradePaperclips || 0) - totalCost,
+      batteries: (state.batteries || 0) + amount,
+      maxEnergy: ((state.batteries || 0) + amount) * 1000
+    });
+  },
+
+  // Debug function to add aerograde paperclips
+  addAerogradePaperclips: (amount: number) => {
+    const state = get();
+    
+    if (!state.spaceAgeUnlocked) {
+      return;
+    }
+    
+    set({
+      aerogradePaperclips: (state.aerogradePaperclips || 0) + amount
     });
   }
 });

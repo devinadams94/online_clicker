@@ -49,6 +49,25 @@ export interface GameState {
   currentPlanetIndex: number;
   discoveredCelestialBodies: CelestialBody[];
   aerogradePaperclips: number;
+  
+  // Probe defection system
+  enemyShips: number;
+  defectionRate: number;
+  lastDefectionTime: Date;
+  totalProbesLost: number;
+  defectionEvents: Array<{
+    timestamp: Date;
+    probesDefected: number;
+    probesDestroyed: number;
+    description: string;
+  }>;
+  
+  // Space Energy System
+  energy: number;
+  maxEnergy: number;
+  energyPerSecond: number;
+  solarArrays: number;
+  batteries: number;
   droneReplicationEnabled: boolean; // Whether drone self-replication is enabled
   droneReplicationCostPerDrone: number; // Cost in Aerograde paperclips to replicate a drone
   autoBattleEnabled: boolean; // Whether auto-battles are enabled
@@ -159,6 +178,29 @@ export interface GameState {
   spaceAgeUnlocked: boolean;
   spaceStats: SpaceStats;
   unlockedSpaceResearch: string[];
+  unlockedSpaceUpgrades: string[];
+  unlockedMoneySpaceUpgrades: string[];
+  unlockedOpsSpaceUpgrades: string[];
+  unlockedCreativitySpaceUpgrades: string[];
+  unlockedYomiSpaceUpgrades: string[];
+  unlockedTrustSpaceUpgrades: string[];
+  unlockedEnergySpaceUpgrades: string[];
+  
+  // Space upgrade bonuses
+  spaceInfrastructureBonus: number;
+  passiveIncomeRate: number;
+  opsGenerationRate: number;
+  creativityBonus: number;
+  costReductionBonus: number;
+  diplomacyBonus: number;
+  
+  // Space upgrade efficiency multipliers
+  miningEfficiency: number;
+  droneEfficiency: number;
+  factoryEfficiency: number;
+  explorationSpeed: number;
+  nanobotRepairEnabled: boolean;
+  honor: number;
   
   // Meta
   lastSaved?: Date;

@@ -247,7 +247,10 @@ export default function SpaceLaunchPanel() {
               onClick={() => bulkLaunchWireHarvesters(100)}
               disabled={(aerogradePaperclips || 0) < calculateBulkCost(10, wireHarvesters, 100)}
             >
-              Launch 100
+              Launch 100<br/>
+              <span className="text-xs opacity-75">
+                ({formatNumber(calculateBulkCost(10, wireHarvesters, 100))})
+              </span>
             </button>
             <button
               className={`py-2 px-3 rounded text-sm ${
@@ -258,7 +261,10 @@ export default function SpaceLaunchPanel() {
               onClick={() => bulkLaunchWireHarvesters(1000)}
               disabled={(aerogradePaperclips || 0) < calculateBulkCost(10, wireHarvesters, 1000)}
             >
-              Launch 1000
+              Launch 1000<br/>
+              <span className="text-xs opacity-75">
+                ({formatNumber(calculateBulkCost(10, wireHarvesters, 1000))})
+              </span>
             </button>
           </div>
           {(aerogradePaperclips || 0) < getWireHarvesterCost() && (
@@ -295,7 +301,10 @@ export default function SpaceLaunchPanel() {
               onClick={() => bulkLaunchOreHarvesters(100)}
               disabled={(aerogradePaperclips || 0) < calculateBulkCost(10, oreHarvesters, 100)}
             >
-              Launch 100
+              Launch 100<br/>
+              <span className="text-xs opacity-75">
+                ({formatNumber(calculateBulkCost(10, oreHarvesters, 100))})
+              </span>
             </button>
             <button
               className={`py-2 px-3 rounded text-sm ${
@@ -306,7 +315,10 @@ export default function SpaceLaunchPanel() {
               onClick={() => bulkLaunchOreHarvesters(1000)}
               disabled={(aerogradePaperclips || 0) < calculateBulkCost(10, oreHarvesters, 1000)}
             >
-              Launch 1000
+              Launch 1000<br/>
+              <span className="text-xs opacity-75">
+                ({formatNumber(calculateBulkCost(10, oreHarvesters, 1000))})
+              </span>
             </button>
           </div>
           {(aerogradePaperclips || 0) < getOreHarvesterCost() && (
@@ -343,7 +355,10 @@ export default function SpaceLaunchPanel() {
               onClick={() => bulkBuildFactories(100)}
               disabled={(aerogradePaperclips || 0) < calculateBulkCost(100, factories, 100)}
             >
-              Build 100
+              Build 100<br/>
+              <span className="text-xs opacity-75">
+                ({formatNumber(calculateBulkCost(100, factories, 100))})
+              </span>
             </button>
             <button
               className={`py-2 px-3 rounded text-sm ${
@@ -354,7 +369,10 @@ export default function SpaceLaunchPanel() {
               onClick={() => bulkBuildFactories(1000)}
               disabled={(aerogradePaperclips || 0) < calculateBulkCost(100, factories, 1000)}
             >
-              Build 1000
+              Build 1000<br/>
+              <span className="text-xs opacity-75">
+                ({formatNumber(calculateBulkCost(100, factories, 1000))})
+              </span>
             </button>
           </div>
           {(aerogradePaperclips || 0) < getFactoryCost() && (
@@ -380,6 +398,10 @@ export default function SpaceLaunchPanel() {
               <span>Space Wire/sec:</span>
               <span>{formatNumber(spaceWirePerSecond)}</span>
             </div>
+            <div className="flex justify-between text-xs text-orange-300">
+              <span>Energy Required:</span>
+              <span>{formatNumber(wireHarvesters * 2)} ⚡/sec</span>
+            </div>
           </div>
           
           {/* Ore Harvesters */}
@@ -391,6 +413,10 @@ export default function SpaceLaunchPanel() {
             <div className="flex justify-between text-xs text-gray-300">
               <span>Space Ore/sec:</span>
               <span>{formatNumber(spaceOrePerSecond)}</span>
+            </div>
+            <div className="flex justify-between text-xs text-orange-300">
+              <span>Energy Required:</span>
+              <span>{formatNumber(oreHarvesters * 2)} ⚡/sec</span>
             </div>
           </div>
           
@@ -404,6 +430,18 @@ export default function SpaceLaunchPanel() {
               <span>Aerograde Paperclips/sec:</span>
               <span>{formatNumber(spacePaperclipsPerSecond)}</span>
             </div>
+            <div className="flex justify-between text-xs text-orange-300">
+              <span>Energy Required:</span>
+              <span>{formatNumber(factories * 5)} ⚡/sec</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Total Energy Requirements */}
+        <div className="mt-3 pt-2 border-t border-gray-600">
+          <div className="flex justify-between text-sm font-medium text-orange-300">
+            <span>Total Energy Required:</span>
+            <span>{formatNumber((wireHarvesters * 2) + (oreHarvesters * 2) + (factories * 5))} ⚡/sec</span>
           </div>
         </div>
       </div>
