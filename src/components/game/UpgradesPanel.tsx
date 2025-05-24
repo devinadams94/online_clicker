@@ -28,10 +28,19 @@ export default function UpgradesPanel() {
     megaClipperCost,
     megaClippersUnlocked,
     productionMultiplier,
-    buyMegaClipper
+    buyMegaClipper,
+    opsProductionMultiplier,
+    prestigeRewards
   } = useGameStore();
 
   const [showSettings, setShowSettings] = useState(false);
+
+  // Calculate total production multiplier
+  const prestigeProductionMultiplier = prestigeRewards?.productionMultiplier || 1;
+  const totalMultiplier = (productionMultiplier + (opsProductionMultiplier || 0)) * prestigeProductionMultiplier;
+  
+  // Calculate actual production per second
+  const actualProductionPerSec = autoclippers * totalMultiplier;
 
   // Calculate multiplier upgrade cost: 50 * 2^(current multiplier - 1)
   const multiplierCost = Math.floor(50 * Math.pow(2, clickMultiplier - 1));
@@ -120,10 +129,10 @@ export default function UpgradesPanel() {
             <h3 className="text-lg font-semibold mb-2">Autoclippers</h3>
             <div className="flex justify-between text-sm mb-2">
               <span>Owned: {autoclippers}</span>
-              <span>Production: {(clicks_per_second / 10).toFixed(1)}/sec</span>
+              <span>Production: {actualProductionPerSec.toFixed(1)}/sec</span>
             </div>
             <p className="text-sm mb-4">
-              Autoclippers make paperclips for you automatically at a rate of 1 clip per second each.
+              Autoclippers make paperclips for you automatically at a rate of 1 clip per second each{totalMultiplier > 1 ? ` (×${totalMultiplier.toFixed(1)} with multipliers)` : ''}.
             </p>
             <button
               className={`w-full btn ${canBuyAutoclipper ? 'btn-primary' : 'bg-gray-300 cursor-not-allowed'}`}

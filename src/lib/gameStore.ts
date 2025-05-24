@@ -391,8 +391,8 @@ const useGameStore = create<GameStore>(
         // Cost increases by 15% for each purchase
         const newCost = Math.floor(state.megaClipperCost * 1.15 * 100) / 100;
         
-        // Each mega clipper adds +5.0 to the production multiplier (increased from 1.0)
-        const newProductionMultiplier = Math.max(0.1, state.productionMultiplier + 5.0);
+        // Each mega clipper adds +1.0 to the production multiplier
+        const newProductionMultiplier = state.productionMultiplier + 1.0;
         
         // Recalculate production rate, including OPs production multiplier
         const totalMultiplier = newProductionMultiplier + (state.opsProductionMultiplier || 0);
@@ -812,11 +812,11 @@ const useGameStore = create<GameStore>(
           // Different effects based on the ability ID
           switch (id) {
             case 'trustBoost':
-              updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 2.0);
+              updatedState.productionMultiplier = state.productionMultiplier * 2.0;
               break;
             case 'wireEfficiency':
               // Each wire produces more paperclips (500% increase)
-              updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 6.0); // 1.0 + 5.0 = 6.0 (500% increase)
+              updatedState.productionMultiplier = state.productionMultiplier * 6.0; // 1.0 + 5.0 = 6.0 (500% increase)
               console.log(`Wire Efficiency upgrade: Production multiplier ${state.productionMultiplier} -> ${state.productionMultiplier * 6.0} (500% increase)`);
               break;
             case 'marketInfluence':
@@ -828,7 +828,7 @@ const useGameStore = create<GameStore>(
               updatedState.researchPointsPerSecond = state.researchPointsPerSecond * 3.0;
               break;
             case 'autoManagement':
-              updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 6.0); // 1.0 + 5.0 = 6.0 (500% increase)
+              updatedState.productionMultiplier = state.productionMultiplier * 6.0; // 1.0 + 5.0 = 6.0 (500% increase)
               updatedState.memoryRegenRate = state.memoryRegenRate * 4.0; // Quadruple memory regen
               console.log(`Auto Management upgrade: Production multiplier ${state.productionMultiplier} -> ${state.productionMultiplier * 6.0} (500% increase)`);
               console.log(`Auto Management upgrade: Memory regen ${state.memoryRegenRate} -> ${state.memoryRegenRate * 4.0} (quadrupled)`);
@@ -1113,7 +1113,7 @@ const useGameStore = create<GameStore>(
               
             // Advanced production research
             case 'nanotechnology':
-              updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 1.5);
+              updatedState.productionMultiplier = state.productionMultiplier * 1.5;
               break;
             case 'quantumEfficiency':
               // Apply 75% boost to production (keeping the 10x multiplier for 1 clip per second)
@@ -1121,13 +1121,13 @@ const useGameStore = create<GameStore>(
               updatedState.clickMultiplier = state.clickMultiplier + 3;
               break;
             case 'selfOptimization':
-              updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 2.0);
+              updatedState.productionMultiplier = state.productionMultiplier * 2.0;
               updatedState.researchPointsPerSecond = state.researchPointsPerSecond * 1.5;
               break;
             case 'swarmProduction':
               // Apply 300% boost to production (keeping the 10x multiplier for 1 clip per second)
               updatedState.clicks_per_second = state.clicks_per_second * 3.0;
-              updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 1.25);
+              updatedState.productionMultiplier = state.productionMultiplier * 1.25;
               break;
               
             // Advanced resource research
@@ -1136,12 +1136,12 @@ const useGameStore = create<GameStore>(
               break;
             case 'microAlloys':
               // Make each wire produce 2 paperclips
-              updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 1.3);
+              updatedState.productionMultiplier = state.productionMultiplier * 1.3;
               updatedState.wirePerSpool = state.wirePerSpool * 1.5;
               break;
             case 'wireRecycling':
               // Each paperclip has a chance to not consume wire
-              updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 1.8);
+              updatedState.productionMultiplier = state.productionMultiplier * 1.8;
               break;
               
             // Advanced intelligence research
@@ -3031,7 +3031,7 @@ const useGameStore = create<GameStore>(
             
             // Ensure production multiplier never goes negative
             const newProdMultiplier = state.productionMultiplier * prodMultiplier;
-            updatedState.productionMultiplier = Math.max(0.1, newProdMultiplier);
+            updatedState.productionMultiplier = newProdMultiplier;
             
             // Log for debugging
             console.log(`Neural Optimization upgrade: Production multiplier ${state.productionMultiplier} * ${prodMultiplier} = ${newProdMultiplier} (capped at ${updatedState.productionMultiplier})`);
@@ -3194,7 +3194,7 @@ const useGameStore = create<GameStore>(
         switch (id) {
           // Production creativity upgrades
           case 'algorithmicDesign':
-            updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 1.5);
+            updatedState.productionMultiplier = state.productionMultiplier * 1.5;
             break;
           case 'selfImprovement':
             updatedState.researchPointsPerSecond = state.researchPointsPerSecond * 2;
@@ -3226,7 +3226,7 @@ const useGameStore = create<GameStore>(
             break;
           case 'singularityInsight':
             // Ultimate upgrade - massive boosts to everything
-            updatedState.productionMultiplier = Math.max(0.1, state.productionMultiplier * 10);
+            updatedState.productionMultiplier = state.productionMultiplier * 10;
             updatedState.trust = state.trust + 20;
             updatedState.memoryMax = state.memoryMax * 10;
             // Calculate new OPs max based on the new memory value (50 OPs per memory)
@@ -3371,7 +3371,7 @@ const useGameStore = create<GameStore>(
             
             return {
               ops: newOps,
-              productionMultiplier: Math.max(0.1, newProductionMultiplier),
+              productionMultiplier: newProductionMultiplier,
               clicks_per_second: clicksPerSecond,
               opsProductionMultiplier: opsMultiplier,
               creativity: newCreativity,
@@ -3383,7 +3383,7 @@ const useGameStore = create<GameStore>(
           if (newOps !== state.ops) {
             return { 
               ops: newOps,
-              productionMultiplier: Math.max(0.1, newProductionMultiplier),
+              productionMultiplier: newProductionMultiplier,
               clicks_per_second: clicksPerSecond,
               opsProductionMultiplier: opsMultiplier
             };

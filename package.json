@@ -28,7 +28,7 @@
     "@prisma/client": "^5.12.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.5.0",
-    "next": "^15.3.2",
+    "next": "^15.1.8",
     "next-auth": "^4.24.5",
     "phaser": "^3.88.2",
     "react": "^19.1.0",

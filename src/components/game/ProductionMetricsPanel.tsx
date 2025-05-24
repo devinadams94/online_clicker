@@ -9,7 +9,11 @@ export default function ProductionMetricsPanel() {
     totalSales,
     totalClicks,
     clicks_per_second,
-    paperclipsSold
+    paperclipsSold,
+    autoclippers,
+    productionMultiplier,
+    opsProductionMultiplier,
+    prestigeRewards
   } = useGameStore();
 
   // Format large numbers with appropriate suffixes
@@ -29,6 +33,13 @@ export default function ProductionMetricsPanel() {
   const formatMoney = (amount: number): string => {
     return '$' + formatNumber(amount);
   };
+
+  // Calculate total production multiplier
+  const prestigeProductionMultiplier = prestigeRewards?.productionMultiplier || 1;
+  const totalMultiplier = (productionMultiplier + (opsProductionMultiplier || 0)) * prestigeProductionMultiplier;
+  
+  // Calculate actual production per second
+  const actualProductionPerSec = autoclippers * totalMultiplier;
 
   return (
     <div className="card bg-white dark:bg-gray-800 p-4">
@@ -64,7 +75,7 @@ export default function ProductionMetricsPanel() {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Production Rate</p>
-              <p className="font-medium">{formatNumber(clicks_per_second / 10)}/sec</p>
+              <p className="font-medium">{formatNumber(actualProductionPerSec)}/sec</p>
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Revenue Rate</p>
