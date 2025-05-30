@@ -1865,7 +1865,7 @@ export default function GameInterface() {
                 return (
                   <button
                     key={item.id}
-                    className={`px-2 md:px-3 py-1 rounded-md text-sm md:text-base font-medium transition-all duration-300 ${
+                    className={`px-2 md:px-3 py-1 rounded-md text-sm md:text-base font-bold transition-all duration-300 ${
                       currentPage === item.id 
                         ? 'bg-gradient-to-r from-yellow-500 to-amber-500 shadow-[0_0_10px_rgba(250,204,21,0.6)]' 
                         : 'hover:bg-yellow-500/20 text-yellow-300 hover:text-yellow-400'

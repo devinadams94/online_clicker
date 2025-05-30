@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import useGameStore from "@/lib/gameStore";
+import { formatNumber, formatCurrency } from "@/utils/numberFormat";
 
 export default function MarketPanel() {
   const { 
@@ -56,9 +57,9 @@ export default function MarketPanel() {
     }
   };
   
-  // Format money with 2 decimal places
+  // Use the formatCurrency utility function instead
   const formatMoney = (value: number) => {
-    return `$${value.toFixed(2)}`;
+    return formatCurrency(value);
   };
   
   return (
@@ -73,7 +74,7 @@ export default function MarketPanel() {
             <div className="grid grid-cols-2 gap-2">
               <div className="backdrop-blur-sm bg-gray-800/50 p-2 rounded-lg border border-green-400/20 hover:border-green-400/40 transition-all duration-300">
                 <div className="text-xs text-green-300/70">Inventory</div>
-                <div className="font-semibold text-green-400">{Math.floor(paperclips)} paperclips</div>
+                <div className="font-semibold text-green-400">{formatNumber(paperclips, 0)} paperclips</div>
               </div>
               <div className="backdrop-blur-sm bg-gray-800/50 p-2 rounded-lg border border-green-400/20 hover:border-green-400/40 transition-all duration-300">
                 <div className="text-xs text-green-300/70">Money</div>
@@ -84,7 +85,7 @@ export default function MarketPanel() {
             <div className="backdrop-blur-sm bg-gray-800/50 p-2 rounded-lg text-xs border border-green-400/20 hover:border-green-400/40 transition-all duration-300">
               <div className="flex justify-between mb-1 text-green-300">
                 <span>Total Clips Sold:</span>
-                <span className="font-medium text-green-400">{Math.floor(paperclipsSold)}</span>
+                <span className="font-medium text-green-400">{formatNumber(paperclipsSold, 0)}</span>
               </div>
               <div className="flex justify-between text-green-300">
                 <span>Total Revenue:</span>
@@ -148,7 +149,7 @@ export default function MarketPanel() {
                 <span>Current Demand:</span>
                 <div className="flex items-center">
                   <span className={`font-medium ${marketDemand === 0 ? 'text-red-400' : 'text-green-400'}`}>
-                    {Math.round(marketDemand)} clips/sec
+                    {formatNumber(Math.round(marketDemand), 0)} clips/sec
                   </span>
                   {paperclipPrice >= 1 && marketDemand > 0 ? (
                     <span className="ml-1 text-xs text-emerald-400">

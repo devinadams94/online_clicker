@@ -136,6 +136,7 @@ export interface GameState {
   botTradingLosses: number;
   botRiskThreshold: number; // Risk threshold for bot trading (0.1=10%, 0.2=20%, 0.3=30%)
   stockMarketReturns: number;
+  highFrequencyTradingLevel: number; // Level of high frequency trading upgrade
   stockMarketInvestment: number;
   stockMarketLastUpdate: Date;
   stockPortfolio: StockHolding[];

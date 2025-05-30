@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import useGameStore from "@/lib/gameStore";
+import { formatNumber, formatCurrency } from "@/utils/numberFormat";
 
 // Define the upgrade items
 const opsUpgradeItems = [
@@ -119,7 +120,7 @@ export default function OpsUpgradesPanel() {
       <div className="mb-2">
         <div className="flex justify-between mb-1">
           <span className="font-medium text-sm text-green-300">Operations:</span>
-          <span className="font-bold text-green-400 text-sm drop-shadow-[0_0_5px_rgba(74,222,128,0.6)]">{Math.floor(ops)}/{opsMax}</span>
+          <span className="font-bold text-green-400 text-sm drop-shadow-[0_0_5px_rgba(74,222,128,0.6)]">{formatNumber(Math.floor(ops), 0)}/{formatNumber(opsMax, 0)}</span>
         </div>
         <div className="w-full bg-gray-700/70 rounded-full h-2 mb-2">
           <div 
@@ -133,7 +134,7 @@ export default function OpsUpgradesPanel() {
           </div>
         ) : (
           <div className="text-xs text-green-200 mb-2">
-            Need {5000 - opsMax} more OPs capacity to unlock Creativity
+            Need {formatNumber(5000 - opsMax, 0)} more OPs capacity to unlock Creativity
             <div className="mt-1 italic">
               <span className="font-medium text-green-300">Tip:</span> Purchase "Memory Compression" multiple times to increase memory capacity
             </div>

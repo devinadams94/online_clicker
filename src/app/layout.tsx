@@ -30,7 +30,7 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
       </head>
-      <body className={`${inter.className} flex flex-col min-h-screen`}>
+      <body className="font-['MedodicaRegular',sans-serif] flex flex-col min-h-screen">
         <AuthProvider>
           <Header />
           <main className="flex-grow">{children}</main>

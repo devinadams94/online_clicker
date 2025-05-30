@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import useGameStore from "@/lib/gameStore";
 import { Stock } from "@/types/game";
+import { formatNumber, formatCurrency } from "@/utils/numberFormat";
 
 // Simple inline chart component for stock price history
 const StockPriceChart = ({ stockId, stockPriceHistory, height = 10 }: { stockId: string, stockPriceHistory: Record<string, number[]>, height?: number }) => {
@@ -194,7 +195,7 @@ const StockDetailModal = ({
           <div className="mb-6">
             <div className="flex flex-wrap justify-between items-center mb-2">
               <span className="text-3xl font-bold flex items-center">
-                ${currentStock.price.toFixed(2)}
+                {formatCurrency(currentStock.price)}
                 {/* Subtle animation when price updates */}
                 <span 
                   key={lastUpdated}
@@ -217,15 +218,15 @@ const StockDetailModal = ({
                   </div>
                   <div>
                     <div className="text-gray-500 dark:text-gray-400">Avg Cost</div>
-                    <div className="font-bold">${currentHolding?.averagePurchasePrice.toFixed(2)}</div>
+                    <div className="font-bold">{formatCurrency(currentHolding?.averagePurchasePrice || 0)}</div>
                   </div>
                   <div>
                     <div className="text-gray-500 dark:text-gray-400">Value</div>
-                    <div className="font-bold">${(currentStock.price * sharesOwned).toFixed(2)}</div>
+                    <div className="font-bold">{formatCurrency(currentStock.price * sharesOwned)}</div>
                   </div>
                   <div className={`col-span-3 ${profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     <div>Profit/Loss</div>
-                    <div className="font-bold">${profitLoss.toFixed(2)} ({profitLossPercent.toFixed(2)}%)</div>
+                    <div className="font-bold">{formatCurrency(profitLoss)} ({profitLossPercent.toFixed(2)}%)</div>
                   </div>
                 </div>
               </div>
@@ -238,22 +239,22 @@ const StockDetailModal = ({
             <div className="grid grid-cols-3 gap-4 mb-4">
               <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded">
                 <div className="text-sm text-gray-500 dark:text-gray-400">High</div>
-                <div className="font-bold">${maxPrice.toFixed(2)}</div>
+                <div className="font-bold">{formatCurrency(maxPrice)}</div>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded">
                 <div className="text-sm text-gray-500 dark:text-gray-400">Low</div>
-                <div className="font-bold">${minPrice.toFixed(2)}</div>
+                <div className="font-bold">{formatCurrency(minPrice)}</div>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded">
                 <div className="text-sm text-gray-500 dark:text-gray-400">Avg</div>
-                <div className="font-bold">${avgPrice.toFixed(2)}</div>
+                <div className="font-bold">{formatCurrency(avgPrice)}</div>
               </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded">
                 <div className="text-sm text-gray-500 dark:text-gray-400">Volume</div>
-                <div className="font-bold">{currentStock.volume.toLocaleString()}</div>
+                <div className="font-bold">{formatNumber(currentStock.volume, 0)}</div>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded">
                 <div className="text-sm text-gray-500 dark:text-gray-400">Volatility</div>
@@ -268,14 +269,14 @@ const StockDetailModal = ({
               onClick={onBuy}
               disabled={!canBuy}
             >
-              Buy {quantity} @ ${(currentStock.price * quantity).toFixed(2)}
+              Buy {quantity} @ {formatCurrency(currentStock.price * quantity)}
             </button>
             <button
               className={`flex-1 py-2 px-4 rounded ${canSell ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-300 cursor-not-allowed'}`}
               onClick={onSell}
               disabled={!canSell}
             >
-              Sell {quantity} @ ${(currentStock.price * quantity).toFixed(2)}
+              Sell {quantity} @ {formatCurrency(currentStock.price * quantity)}
             </button>
           </div>
           
@@ -286,7 +287,7 @@ const StockDetailModal = ({
                 className="w-full py-2 px-4 rounded bg-red-800 text-white hover:bg-red-900"
                 onClick={handleSellAll}
               >
-                Sell All {sharesOwned} Shares @ ${(currentStock.price * sharesOwned).toFixed(2)}
+                Sell All {sharesOwned} Shares @ {formatCurrency(currentStock.price * sharesOwned)}
               </button>
             </div>
           )}
@@ -568,7 +569,7 @@ export default function StockMarketPanel() {
               <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-amber-500 text-transparent bg-clip-text drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]">Stock Market</h2>
               <div className="backdrop-blur-md bg-gray-800/50 px-4 py-2 rounded-lg flex items-center border border-green-400/30">
                 <span className="text-sm font-medium mr-2 text-green-300">Available:</span>
-                <span className="text-lg font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">${money.toFixed(2)}</span>
+                <span className="text-lg font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">{formatCurrency(money)}</span>
               </div>
             </div>
         
@@ -577,15 +578,15 @@ export default function StockMarketPanel() {
           <div className="grid grid-cols-3 gap-2">
             <div>
               <div className="text-sm font-medium text-green-300">Portfolio Value</div>
-              <div className="text-xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">${portfolioValue.toFixed(2)}</div>
+              <div className="text-xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">{formatCurrency(portfolioValue)}</div>
             </div>
             <div>
               <div className="text-sm font-medium text-green-300">Total Profit</div>
-              <div className="text-xl font-bold text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]">${botTradingProfit.toFixed(2)}</div>
+              <div className="text-xl font-bold text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]">{formatCurrency(botTradingProfit)}</div>
             </div>
             <div>
               <div className="text-sm font-medium text-red-300">Total Losses</div>
-              <div className="text-xl font-bold text-red-400 drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]">${botTradingLosses.toFixed(2)}</div>
+              <div className="text-xl font-bold text-red-400 drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]">{formatCurrency(botTradingLosses)}</div>
             </div>
             <div className="col-span-3 mt-2 flex items-center justify-between">
               <div className="text-sm font-medium text-green-300">Performance</div>
@@ -624,7 +625,7 @@ export default function StockMarketPanel() {
                 onClick={buyTradingBot}
                 disabled={!canBuyTradingBot}
               >
-                Buy Bot (${tradingBotCost.toFixed(2)})
+                Buy Bot ({formatCurrency(tradingBotCost)})
               </button>
             </div>
             
@@ -643,7 +644,7 @@ export default function StockMarketPanel() {
                 onClick={handleUpgradeBotIntelligence}
                 disabled={!canUpgradeBotIntelligence}
               >
-                Upgrade (${botIntelligenceCost.toFixed(2)})
+                Upgrade ({formatCurrency(botIntelligenceCost)})
               </button>
             </div>
           </div>
@@ -653,7 +654,7 @@ export default function StockMarketPanel() {
             <div className="flex justify-between items-center mb-2">
               <div>
                 <div className="text-sm font-medium text-green-300">Trading Budget</div>
-                <div className="text-lg font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">${botTradingBudget.toFixed(2)}</div>
+                <div className="text-lg font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">{formatCurrency(botTradingBudget)}</div>
               </div>
               <div className="flex items-center space-x-2">
                 <input
@@ -691,7 +692,7 @@ export default function StockMarketPanel() {
               <div>
                 <div className="text-sm font-medium text-green-300">Available Funds</div>
                 <div className="text-xs text-gray-400">
-                  You can withdraw up to <span className="text-yellow-400">${botTradingBudget.toFixed(2)}</span>
+                  You can withdraw up to <span className="text-yellow-400">{formatCurrency(botTradingBudget)}</span>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -925,7 +926,7 @@ export default function StockMarketPanel() {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clipRule="evenodd" />
                   </svg>
-                  Sell All Stocks (${portfolioValue.toFixed(2)})
+                  Sell All Stocks ({formatCurrency(portfolioValue)})
                 </button>
               </div>
             )}
@@ -975,11 +976,11 @@ export default function StockMarketPanel() {
                     <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                       <div>
                         <span className="text-gray-400">Total Value: </span>
-                        <span className="font-semibold text-green-300">${currentValue.toFixed(2)}</span>
+                        <span className="font-semibold text-green-300">{formatCurrency(currentValue)}</span>
                       </div>
                       <div>
                         <span className="text-gray-400">Avg Cost: </span>
-                        <span className="font-semibold text-gray-300">${holding.averagePurchasePrice.toFixed(2)}</span>
+                        <span className="font-semibold text-gray-300">{formatCurrency(holding.averagePurchasePrice)}</span>
                       </div>
                       <div className="col-span-2">
                         <span className="text-gray-400">Profit/Loss: </span>
@@ -988,7 +989,7 @@ export default function StockMarketPanel() {
                             ? 'text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]' 
                             : 'text-red-400 drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]'
                         }`}>
-                          ${profit.toFixed(2)} ({profitPercent.toFixed(2)}%)
+                          {formatCurrency(profit)} ({profitPercent.toFixed(2)}%)
                         </span>
                       </div>
                     </div>
@@ -1050,10 +1051,10 @@ export default function StockMarketPanel() {
                         <span className="ml-2 text-gray-400">x{transaction.quantity}</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-yellow-400">${transaction.total.toFixed(2)}</div>
+                        <div className="text-yellow-400">{formatCurrency(transaction.total)}</div>
                         {transaction.profit !== 0 && (
                           <div className={`text-sm ${transaction.profit > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {transaction.profit > 0 ? '+' : ''}{transaction.profit.toFixed(2)}
+                            {transaction.profit > 0 ? '+' : ''}{formatNumber(transaction.profit, 2)}
                           </div>
                         )}
                       </div>

@@ -2,6 +2,7 @@
 
 import useGameStore from "@/lib/gameStore";
 import { useState } from "react";
+import { formatNumber, formatCurrency } from "@/utils/numberFormat";
 
 export default function UpgradesPanel() {
   const { 
@@ -49,10 +50,7 @@ export default function UpgradesPanel() {
   // Calculate multiplier upgrade cost: 50 * 2^(current multiplier - 1)
   const multiplierCost = Math.floor(50 * Math.pow(2, clickMultiplier - 1));
   
-  // Format money with 2 decimal places
-  const _formatMoney = (value: number) => {
-    return `$${value.toFixed(2)}`;
-  };
+  // No longer needed, using formatCurrency from utility
   
   // Stock market unlock cost
   const stockMarketCost = 50000;
@@ -173,17 +171,17 @@ export default function UpgradesPanel() {
             <h3 className="text-lg font-semibold mb-2 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">Autoclippers</h3>
             <div className="flex justify-between text-sm mb-2">
               <span>Owned: {autoclippers}</span>
-              <span>Production: {actualProductionPerSec.toFixed(1)}/sec</span>
+              <span>Production: {formatNumber(actualProductionPerSec, 1)}/sec</span>
             </div>
             <p className="text-sm mb-4">
-              Autoclippers make paperclips for you automatically at a rate of 1 clip per second each{totalMultiplier > 1 ? ` (×${totalMultiplier.toFixed(1)} with multipliers)` : ''}.
+              Autoclippers make paperclips for you automatically at a rate of 1 clip per second each{totalMultiplier > 1 ? ` (×${formatNumber(totalMultiplier, 1)} with multipliers)` : ''}.
             </p>
             <button
               className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 ${canBuyAutoclipper ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-black shadow-[0_0_15px_rgba(74,222,128,0.5)] hover:shadow-[0_0_20px_rgba(74,222,128,0.7)]' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
               onClick={buyAutoclipper}
               disabled={!canBuyAutoclipper}
             >
-              Buy Autoclipper (${autoclipper_cost.toFixed(2)})
+              Buy Autoclipper ({formatCurrency(autoclipper_cost)})
             </button>
           </div>
           
@@ -202,7 +200,7 @@ export default function UpgradesPanel() {
               onClick={buyClickMultiplier}
               disabled={!canBuyMultiplier}
             >
-              Buy Multiplier (${multiplierCost.toFixed(2)})
+              Buy Multiplier ({formatCurrency(multiplierCost)})
             </button>
           </div>
           
@@ -226,7 +224,7 @@ export default function UpgradesPanel() {
               <>
                 <div className="flex justify-between text-sm mb-2">
                   <span>Owned: {megaClippers}</span>
-                  <span>Multiplier: {productionMultiplier.toFixed(1)}x</span>
+                  <span>Multiplier: {formatNumber(productionMultiplier, 1)}x</span>
                 </div>
                 <p className="text-sm mb-4">
                   Mega-clippers enhance production efficiency. Each one increases your production multiplier by +1.
@@ -236,7 +234,7 @@ export default function UpgradesPanel() {
                   onClick={buyMegaClipper}
                   disabled={!canBuyMegaClipper}
                 >
-                  Buy Mega-Clipper (${megaClipperCost.toFixed(2)})
+                  Buy Mega-Clipper ({formatCurrency(megaClipperCost)})
                 </button>
               </>
             )}
@@ -272,7 +270,7 @@ export default function UpgradesPanel() {
               onClick={upgradeMarketDemand}
               disabled={!canUpgradeMarketDemand}
             >
-              Expand Market (${marketDemandUpgradeCost.toFixed(2)})
+              Expand Market ({formatCurrency(marketDemandUpgradeCost)})
             </button>
           </div>
           
@@ -289,7 +287,7 @@ export default function UpgradesPanel() {
                   onClick={unlockMetrics}
                   disabled={!canUnlockMetrics}
                 >
-                  Unlock Metrics ($500.00)
+                  Unlock Metrics ({formatCurrency(500)})
                 </button>
               </>
             ) : (
@@ -318,7 +316,7 @@ export default function UpgradesPanel() {
                   onClick={unlockStockMarket}
                   disabled={!canUnlockStockMarket}
                 >
-                  Unlock Stock Market (${stockMarketCost.toFixed(2)})
+                  Unlock Stock Market ({formatCurrency(stockMarketCost)})
                 </button>
               </>
             ) : (
@@ -339,7 +337,7 @@ export default function UpgradesPanel() {
             <div className="p-3 bg-gradient-to-br from-gray-800/50 to-green-900/20 rounded-lg border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
               <h3 className="text-lg font-semibold mb-2 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">Memory Upgrades</h3>
               <div className="flex justify-between text-sm mb-2">
-                <span>Current Memory: {memory.toFixed(1)}/{memoryMax}</span>
+                <span>Current Memory: {formatNumber(memory, 1)}/{formatNumber(memoryMax, 0)}</span>
               </div>
               <div className="space-y-2 mt-3">
                 {memoryUpgrades.map(upgrade => {

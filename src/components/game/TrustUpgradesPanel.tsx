@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import useGameStore from "@/lib/gameStore";
+import { formatNumber, formatCurrency } from "@/utils/numberFormat";
 
 export default function TrustUpgradesPanel() {
   const { 
@@ -51,10 +52,10 @@ export default function TrustUpgradesPanel() {
   const trustAbilities = [
     { id: 'trustBoost', name: 'Production Boost', cost: 10, description: 'Double your production multiplier' },
     { id: 'wireEfficiency', name: 'Wire Efficiency', cost: 15, description: 'Increase production by 500% through better wire usage' },
-    { id: 'marketInfluence', name: 'Market Influence', cost: 20, description: 'Increase market demand and max demand by 5000%' },
+    { id: 'marketInfluence', name: 'Market Influence', cost: 30, description: 'Increase market demand and max demand by 5000%' },
     { id: 'researchInsight', name: 'Research Insight', cost: 10, description: 'Triple research point generation' }, // Cost reduced from 25 to 10
     { id: 'autoManagement', name: 'Auto Management', cost: 15, description: 'Increase production by 500% and quadruple memory regeneration' }, // Cost reduced from 30 to 15
-    { id: 'quantumComputation', name: 'Quantum Computation', cost: 20, description: 'Double CPU level and memory capacity' } // Cost reduced from 50 to 20
+    { id: 'quantumComputation', name: 'Quantum Computation', cost: 40, description: 'Double CPU level and memory capacity' } // Updated cost from 20 to 40
   ];
   
   // Special space age upgrade - only visible at high trust and OPs levels
@@ -68,15 +69,7 @@ export default function TrustUpgradesPanel() {
     minOps: 10000 // Reduced from 50,000 to 10,000
   };
 
-  // Format large numbers for display
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) {
-      return `${(num / 1000000).toFixed(1)}M`;
-    } else if (num >= 1000) {
-      return `${(num / 1000).toFixed(1)}K`;
-    }
-    return num.toString();
-  };
+  // Using imported formatNumber utility instead of local implementation
   
   return (
     <div className="backdrop-blur-md bg-gray-900/50 rounded-xl p-4 border border-green-400/30 shadow-[0_0_20px_rgba(74,222,128,0.3)]">
@@ -131,7 +124,7 @@ export default function TrustUpgradesPanel() {
                   <div className="flex justify-between mb-1">
                     <span className={`font-medium text-sm ${isPurchased ? 'text-green-400' : 'text-green-300'}`}>Trust Level {upgrade.level}</span>
                     <span className={`text-sm ${canAfford && !isPurchased ? 'text-green-400 font-bold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]' : 'text-gray-400'}`}>
-                      ${formatNumber(upgrade.cost)}
+                      {formatCurrency(upgrade.cost)}
                     </span>
                   </div>
                   <p className="text-xs mb-2 text-green-200">Gain {upgrade.trustGain} trust points</p>
@@ -170,7 +163,7 @@ export default function TrustUpgradesPanel() {
                       }}
                       disabled={!canAfford || isPurchased}
                     >
-                      Purchase (${formatNumber(upgrade.cost)})
+                      Purchase ({formatCurrency(upgrade.cost)})
                     </button>
                   )}
                 </div>

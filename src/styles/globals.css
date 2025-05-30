@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'MedodicaRegular';
+  src: url('/assets/MedodicaRegular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -25,11 +33,63 @@ body {
     )
     rgb(var(--background-start-rgb));
   min-height: 100vh;
+  font-family: 'MedodicaRegular', sans-serif;
+  font-size: 1.25rem; /* Increase base font size from 18px to 20px */
+}
+
+/* Additional global spacing improvements */
+.container {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+.p-4 {
+  padding: 1.25rem !important;
+}
+
+.p-6 {
+  padding: 1.75rem !important;
+}
+
+/* Override Tailwind font sizes for larger text */
+.text-xs {
+  font-size: 1rem !important; /* 16px instead of 12px */
+  line-height: 1.5rem !important;
+}
+
+.text-sm {
+  font-size: 1.25rem !important; /* 20px instead of 14px */
+  line-height: 1.75rem !important;
+}
+
+.text-base {
+  font-size: 1.5rem !important; /* 24px instead of 16px */
+  line-height: 2rem !important;
+}
+
+.text-lg {
+  font-size: 1.75rem !important; /* 28px instead of 18px */
+  line-height: 2.25rem !important;
+}
+
+.text-xl {
+  font-size: 2rem !important; /* 32px instead of 20px */
+  line-height: 2.5rem !important;
+}
+
+.text-2xl {
+  font-size: 2.5rem !important; /* 40px instead of 24px */
+  line-height: 3rem !important;
+}
+
+.text-3xl {
+  font-size: 3rem !important; /* 48px instead of 30px */
+  line-height: 3.5rem !important;
 }
 
 @layer components {
   .btn {
-    @apply px-4 py-2 rounded-md font-medium transition-colors duration-200;
+    @apply px-6 py-4 rounded-lg font-medium transition-colors duration-200 text-base;
   }
   
   .btn-primary {
@@ -41,28 +101,38 @@ body {
   }
   
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-4;
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-8;
   }
   
   .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-green-600 dark:text-green-400;
+    @apply w-full px-5 py-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-green-600 dark:text-green-400 text-base;
   }
   
   /* Custom green slider styles */
   .slider-green::-webkit-slider-thumb {
-    @apply appearance-none w-4 h-4 bg-green-500 rounded-full cursor-pointer shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)] transition-all duration-300;
+    @apply appearance-none w-6 h-6 bg-green-500 rounded-full cursor-pointer shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)] transition-all duration-300;
   }
   
   .slider-green::-moz-range-thumb {
-    @apply w-4 h-4 bg-green-500 rounded-full cursor-pointer shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)] transition-all duration-300 border-0;
+    @apply w-6 h-6 bg-green-500 rounded-full cursor-pointer shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)] transition-all duration-300 border-0;
   }
   
   .slider-green::-webkit-slider-runnable-track {
-    @apply bg-gradient-to-r from-green-900/50 to-emerald-900/50;
+    @apply bg-gradient-to-r from-green-900/50 to-emerald-900/50 h-3 rounded-full;
   }
   
   .slider-green::-moz-range-track {
-    @apply bg-gradient-to-r from-green-900/50 to-emerald-900/50;
+    @apply bg-gradient-to-r from-green-900/50 to-emerald-900/50 h-3 rounded-full;
+  }
+  
+  /* Increase spacing for form groups */
+  .form-group {
+    @apply mb-5;
+  }
+  
+  /* Increase spacing between paragraphs */
+  p {
+    @apply mb-4;
   }
 }
 

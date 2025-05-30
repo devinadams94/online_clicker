@@ -1,0 +1,38 @@
+--- gameStore.ts	2025-05-30 10:00:00
++++ gameStore.ts	2025-05-30 10:10:00
+@@ -1124,6 +1124,9 @@
+         // Each CPU level increases memory regeneration rate by 0.5
+         const newRegenRate = 1 + (newLevel - 1) * 0.5;
+         
++        // Each CPU level increases OPs max by 50 per level
++        const newOpsMax = state.memoryMax * 50 + (newLevel * 50);
++        
+         // Update state with new values
+         set({
+           money: state.money - state.cpuCost,
+           cpuLevel: newLevel,
+           cpuCost: newCost,
+-          memoryRegenRate: newRegenRate
++          memoryRegenRate: newRegenRate,
++          opsMax: newOpsMax
+         });
+         
+@@ -1145,7 +1148,8 @@
+         const newCost = Math.floor(state.memoryCost * 1.10); // 10% increase per level
+         
+         // OPs max is 50 x memory (increased from 10x)
+-        const newOpsMax = newMemoryMax * 50;
++        // Add 50 OPs per CPU level as well
++        const newOpsMax = newMemoryMax * 50 + (state.cpuLevel * 50);
+         
+         // Update state with new values
+         set({
+@@ -2487,7 +2491,7 @@
+             batchedUpdates.memory = (batchedUpdates.memory || state.memory) - memoryToUse;
+             
+             // Update OPs production multiplier
+-            const opsMultiplier = Math.min(0.5, state.ops / 1000);
++            const opsMultiplier = state.ops / 100; // Changed from ops/1000 to ops/100
+             if (opsMultiplier !== state.opsProductionMultiplier) {
+               batchedUpdates.opsProductionMultiplier = opsMultiplier;
+             }

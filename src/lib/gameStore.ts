@@ -17,6 +17,34 @@ import { addSpaceFunctions } from "./spaceExtension";
 // Import trading bot algorithm
 import * as tradingAlgorithm from "./tradingBotAlgorithm";
 
+// Helper function to ensure a value is a valid Date object
+const ensureDate = (dateValue: any): Date => {
+  if (!dateValue) {
+    return new Date();
+  }
+  
+  if (dateValue instanceof Date) {
+    // Check if the date is valid
+    if (!isNaN(dateValue.getTime())) {
+      return dateValue;
+    }
+  }
+  
+  // Try to create a Date from the value
+  try {
+    const newDate = new Date(dateValue);
+    if (!isNaN(newDate.getTime())) {
+      return newDate;
+    }
+  } catch (e) {
+    // If conversion fails, return current date
+    console.error("Failed to convert date:", dateValue, e);
+  }
+  
+  // Default to current date if all else fails
+  return new Date();
+};
+
 // Added types for visual effects and upgrades
 interface VisualFX {
   particleIntensity: number;
@@ -646,7 +674,9 @@ const useGameStore = create<GameStore>(
           if (state.autoWireBuyer && state.wire < state.wirePerSpool * 0.1 && state.money >= state.spoolCost) {
             // Update purchase count and time for dynamic pricing - same logic as buyWireSpool
             const now = new Date();
-            const timeSinceLastPurchase = now.getTime() - state.lastWirePurchaseTime.getTime();
+            // Use our helper function to ensure we have a valid date
+            const lastPurchaseTime = ensureDate(state.lastWirePurchaseTime);
+            const timeSinceLastPurchase = now.getTime() - lastPurchaseTime.getTime();
             const newWirePurchaseCount = state.wirePurchaseCount + 1;
             
             // Dynamic pricing: Increase cost based on frequency of purchases
@@ -712,7 +742,9 @@ const useGameStore = create<GameStore>(
           
           // Update purchase count and time for dynamic pricing
           const now = new Date();
-          const timeSinceLastPurchase = now.getTime() - state.lastWirePurchaseTime.getTime();
+          // Use our helper function to ensure we have a valid date
+          const lastPurchaseTime = ensureDate(state.lastWirePurchaseTime);
+          const timeSinceLastPurchase = now.getTime() - lastPurchaseTime.getTime();
           const newWirePurchaseCount = state.wirePurchaseCount + 1;
           
           // Dynamic pricing: Increase cost based on frequency of purchases
@@ -880,8 +912,8 @@ const useGameStore = create<GameStore>(
             case 'quantumComputation':
               updatedState.cpuLevel = state.cpuLevel * 2;
               updatedState.memoryMax = state.memoryMax * 2;
-              // Update OPs max based on new memory (50 OPs per memory)
-              updatedState.opsMax = (state.memoryMax * 2) * 50;
+              // Update OPs max based on new memory (50 OPs per memory) and CPU level (50 OPs per level)
+              updatedState.opsMax = ((state.memoryMax * 2) * 50) + ((state.cpuLevel * 2) * 50);
               break;
           }
           
@@ -996,7 +1028,38 @@ const useGameStore = create<GameStore>(
       },
 
       // Game state management functions
-      setGameState: (gameState: GameState) => set(() => ({ ...gameState })),
+      setGameState: (gameState: GameState) => {
+        // Ensure highFrequencyTradingLevel has a default value if not present
+        if (gameState.highFrequencyTradingLevel === undefined) {
+          gameState.highFrequencyTradingLevel = 0;
+        }
+        
+        // Convert all date fields using our helper function
+        gameState.lastWirePurchaseTime = ensureDate(gameState.lastWirePurchaseTime);
+        gameState.lastSaved = ensureDate(gameState.lastSaved);
+        gameState.lastPriceUpdate = ensureDate(gameState.lastPriceUpdate);
+        gameState.botLastTradeTime = ensureDate(gameState.botLastTradeTime);
+        gameState.stockMarketLastUpdate = ensureDate(gameState.stockMarketLastUpdate);
+        
+        // Also handle dates inside stock objects
+        if (gameState.stockPortfolio && Array.isArray(gameState.stockPortfolio)) {
+          // No dates in stockPortfolio currently
+        }
+        
+        // Ensure all stock dates are valid
+        if (gameState.stocks && Array.isArray(gameState.stocks)) {
+          gameState.stocks.forEach(stock => {
+            if (stock.lastUpdate) {
+              stock.lastUpdate = ensureDate(stock.lastUpdate);
+            }
+            if (stock.trendStartTime) {
+              stock.trendStartTime = ensureDate(stock.trendStartTime);
+            }
+          });
+        }
+        
+        return set(() => ({ ...gameState }));
+      },
       setUserId: (userId: string | null) => set(() => ({ userId })),
       setAuthenticated: (isAuthenticated: boolean) => set(() => ({ isAuthenticated })),
       setLoading: (isLoading: boolean) => set(() => ({ isLoading })),
@@ -1218,8 +1281,8 @@ const useGameStore = create<GameStore>(
               // Massive boost to multiple systems
               updatedState.cpuLevel = state.cpuLevel * 2;
               updatedState.memoryMax = state.memoryMax * 2;
-              // Update OPs max based on new memory value (50 OPs per memory)
-              updatedState.opsMax = (state.memoryMax * 2) * 50;
+              // Update OPs max based on new memory value (50 OPs per memory) and CPU level (50 OPs per level)
+              updatedState.opsMax = ((state.memoryMax * 2) * 50) + ((state.cpuLevel * 2) * 50);
               updatedState.researchPointsPerSecond = state.researchPointsPerSecond * 3;
               updatedState.creativityUnlocked = true;
               break;
@@ -2737,11 +2800,14 @@ const useGameStore = create<GameStore>(
         const tickCount = (state.tickCount || 0) + 1;
         set({ tickCount });
         
-        // Calculate ticks needed for a 60-second trade interval (600 ticks per minute since ticks occur every 100ms)
-        const ticksPerTrade = 600; // 600 ticks = 60 seconds
+        // Calculate ticks needed for a trade interval (base: 600 ticks = 60 seconds)
+        // Reduce by 20% for each level of high frequency trading
+        const hftLevel = state.highFrequencyTradingLevel || 0;
+        // Base of 600, reduced by 20% per HFT level (with a minimum of 100 ticks = 10 seconds)
+        const ticksPerTrade = Math.max(100, Math.floor(600 * Math.pow(0.8, hftLevel))); 
         
         // Debug logging with updated interval info
-        console.log(`[Stock Market Tick ${tickCount}] Bots: ${tradingBots}, Budget: $${botBudget.toFixed(2)}, Next trade in ${ticksPerTrade - (tickCount % ticksPerTrade)} ticks`);
+        console.log(`[Stock Market Tick ${tickCount}] Bots: ${tradingBots}, Budget: $${botBudget.toFixed(2)}, HFT Level: ${hftLevel}, Trade Interval: ${ticksPerTrade} ticks, Next trade in ${ticksPerTrade - (tickCount % ticksPerTrade)} ticks`);
         
         // Trade every 600 ticks (60 seconds) if we have bots and budget
         if (tradingBots > 0 && botBudget >= 10) {
@@ -2825,14 +2891,16 @@ const useGameStore = create<GameStore>(
         const newCost = Math.floor(state.cpuCost * 1.4375);
         // Each CPU level increases memory regeneration rate by 0.5
         const newRegenRate = 1 + (newLevel - 1) * 0.5;
-        
+        // Each CPU level increases OPs max by 50
+        const newOpsMax = (state.memoryMax * 50) + (newLevel * 50);
         
         // Update state with new values
         set({
           money: state.money - state.cpuCost,
           cpuLevel: newLevel,
           cpuCost: newCost,
-          memoryRegenRate: newRegenRate
+          memoryRegenRate: newRegenRate,
+          opsMax: newOpsMax
         });
         
         // Verify state was updated correctly
@@ -2897,8 +2965,8 @@ const useGameStore = create<GameStore>(
         // Cost increases by 10% for each upgrade (increased from 1.25%)
         const newCost = Math.floor(state.memoryCost * 1.10); // 10% increase per level
         
-        // OPs max is 50 x memory (increased from 10x)
-        const newOpsMax = newMemoryMax * 50;
+        // OPs max is 50 x memory plus 50 x CPU level
+        const newOpsMax = (newMemoryMax * 50) + (state.cpuLevel * 50);
         
         
         // Update state with new values
@@ -3123,8 +3191,8 @@ const useGameStore = create<GameStore>(
             
             const newMemoryMax = state.memoryMax + memoryIncrease;
             updatedState.memoryMax = newMemoryMax;
-            // Update OPs max when memory increases (50 OPs per memory)
-            updatedState.opsMax = newMemoryMax * 50;
+            // Update OPs max when memory increases (50 OPs per memory) and account for CPU (50 OPs per level)
+            updatedState.opsMax = (newMemoryMax * 50) + (state.cpuLevel * 50);
             break;
             
           case 'cacheOptimization':
@@ -3144,8 +3212,8 @@ const useGameStore = create<GameStore>(
             
             const newMemory = state.memoryMax * storageMultiplier;
             updatedState.memoryMax = newMemory;
-            // Update OPs max when memory increases (50 OPs per memory)
-            updatedState.opsMax = newMemory * 50;
+            // Update OPs max when memory increases (50 OPs per memory) and account for CPU (50 OPs per level)
+            updatedState.opsMax = (newMemory * 50) + (state.cpuLevel * 50);
             
             break;
           
@@ -3173,7 +3241,12 @@ const useGameStore = create<GameStore>(
             break;
             
           case 'highFrequencyTrading':
-            // Make bots trade faster - implement in botAutoTrade function
+            // Count previous purchases to determine effect scaling
+            const hftCount = state.unlockedOpsUpgrades.filter(id => id === 'highFrequencyTrading').length;
+            // Reduce trading interval by 20% for each purchase (with diminishing returns)
+            // Store the HFT level in state so it can be used in the trading tick function
+            updatedState.highFrequencyTradingLevel = (state.highFrequencyTradingLevel || 0) + 1;
+            console.log(`[HFT] Upgraded high frequency trading to level ${updatedState.highFrequencyTradingLevel}`);
             break;
         }
         
@@ -3275,16 +3348,16 @@ const useGameStore = create<GameStore>(
             break;
           case 'consciousnessExpansion':
             updatedState.memoryMax = state.memoryMax * 3;
-            // Calculate new OPs max based on the new memory value (50 OPs per memory)
-            updatedState.opsMax = (state.memoryMax * 3) * 50;
+            // Calculate new OPs max based on the new memory value (50 OPs per memory) and CPU level (50 OPs per level)
+            updatedState.opsMax = ((state.memoryMax * 3) * 50) + (state.cpuLevel * 50);
             break;
           case 'singularityInsight':
             // Ultimate upgrade - massive boosts to everything
             updatedState.productionMultiplier = state.productionMultiplier * 10;
             updatedState.trust = state.trust + 20;
             updatedState.memoryMax = state.memoryMax * 10;
-            // Calculate new OPs max based on the new memory value (50 OPs per memory)
-            updatedState.opsMax = (state.memoryMax * 10) * 50;
+            // Calculate new OPs max based on the new memory value (50 OPs per memory) and CPU level (50 OPs per level)
+            updatedState.opsMax = ((state.memoryMax * 10) * 50) + (state.cpuLevel * 50);
             break;
         }
         
@@ -3366,8 +3439,10 @@ const useGameStore = create<GameStore>(
             // Increase memory capacity by 50%
             const newMemoryMax = state.memoryMax * 1.5;
             updatedState.memoryMax = newMemoryMax;
-            // Also increase OPs max proportionally
-            updatedState.opsMax = newMemoryMax * (state.opsMax / state.memoryMax);
+            // Also increase OPs max proportionally, and include CPU contribution
+            const memoryContribution = newMemoryMax * 50;
+            const cpuContribution = state.cpuLevel * 50;
+            updatedState.opsMax = memoryContribution + cpuContribution;
             break;
         }
         
@@ -3505,7 +3580,9 @@ const useGameStore = create<GameStore>(
             // Handle auto wire buyer
             if (state.autoWireBuyer && state.wire < state.wirePerSpool * 0.1 && state.money >= state.spoolCost) {
               const now = new Date();
-              const timeSinceLastPurchase = now.getTime() - state.lastWirePurchaseTime.getTime();
+              // Use our helper function to ensure we have a valid date
+              const lastPurchaseTime = ensureDate(state.lastWirePurchaseTime);
+              const timeSinceLastPurchase = now.getTime() - lastPurchaseTime.getTime();
               const newWirePurchaseCount = state.wirePurchaseCount + 1;
               
               // Use cached calculation for wire cost
@@ -3613,9 +3690,12 @@ const useGameStore = create<GameStore>(
           }
           
           if (state.botTradingBudget > 0 && state.tradingBots > 0) {
-          // Only run bot trading every 600 ticks (60 seconds) to reduce frequency
+          // Only run bot trading periodically to reduce frequency
           const tickCount = Math.floor(Date.now() / 100);
-          const ticksPerTrade = 600; // 600 ticks = 60 seconds
+          // Reduce trade interval by 20% for each level of high frequency trading
+          const hftLevel = state.highFrequencyTradingLevel || 0;
+          // Base of 600, reduced by 20% per HFT level (with a minimum of 100 ticks = 10 seconds)
+          const ticksPerTrade = Math.max(100, Math.floor(600 * Math.pow(0.8, hftLevel)));
           if (tickCount % ticksPerTrade === 0) {
             // Bot trading logic would go here, but it's too complex to inline
             // For now, just call the existing function
@@ -3838,7 +3918,7 @@ const useGameStore = create<GameStore>(
           memoryRegenRate: 1,
           
           // Advanced Resources
-          trust: 0,
+          trust: state.prestigeLevel || 0, // Start with 1 trust per prestige level
           trustLevel: 0,
           nextTrustAt: 100000,
           unlockedTrustAbilities: [],

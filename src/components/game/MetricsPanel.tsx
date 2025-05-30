@@ -2,6 +2,7 @@
 
 // import { useState, useEffect } from 'react';
 import useGameStore from '@/lib/gameStore';
+import { formatNumber, formatCurrency } from '@/utils/numberFormat';
 
 export default function MetricsPanel() {
   const { 
@@ -30,17 +31,17 @@ export default function MetricsPanel() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
         <div className="backdrop-blur-sm bg-gray-800/50 p-4 rounded-lg border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
           <div className="text-sm text-green-300 mb-1">Total Paperclips</div>
-          <div className="text-2xl font-bold text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]">{Math.floor(totalPaperclipsMade).toLocaleString()}</div>
+          <div className="text-2xl font-bold text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]">{formatNumber(Math.floor(totalPaperclipsMade), 0)}</div>
         </div>
         
         <div className="backdrop-blur-sm bg-gray-800/50 p-4 rounded-lg border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
           <div className="text-sm text-green-300 mb-1">Total Sales</div>
-          <div className="text-2xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">${totalSales.toFixed(2)}</div>
+          <div className="text-2xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">{formatCurrency(totalSales)}</div>
         </div>
         
         <div className="backdrop-blur-sm bg-gray-800/50 p-4 rounded-lg border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
           <div className="text-sm text-green-300 mb-1">Revenue Rate</div>
-          <div className="text-2xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">${revenuePerSecond.toFixed(2)}/sec</div>
+          <div className="text-2xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">{formatCurrency(revenuePerSecond)}/sec</div>
         </div>
       </div>
       
@@ -49,12 +50,12 @@ export default function MetricsPanel() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <div className="backdrop-blur-sm bg-gray-700/50 p-4 rounded-lg border border-green-400/10">
           <div className="text-sm text-green-300/80">Avg. Price Per Clip</div>
-          <div className="text-xl font-bold text-green-400">${averagePricePerClip.toFixed(4)}</div>
+          <div className="text-xl font-bold text-green-400">{formatCurrency(averagePricePerClip)}</div>
         </div>
         
         <div className="backdrop-blur-sm bg-gray-700/50 p-4 rounded-lg border border-green-400/10">
           <div className="text-sm text-green-300/80">Clips Per Dollar Invested</div>
-          <div className="text-xl font-bold text-green-400">{clipsPerMoney.toFixed(2)}</div>
+          <div className="text-xl font-bold text-green-400">{formatNumber(clipsPerMoney, 2)}</div>
         </div>
       </div>
       
@@ -66,14 +67,14 @@ export default function MetricsPanel() {
             <div className="backdrop-blur-sm bg-purple-900/30 p-4 rounded-lg border border-purple-400/30 shadow-[0_0_10px_rgba(147,51,234,0.3)]">
               <div className="text-sm text-purple-300">Portfolio Value</div>
               <div className="text-xl font-bold text-purple-400 drop-shadow-[0_0_10px_rgba(147,51,234,0.6)]">
-                ${portfolioValue.toFixed(2)}
+                {formatCurrency(portfolioValue)}
               </div>
             </div>
             
             <div className="backdrop-blur-sm bg-purple-900/30 p-4 rounded-lg border border-purple-400/30 shadow-[0_0_10px_rgba(147,51,234,0.3)]">
               <div className="text-sm text-purple-300">Stock Returns</div>
               <div className="text-xl font-bold text-purple-400 drop-shadow-[0_0_10px_rgba(147,51,234,0.6)]">
-                ${stockMarketReturns.toFixed(2)}
+                {formatCurrency(stockMarketReturns)}
               </div>
             </div>
           </div>
@@ -87,15 +88,15 @@ export default function MetricsPanel() {
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
             <div className="text-xs text-gray-400 mb-1">1 Hour</div>
-            <div className="text-lg font-bold text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">{Math.floor(revenuePerSecond / averagePricePerClip * 3600).toLocaleString()}</div>
+            <div className="text-lg font-bold text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">{formatNumber(Math.floor(revenuePerSecond / averagePricePerClip * 3600), 0)}</div>
           </div>
           <div className="text-center">
             <div className="text-xs text-gray-400 mb-1">8 Hours</div>
-            <div className="text-lg font-bold text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">{Math.floor(revenuePerSecond / averagePricePerClip * 3600 * 8).toLocaleString()}</div>
+            <div className="text-lg font-bold text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">{formatNumber(Math.floor(revenuePerSecond / averagePricePerClip * 3600 * 8), 0)}</div>
           </div>
           <div className="text-center">
             <div className="text-xs text-gray-400 mb-1">24 Hours</div>
-            <div className="text-lg font-bold text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">{Math.floor(revenuePerSecond / averagePricePerClip * 3600 * 24).toLocaleString()}</div>
+            <div className="text-lg font-bold text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">{formatNumber(Math.floor(revenuePerSecond / averagePricePerClip * 3600 * 24), 0)}</div>
           </div>
         </div>
       </div>
