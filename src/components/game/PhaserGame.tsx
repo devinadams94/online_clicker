@@ -28,8 +28,13 @@ export default function PhaserGame() {
   const { clickPaperclip } = gameStore;
 
   useEffect(() => {
-    // Check if the game has already been initialized
-    if (gameRef.current || typeof window === 'undefined') {
+    // Check if the game has already been initialized or if we're in SSR
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
+    // Prevent multiple game instances
+    if (gameRef.current || (window as any).__PHASER_GAME_INSTANCE__) {
       return;
     }
 
@@ -68,6 +73,18 @@ export default function PhaserGame() {
         // Mark that we're attempting to load Phaser
         (window as any).PHASER_LOADING = true;
         
+        // Completely disable Phaser's sound manager before game creation
+        if (Phaser.Sound && Phaser.Sound.WebAudioSoundManager) {
+          Phaser.Sound.WebAudioSoundManager.prototype.createAudioContext = function() {
+            return null;
+          };
+        }
+        if (Phaser.Sound && Phaser.Sound.HTML5AudioSoundManager) {
+          Phaser.Sound.HTML5AudioSoundManager.prototype.add = function() {
+            return null;
+          };
+        }
+        
         // Custom config extending the default
         const config = {
           ...DEFAULT_PHASER_CONFIG,
@@ -75,10 +92,31 @@ export default function PhaserGame() {
           scene: [PaperclipScene],
           // Ensure we're using a single well-managed canvas renderer
           canvas: document.getElementById('paperclip-game-canvas') as HTMLCanvasElement || undefined,
+          // Force disable all audio to prevent AudioContext errors
+          audio: {
+            noAudio: true,
+            disableWebAudio: true,
+          },
+          // Disable plugins that might use audio
+          plugins: {
+            global: [],
+            scene: []
+          }
         };
 
-        // Initialize the Phaser game
-        gameRef.current = new Phaser.Game(config);
+        // Initialize the Phaser game with error handling
+        try {
+          gameRef.current = new Phaser.Game(config);
+        } catch (gameError) {
+          console.error('Failed to initialize Phaser game:', gameError);
+          // Dispatch error event so parent can handle it
+          const errorEvent = new Event('phaser-init-error');
+          window.dispatchEvent(errorEvent);
+          return;
+        }
+        
+        // Mark this instance globally to prevent duplicates
+        (window as any).__PHASER_GAME_INSTANCE__ = gameRef.current;
 
         // Make the clickPaperclip function available to Phaser scenes
         (window as any).clickPaperclip = clickPaperclip;
@@ -115,11 +153,29 @@ export default function PhaserGame() {
     // Cleanup function to destroy the game when the component unmounts
     return () => {
       if (gameRef.current) {
-        gameRef.current.destroy(true);
-        gameRef.current = null;
+        try {
+          // Stop all scenes first
+          const scenes = gameRef.current.scene.scenes;
+          scenes.forEach((scene: any) => {
+            if (scene && scene.scene) {
+              scene.scene.stop();
+            }
+          });
+          
+          // Destroy the game instance
+          gameRef.current.destroy(true);
+          gameRef.current = null;
+        } catch (error) {
+          console.warn('Error cleaning up Phaser game:', error);
+          // Force cleanup even if there's an error
+          gameRef.current = null;
+        }
       }
       
+      // Clean up global references
       delete (window as any).__ZUSTAND_STORE__;
+      delete (window as any).__PHASER_GAME_INSTANCE__;
+      delete (window as any).clickPaperclip;
     };
   }, [clickPaperclip, gameStore]);
 

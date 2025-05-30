@@ -223,6 +223,7 @@ export async function POST(req: Request) {
           clickMultiplier: parseInt(body.clickMultiplier || 1),
           totalClicks: parseInt(body.totalClicks || 0),
           totalPaperclipsMade: parseFloat(body.totalPaperclipsMade || 0),
+          highestRun: Math.max(parseFloat(body.highestRun || 0), parseFloat(body.paperclips || 0), parseFloat(body.aerogradePaperclips || 0)),
           revenuePerSecond: parseFloat(body.revenuePerSecond || 0),
           
           // Save Space Age values

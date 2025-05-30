@@ -11,6 +11,8 @@
  * 4. Intelligence-based trading frequency adjustments
  */
 
+// Type definitions removed for JS file
+
 /**
  * Calculates market opportunity score for determining when to trade
  * @param {Object} state - The current game state
@@ -24,7 +26,7 @@ export function calculateMarketOpportunityScore(state, stocks, botIntelligence) 
   if (stocks.length > 0) {
     let goodOpportunityCount = 0;
     
-    stocks.forEach(stock => {
+    stocks.forEach((stock) => {
       const history = state.stockPriceHistory[stock.id] || [];
       if (history.length >= 5) {
         const recentAverage = history.slice(-5).reduce((sum, price) => sum + price, 0) / 5;
@@ -58,7 +60,7 @@ export function calculateMarketOpportunityScore(state, stocks, botIntelligence) 
  * @returns {Array} - Stocks with buying opportunities
  */
 export function identifyBuyingOpportunities(state, stocks, botIntelligence) {
-  return stocks.filter(stock => {
+  return stocks.filter((stock) => {
     // Get price history for this stock
     const history = state.stockPriceHistory[stock.id] || [];
     
@@ -275,15 +277,16 @@ export function calculateSellPercentage(stock, stockPrice, avgPurchasePrice, inP
  * @returns {Number} - Probability of trading (0-1)
  */
 export function calculateTradingProbability(botIntelligence, marketVolatility, marketOpportunityScore) {
-  // Base chance is 2% per tick, scaled down with intelligence
+  // Base chance is 10% per tick (increased from 2% for testing)
   // Lower intelligence bots trade more frequently but less effectively
   // Higher intelligence bots are more selective but make better trades
-  const baseTradeProbability = 0.02 * (1 / Math.sqrt(botIntelligence));
+  const baseTradeProbability = 0.10 * (1 / Math.sqrt(botIntelligence));
   
   // Adjust probability based on market conditions and opportunity score
   // More volatile markets and better opportunities increase trading frequency
-  // Reduced volatility multiplier from 5 to 2 to reduce overtrading
-  return baseTradeProbability * (1 + (marketVolatility * 2)) * marketOpportunityScore;
+  // Ensure minimum probability of 5% for testing
+  const calculatedProbability = baseTradeProbability * (1 + (marketVolatility * 2)) * marketOpportunityScore;
+  return Math.max(0.05, calculatedProbability);
 }
 
 /**

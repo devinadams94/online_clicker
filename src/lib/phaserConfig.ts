@@ -48,7 +48,10 @@ export const DEFAULT_PHASER_CONFIG: any = {
     forceSetTimeOut: true
   },
   // Disable unnecessary systems
-  audio: false, // Disable audio if not using it
+  audio: {
+    noAudio: true, // Completely disable audio system
+    disableWebAudio: true, // Disable Web Audio API
+  },
   banner: false, // Disable the Phaser banner
   disableContextMenu: true, // Prevent right-click menu
 };

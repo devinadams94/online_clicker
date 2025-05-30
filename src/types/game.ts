@@ -82,6 +82,7 @@ export interface GameState {
   clickMultiplier: number;
   totalClicks: number;
   totalPaperclipsMade: number;
+  highestRun: number;
   revenuePerSecond: number;
   productionMultiplier: number;
   megaClippers: number;

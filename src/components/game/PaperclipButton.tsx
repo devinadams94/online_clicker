@@ -47,10 +47,12 @@ export default function PaperclipButton() {
       <button
         onClick={handleClick}
         disabled={spaceAgeUnlocked}
-        className={`w-full btn btn-primary py-3 text-lg font-semibold
+        className={`w-full py-3 text-lg font-semibold rounded-lg
           transition-all duration-150 transform relative overflow-hidden
-          ${isAnimating ? "scale-95 bg-primary-700 shadow-inner" : "scale-100"}
-          ${spaceAgeUnlocked ? "opacity-50 cursor-not-allowed" : "hover:shadow-lg hover:brightness-110 active:brightness-90 active:shadow-inner"}`}
+          ${isAnimating ? "scale-95" : "scale-100"}
+          ${spaceAgeUnlocked 
+            ? "bg-gray-700/50 text-gray-500 cursor-not-allowed" 
+            : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-[0_0_20px_rgba(74,222,128,0.5)] hover:shadow-[0_0_30px_rgba(74,222,128,0.7)] active:shadow-[0_0_10px_rgba(74,222,128,0.3)]"}`}
         aria-label="Create paperclip"
       >
         {/* Pulse effect */}
@@ -60,7 +62,7 @@ export default function PaperclipButton() {
         {particles.map(particle => (
           <span 
             key={particle.id}
-            className={`absolute inline-block rounded-full bg-white opacity-80 pointer-events-none animate-fly-out`}
+            className={`absolute inline-block rounded-full bg-green-300 opacity-80 pointer-events-none animate-fly-out shadow-[0_0_10px_rgba(134,239,172,0.8)]`}
             style={{
               left: `${particle.x}px`, 
               top: `${particle.y}px`,

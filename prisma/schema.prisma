@@ -68,6 +68,7 @@ model GameState {
   clickMultiplier            Int      @default(1)
   totalClicks                Int      @default(0)
   totalPaperclipsMade        Float    @default(0)
+  highestRun                 Float    @default(0)
   revenuePerSecond           Float    @default(0)
   productionMultiplier       Float    @default(1)
   megaClippers               Int      @default(0)

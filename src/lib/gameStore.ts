@@ -14,6 +14,8 @@ import {
 } from "@/utils/marketUtils";
 // Import space extension functions
 import { addSpaceFunctions } from "./spaceExtension";
+// Import trading bot algorithm
+import * as tradingAlgorithm from "./tradingBotAlgorithm";
 
 // Added types for visual effects and upgrades
 interface VisualFX {
@@ -95,6 +97,7 @@ interface GameStore extends GameState {
   // Advanced resource upgrades
   buyOpsUpgrade: (id: string, cost: number) => void;
   buyCreativityUpgrade: (id: string, cost: number) => void;
+  buyMemoryUpgrade: (id: string, cost: number) => void;
   
   // Space Age
   spaceAgeUnlocked: boolean;
@@ -135,6 +138,7 @@ interface GameStore extends GameState {
   statsTick: () => void;
   trustTick: () => void;
   opsTick: () => void;
+  batchedTick: () => void; // New optimized tick that batches all updates
   
   // State setters
   setGameState: (gameState: GameState) => void;
@@ -260,6 +264,7 @@ const useGameStore = create<GameStore>(
       creativityUnlocked: false,
       unlockedOpsUpgrades: [],
       unlockedCreativityUpgrades: [],
+      unlockedMemoryUpgrades: [],
       // Default costs for upgrades
       upgradeCosts: {
         'parallelProcessing': 15,
@@ -283,6 +288,7 @@ const useGameStore = create<GameStore>(
       clickMultiplier: 1,
       totalClicks: 0,
       totalPaperclipsMade: 0,
+      highestRun: 0,
       revenuePerSecond: 0,
       productionMultiplier: 1,
       megaClippers: 0,
@@ -323,6 +329,7 @@ const useGameStore = create<GameStore>(
       
       // Stock Market
       stockMarketUnlocked: false,
+      tickCount: 0,
       tradingBots: 0,
       tradingBotCost: 1000,
       botIntelligence: 1,
@@ -407,11 +414,11 @@ const useGameStore = create<GameStore>(
           // Cost increases by 8% for each purchase (reduced from 10%)
           const newCost = Math.floor(state.autoclipper_cost * 1.08 * 100) / 100;
           
-          // Each autoclipper produces 1 paperclip per second (affected by total production multiplier)
-          const totalMultiplier = state.productionMultiplier + (state.opsProductionMultiplier || 0);
+          // Each autoclipper produces 1 paperclip per second
           // Set to 10 clips per second per autoclipper, so when divided by 10 in the tick function, 
           // we get 1 paperclip per second per autoclipper
-          const newClicksPerSecond = newAutoclippers * 10 * totalMultiplier;
+          // Don't apply multiplier here - it's applied in the tick function
+          const newClicksPerSecond = newAutoclippers * 10;
           
           // Check if we should unlock Mega-Clippers at 100 autoclippers
           const megaClippersUnlocked = newAutoclippers >= 100 ? true : state.megaClippersUnlocked;
@@ -448,10 +455,10 @@ const useGameStore = create<GameStore>(
         // Each mega clipper adds +1.0 to the production multiplier
         const newProductionMultiplier = state.productionMultiplier + 1.0;
         
-        // Recalculate production rate, including OPs production multiplier
-        const totalMultiplier = newProductionMultiplier + (state.opsProductionMultiplier || 0);
+        // Recalculate production rate
+        // Don't apply multiplier here - it's applied in the tick function
         // Multiply by 10 for consistent 1 paperclip per second per autoclipper
-        const newClicksPerSecond = state.autoclippers * 10 * totalMultiplier;
+        const newClicksPerSecond = state.autoclippers * 10;
         
         // Update state with new values
         set({
@@ -508,10 +515,27 @@ const useGameStore = create<GameStore>(
       
       // Set the paperclip price (player controlled)
       setClipPrice: (price: number) => 
-        set((_state: GameState) => {
+        set((state: GameState) => {
           // Ensure price isn't negative or unreasonably high
           const safePrice = Math.max(0.01, Math.min(price, 1));
-          return { paperclipPrice: safePrice };
+          
+          // Recalculate demand immediately when price changes
+          const newDemand = calculateDemand(
+            safePrice,
+            state.basePaperclipPrice,
+            state.maxDemand,
+            state.elasticity,
+            state.minDemand,
+            state.marketTrend,
+            state.seasonalMultiplier,
+            state.volatility,
+            state.marketDemandLevel
+          );
+          
+          return { 
+            paperclipPrice: safePrice,
+            marketDemand: newDemand
+          };
         }),
       
       // Sell paperclips based on current demand and price
@@ -828,8 +852,8 @@ const useGameStore = create<GameStore>(
         const newUnlockedAbilities = [...state.unlockedTrustAbilities, id];
         
         // Apply ability effects
+        // Don't subtract trust - keep it as a requirement only
         let updatedState: Partial<GameState> = {
-          trust: state.trust - cost,
           unlockedTrustAbilities: newUnlockedAbilities
         };
           
@@ -865,6 +889,16 @@ const useGameStore = create<GameStore>(
           // Special handling for Space Age upgrade
           if (id === 'spaceAge') {
             updatedState.spaceAgeUnlocked = true;
+            
+            // Convert all paperclips to aerograde paperclips at 1000:1 ratio
+            const currentPaperclips = state.paperclips;
+            const aerogradeToAdd = Math.floor(currentPaperclips / 1000);
+            const remainingPaperclips = currentPaperclips % 1000;
+            
+            updatedState.aerogradePaperclips = (state.aerogradePaperclips || 0) + aerogradeToAdd;
+            updatedState.paperclips = remainingPaperclips;
+            
+            console.log(`Space Age unlocked! Converted ${currentPaperclips} paperclips to ${aerogradeToAdd} aerograde paperclips (${remainingPaperclips} paperclips remaining)`);
           }
           
           // Update state
@@ -1315,14 +1349,16 @@ const useGameStore = create<GameStore>(
         
       botAutoTrade: () =>
         set((state: GameState) => {
+          console.log('botAutoTrade called - tradingBots:', state.tradingBots, 'budget:', state.botTradingBudget, 'intelligence:', state.botIntelligence);
+          
           // Attempt to use the enhanced trading algorithm from the separate module
           let useAdvancedAlgorithm = false;
-          let tradingAlgorithm;
+          let tradingAlgorithmModule;
           
           try {
             // Check if the enhanced trading algorithm is available
             // This is for backward compatibility and graceful degradation
-            tradingAlgorithm = require('./tradingBotAlgorithm');
+            tradingAlgorithmModule = tradingAlgorithm;
             useAdvancedAlgorithm = true;
           } catch (error) {
             useAdvancedAlgorithm = false;
@@ -1704,12 +1740,12 @@ const useGameStore = create<GameStore>(
               }
               
               // Advanced multi-stock selection
-              let stocksToBuy = [];
+              let stocksToBuy: any[] = [];
               
-              if (useAdvancedAlgorithm && tradingAlgorithm) {
+              if (useAdvancedAlgorithm && tradingAlgorithmModule) {
                 try {
                   // Use the advanced algorithm to select multiple stocks
-                  stocksToBuy = tradingAlgorithm.selectStocksToBuy(
+                  stocksToBuy = tradingAlgorithmModule.selectStocksToBuy(
                     stocksWithHistories,
                     affordableStocks,
                     updatedBudget,
@@ -1786,7 +1822,27 @@ const useGameStore = create<GameStore>(
                   });
                 }
                 
-                // Log the action
+                // Record transaction in history
+                const transaction = {
+                  id: `bot-buy-${Date.now()}-${stockToBuy.id}`,
+                  type: 'buy' as const,
+                  stockId: stockToBuy.id,
+                  stockName: stockToBuy.name,
+                  quantity: quantity,
+                  price: stockToBuy.price,
+                  total: totalCost,
+                  profit: 0,
+                  timestamp: new Date(),
+                  success: true
+                };
+                
+                if (!updatedState.transactionHistory) {
+                  updatedState.transactionHistory = [];
+                }
+                updatedState.transactionHistory = [...updatedState.transactionHistory, transaction];
+                if (updatedState.transactionHistory.length > 100) {
+                  updatedState.transactionHistory.shift();
+                }
               }
               
               // Update the state with new portfolio and budget
@@ -1909,7 +1965,7 @@ const useGameStore = create<GameStore>(
                   // Use enhanced algorithm if available
                   let riskThreshold = 0.2; // Default fallback
                   
-                  if (useAdvancedAlgorithm && tradingAlgorithm) {
+                  if (useAdvancedAlgorithm && tradingAlgorithmModule) {
                     try {
                       // Determine risk level based on intelligence
                       let riskLevel = "medium"; // Default
@@ -1922,7 +1978,7 @@ const useGameStore = create<GameStore>(
                         riskLevel = "high"; // 50% threshold
                       }
                       
-                      riskThreshold = tradingAlgorithm.getRiskThreshold(riskLevel);
+                      riskThreshold = tradingAlgorithmModule.getRiskThreshold(riskLevel);
                     } catch (error) {
                       // Fallback to traditional calculation
                       useAdvancedAlgorithm = false;
@@ -1943,10 +1999,10 @@ const useGameStore = create<GameStore>(
                   const history = state.stockPriceHistory[stock.id] || [];
                   
                   // Use the enhanced algorithm if available
-                  if (useAdvancedAlgorithm && tradingAlgorithm) {
+                  if (useAdvancedAlgorithm && tradingAlgorithmModule) {
                     try {
                       // Use the advanced algorithm to calculate sell percentage
-                      sellPercentage = tradingAlgorithm.calculateSellPercentage(
+                      sellPercentage = tradingAlgorithmModule.calculateSellPercentage(
                         stock,
                         stockPrice,
                         avgPurchasePrice,
@@ -2061,6 +2117,28 @@ const useGameStore = create<GameStore>(
                   botLog.totalValue = totalRevenue;
                   botLog.profit = profitLoss;
                   
+                  // Record transaction in history
+                  const sellTransaction = {
+                    id: `bot-sell-${Date.now()}-${stock.id}`,
+                    type: 'sell' as const,
+                    stockId: stock.id,
+                    stockName: stock.name,
+                    quantity: sellQuantity,
+                    price: stock.price,
+                    total: totalRevenue,
+                    profit: profitLoss,
+                    timestamp: new Date(),
+                    success: true
+                  };
+                  
+                  if (!updatedState.transactionHistory) {
+                    updatedState.transactionHistory = [];
+                  }
+                  updatedState.transactionHistory = [...updatedState.transactionHistory, sellTransaction];
+                  if (updatedState.transactionHistory.length > 100) {
+                    updatedState.transactionHistory.shift();
+                  }
+                  
                   // Update the state with new portfolio and budget
                   updatedState.stockPortfolio = updatedPortfolio;
                   updatedState.botTradingBudget = updatedBudget;
@@ -2087,7 +2165,8 @@ const useGameStore = create<GameStore>(
             portfolioValue: newPortfolioValue,
             stockMarketReturns: updatedState.stockMarketReturns,
             botTradingProfit: updatedState.botTradingProfit,
-            botTradingLosses: updatedState.botTradingLosses
+            botTradingLosses: updatedState.botTradingLosses,
+            transactionHistory: updatedState.transactionHistory || state.transactionHistory
           };
         }),
         
@@ -2622,56 +2701,85 @@ const useGameStore = create<GameStore>(
       
       // Stock market tick with enhanced trading algorithm
       stockMarketTick: () => {
-        if (get().stockMarketUnlocked) {
-          const state = get();
-          const now = new Date();
-          const lastUpdate = state.stockMarketLastUpdate;
-          
-          // Update stock prices every 5 seconds through the game tick
-          // (The StockMarketPanel also updates prices when displayed)
-          if (now.getTime() - lastUpdate.getTime() >= 5000) {
-            get().updateStockPrices();
+        const state = get();
+        const isUnlocked = state.stockMarketUnlocked;
+        
+        // Log every tick to debug
+        console.log('[stockMarketTick] Called - unlocked:', isUnlocked);
+        
+        if (!isUnlocked) {
+          console.log('[stockMarketTick] Stock market not unlocked, returning');
+          return;
+        }
+        
+        const now = new Date();
+        const lastUpdate = state.stockMarketLastUpdate;
+        
+        // Update stock prices every 5 seconds through the game tick
+        // (The StockMarketPanel also updates prices when displayed)
+        if (now.getTime() - lastUpdate.getTime() >= 5000) {
+          get().updateStockPrices();
+        }
+        
+        // Run auto trading if we have bots with budget
+        const tradingBots = state.tradingBots;
+        const botBudget = state.botTradingBudget;
+        
+        // Increment tick count
+        const tickCount = (state.tickCount || 0) + 1;
+        set({ tickCount });
+        
+        // Debug logging - temporarily every tick for debugging
+        console.log(`[Stock Market Tick ${tickCount}] Bots: ${tradingBots}, Budget: $${botBudget.toFixed(2)}, Next trade in ${5 - (tickCount % 5)} ticks`);
+        
+        // Trade every 5 ticks if we have bots and budget
+        if (tradingBots > 0 && botBudget >= 10) {
+          if (tickCount % 5 === 0) {
+            console.log(`[TRADING NOW] Tick ${tickCount} - Executing bot auto-trade with ${tradingBots} bots and $${botBudget.toFixed(2)} budget`);
+            const result = get().botAutoTrade();
+            console.log('[TRADE RESULT]', result);
           }
+        } else if (tradingBots > 0 && botBudget < 10 && tickCount % 50 === 0) {
+          console.log(`[TRADE SKIPPED] Insufficient budget: $${botBudget.toFixed(2)} (need at least $10)`);
+        } else if (tradingBots === 0 && tickCount % 50 === 0) {
+          console.log('[TRADE SKIPPED] No trading bots purchased');
+        }
           
-          // Run auto trading if we have bots with budget
-          const tradingBots = state.tradingBots;
-          if (tradingBots > 0) {
+          // Remove the else if that was preventing simple auto-trading
+          if (false) {
             try {
               // Use enhanced trading algorithm from tradingBotAlgorithm.js
               const botIntelligence = state.botIntelligence || 1;
               const marketVolatility = state.volatility || 0.15;
               const stocks = get().getStocks();
               
-              // Import dynamically to avoid circular dependencies
-              import('./tradingBotAlgorithm').then(tradingAlgorithm => {
-                // Calculate market opportunity score
-                const marketOpportunityScore = tradingAlgorithm.calculateMarketOpportunityScore(state, stocks, botIntelligence);
+              // Calculate market opportunity score
+              const marketOpportunityScore = tradingAlgorithm.calculateMarketOpportunityScore(state, stocks, botIntelligence);
+              
+              // Calculate trading probability
+              const adjustedProbability = tradingAlgorithm.calculateTradingProbability(botIntelligence, marketVolatility, marketOpportunityScore);
+              
+              // Determine if trading should occur this tick based on probability
+              const randomRoll = Math.random();
+              const shouldTrade = randomRoll < adjustedProbability;
+              
+              console.log(`Bot trade check: roll=${randomRoll.toFixed(4)}, probability=${adjustedProbability.toFixed(4)}, shouldTrade=${shouldTrade}, opportunityScore=${marketOpportunityScore.toFixed(2)}`);
+              
+              if (shouldTrade) {
+                // Log trading decision for debugging
+                console.log(`Trading bot ACTIVE: executing trades...`);
                 
-                // Calculate trading probability
-                const adjustedProbability = tradingAlgorithm.calculateTradingProbability(botIntelligence, marketVolatility, marketOpportunityScore);
+                // Execute trades based on number of bots
+                // More intelligent bots execute fewer trades but with better returns
+                const tradesToExecute = Math.max(1, Math.floor(tradingBots / Math.sqrt(botIntelligence)));
                 
-                // Determine if trading should occur this tick based on probability
-                const shouldTrade = Math.random() < adjustedProbability;
-                
-                if (shouldTrade) {
-                  // Log trading decision for debugging
-                  
-                  // Execute trades based on number of bots
-                  // More intelligent bots execute fewer trades but with better returns
-                  const tradesToExecute = Math.max(1, Math.floor(tradingBots / Math.sqrt(botIntelligence)));
-                  
-                  // Execute the calculated number of trades
-                  for (let i = 0; i < tradesToExecute; i++) {
-                    get().botAutoTrade();
-                  }
-                }
-              }).catch(error => {
-                // Fallback to simple trading if module import fails
-                if (Math.random() < 0.1) {
+                // Execute the calculated number of trades
+                for (let i = 0; i < tradesToExecute; i++) {
                   get().botAutoTrade();
                 }
-              });
+              }
             } catch (error) {
+              console.error('Trading bot error:', error);
               // Fallback to simple trading
               if (Math.random() < 0.1) {
                 get().botAutoTrade();
@@ -2689,7 +2797,6 @@ const useGameStore = create<GameStore>(
           
           // Still run the old passive returns system for backward compatibility
           get().generateStockReturns();
-        }
       },
       
       // Player Stats actions
@@ -3209,6 +3316,66 @@ const useGameStore = create<GameStore>(
         return true;
       },
       
+      buyMemoryUpgrade: (id: string, cost: number) => {
+        const state = get();
+        
+        // Check if already unlocked
+        if (state.unlockedMemoryUpgrades?.includes(id)) {
+          return false;
+        }
+        
+        // Check if we have enough memory
+        if (state.memory < cost) {
+          return false;
+        }
+        
+        // Deduct memory
+        const newMemory = state.memory - cost;
+        const updatedState: Partial<GameState> = {
+          memory: newMemory,
+          unlockedMemoryUpgrades: [...(state.unlockedMemoryUpgrades || []), id],
+        };
+        
+        // Apply upgrade effects
+        switch (id) {
+          case 'efficientProcessing':
+            // Increase memory regeneration rate by 20%
+            updatedState.memoryRegenRate = state.memoryRegenRate * 1.2;
+            break;
+            
+          case 'parallelThinking':
+            // Double OPs production rate (by increasing the OPs per memory ratio)
+            // This effectively doubles the max OPs and current OPs
+            updatedState.opsMax = state.opsMax * 2;
+            updatedState.ops = Math.min(state.ops * 2, updatedState.opsMax);
+            break;
+            
+          case 'quantumMemory':
+            // Increase memory capacity by 50%
+            const newMemoryMax = state.memoryMax * 1.5;
+            updatedState.memoryMax = newMemoryMax;
+            // Also increase OPs max proportionally
+            updatedState.opsMax = newMemoryMax * (state.opsMax / state.memoryMax);
+            break;
+        }
+        
+        // Update state
+        set(updatedState);
+        
+        // Force save
+        setTimeout(() => {
+          try {
+            if (typeof window !== 'undefined' && typeof window.saveGameNow === 'function') {
+              window.saveGameNow();
+            }
+          } catch (err) {
+            // Ignore save errors
+          }
+        }, 250);
+        
+        return true;
+      },
+      
       // Stats tick - regenerates memory and generates yomi
       statsTick: () => {
         get().regenerateMemory();
@@ -3250,55 +3417,60 @@ const useGameStore = create<GameStore>(
       // OPs tick - generates OPs based on memory and CPU and scales production multiplier
       opsTick: () => 
         set((state: GameState) => {
-          // Calculate OPs generation rate based on CPU level (10x faster than original)
-          const opsRate = (state.cpuLevel * 1.0) / 10; // 1.0 per CPU level per second (10x the original 0.1) - Divided by 10 because this runs 10 times per second
-          
-          // New OPs value
-          const newOps = Math.min(state.ops + opsRate, state.opsMax);
-          
-          // Calculate OPs contribution to production multiplier (scales linearly)
-          // At 5,000 OPs, the OPs contribution adds 50 to the multiplier (much better scaling)
-          const opsMultiplier = newOps / 100; // This gives +50 at 5,000 OPs
-          
-          // Calculate the base production multiplier without OPs contribution
-          // First, subtract the current OPs multiplier to get the base multiplier
-          const baseMultiplier = state.productionMultiplier - (state.opsProductionMultiplier || 0);
-          
-          // Then add the new OPs multiplier to get the new total
-          const newProductionMultiplier = baseMultiplier + opsMultiplier;
-          
-          // Recalculate clicks per second based on the new production multiplier
-          const clicksPerSecond = state.autoclippers * 1 * newProductionMultiplier;
-          
-          // Generate creativity if OPs are maxed out and creativity is unlocked
-          let newCreativity = state.creativity;
-          if (newOps >= state.opsMax && state.ops >= state.opsMax) {
-            // Generate 0.1 creativity per second when OPs are maxed
-            newCreativity += 0.01; // 0.1/10 because this runs 10 times per second
+          // Generate OPs by consuming memory slowly
+          if (state.memory >= 0.1 && state.ops < state.opsMax) {
+            // Consume 0.1 memory per tick (1 memory per second)
+            const memoryToConsume = Math.min(state.memory, 0.1);
+            const opsToGenerate = memoryToConsume * 50; // 50 OPs per memory
             
-            // Unlock creativity if we have enough OPs capacity (changed from 20000 to 5000)
-            const creativityUnlocked = state.creativityUnlocked || state.opsMax >= 5000;
+            // Update memory and OPs
+            const newMemory = state.memory - memoryToConsume;
+            const newOps = Math.min(state.ops + opsToGenerate, state.opsMax);
+          
+            // Calculate OPs contribution to production multiplier (scales linearly)
+            // At 5,000 OPs, the OPs contribution adds 50 to the multiplier (much better scaling)
+            const opsMultiplier = newOps / 100; // This gives +50 at 5,000 OPs
             
-            if (creativityUnlocked && !state.creativityUnlocked) {
-              // Force immediate save to persist the unlocked state
-              if (typeof window !== 'undefined' && typeof window.saveGameNow === 'function') {
-                setTimeout(() => (window.saveGameNow as Function)(), 100);
+            // Calculate the base production multiplier without OPs contribution
+            // First, subtract the current OPs multiplier to get the base multiplier
+            const baseMultiplier = state.productionMultiplier - (state.opsProductionMultiplier || 0);
+            
+            // Then add the new OPs multiplier to get the new total
+            const newProductionMultiplier = baseMultiplier + opsMultiplier;
+            
+            // Recalculate clicks per second based on the new production multiplier
+            const clicksPerSecond = state.autoclippers * 10;
+            
+            // Generate creativity if OPs are maxed out and creativity is unlocked
+            let newCreativity = state.creativity;
+            if (newOps >= state.opsMax && state.ops >= state.opsMax) {
+              // Generate 0.1 creativity per second when OPs are maxed
+              newCreativity += 0.01; // 0.1/10 because this runs 10 times per second
+              
+              // Unlock creativity if we have enough OPs capacity (changed from 20000 to 5000)
+              const creativityUnlocked = state.creativityUnlocked || state.opsMax >= 5000;
+              
+              if (creativityUnlocked && !state.creativityUnlocked) {
+                // Force immediate save to persist the unlocked state
+                if (typeof window !== 'undefined' && typeof window.saveGameNow === 'function') {
+                  setTimeout(() => (window.saveGameNow as Function)(), 100);
+                }
               }
+              
+              return {
+                memory: newMemory,
+                ops: newOps,
+                productionMultiplier: newProductionMultiplier,
+                clicks_per_second: clicksPerSecond,
+                opsProductionMultiplier: opsMultiplier,
+                creativity: newCreativity,
+                creativityUnlocked
+              };
             }
             
-            return {
-              ops: newOps,
-              productionMultiplier: newProductionMultiplier,
-              clicks_per_second: clicksPerSecond,
-              opsProductionMultiplier: opsMultiplier,
-              creativity: newCreativity,
-              creativityUnlocked
-            };
-          }
-          
-          // Just update OPs and multiplier if we didn't generate creativity
-          if (newOps !== state.ops) {
+            // Update memory, OPs and multiplier
             return { 
+              memory: newMemory,
               ops: newOps,
               productionMultiplier: newProductionMultiplier,
               clicks_per_second: clicksPerSecond,
@@ -3306,8 +3478,136 @@ const useGameStore = create<GameStore>(
             };
           }
           
-          return state; // No change
+          return state; // No change if no memory to consume
         }),
+        
+      // Optimized batched tick that combines all updates into a single state change
+      batchedTick: () => {
+        const state = get();
+        let batchedUpdates: Partial<GameState> = {};
+        
+        // Only run ticks based on game state
+        if (!state.spaceAgeUnlocked) {
+          // PRODUCTION TICK (optimized)
+          if (state.clicks_per_second > 0) {
+            // Handle auto wire buyer
+            if (state.autoWireBuyer && state.wire < state.wirePerSpool * 0.1 && state.money >= state.spoolCost) {
+              const now = new Date();
+              const timeSinceLastPurchase = now.getTime() - state.lastWirePurchaseTime.getTime();
+              const newWirePurchaseCount = state.wirePurchaseCount + 1;
+              
+              // Use cached calculation for wire cost
+              const frequencyFactor = Math.max(0, 1 - (timeSinceLastPurchase / (5 * 60 * 1000)));
+              const purchaseCountFactor = Math.min(1, newWirePurchaseCount / 10);
+              const baseCost = 5 * state.spoolSizeLevel;
+              const dynamicIncrease = frequencyFactor * purchaseCountFactor * 50;
+              const newCost = Math.min(250, Math.max(baseCost, state.spoolCost + dynamicIncrease));
+              
+              batchedUpdates.money = (batchedUpdates.money || state.money) - state.spoolCost;
+              batchedUpdates.wire = (batchedUpdates.wire || state.wire) + state.wirePerSpool;
+              batchedUpdates.spoolCost = newCost;
+              batchedUpdates.wirePurchaseCount = newWirePurchaseCount;
+              batchedUpdates.lastWirePurchaseTime = now;
+            }
+            
+            // Calculate production
+            const currentWire = batchedUpdates.wire || state.wire;
+            if (currentWire > 0) {
+              const prestigeProductionMultiplier = state.prestigeRewards?.productionMultiplier || 1;
+              const totalMultiplier = (state.productionMultiplier + (state.opsProductionMultiplier || 0)) * prestigeProductionMultiplier;
+              const potentialProduction = (state.clicks_per_second * totalMultiplier) / 10;
+              const wireEfficiency = state.prestigeRewards?.wireEfficiency || 1;
+              const actualProduction = Math.min(potentialProduction, currentWire * wireEfficiency);
+              
+              batchedUpdates.paperclips = state.paperclips + actualProduction;
+              batchedUpdates.wire = currentWire - (actualProduction / wireEfficiency);
+              batchedUpdates.totalPaperclipsMade = state.totalPaperclipsMade + actualProduction;
+            }
+          }
+          
+          // MARKET TICK (optimized - only if we have paperclips to sell)
+          if (state.paperclips > 0) {
+            const demand = state.marketDemand || 100;
+            const saleRate = Math.min(demand / 10, state.paperclips);
+            
+            if (saleRate > 0) {
+              const revenue = saleRate * state.paperclipPrice;
+              batchedUpdates.paperclips = (batchedUpdates.paperclips || state.paperclips) - saleRate;
+              batchedUpdates.money = (batchedUpdates.money || state.money) + revenue;
+              batchedUpdates.paperclipsSold = state.paperclipsSold + saleRate;
+              batchedUpdates.totalSales = state.totalSales + revenue;
+              batchedUpdates.lifetimePaperclips = (state.lifetimePaperclips || 0) + saleRate;
+              batchedUpdates.revenuePerSecond = revenue * 10;
+            }
+          }
+          
+          // RESEARCH TICK (only if research is active)
+          if (state.researchPointsPerSecond > 0) {
+            batchedUpdates.researchPoints = state.researchPoints + (state.researchPointsPerSecond / 10);
+          }
+        }
+        
+        // STATS TICK (always runs)
+        // Memory regeneration
+        if (state.memory < state.memoryMax) {
+          const regenAmount = Math.min(state.memoryRegenRate / 10, state.memoryMax - state.memory);
+          if (regenAmount > 0) {
+            batchedUpdates.memory = state.memory + regenAmount;
+          }
+        }
+        
+        // OPs tick - consume memory slowly over time
+        if (state.memory >= 0.1 && state.ops < state.opsMax) {
+          // Consume memory at a rate of 0.1 per tick (1 memory per second)
+          const memoryToUse = Math.min(state.memory, 0.1);
+          const opsToGenerate = Math.min(memoryToUse * 50, state.opsMax - state.ops);
+          
+          if (opsToGenerate > 0) {
+            batchedUpdates.ops = state.ops + opsToGenerate;
+            batchedUpdates.memory = (batchedUpdates.memory || state.memory) - memoryToUse;
+            
+            // Update OPs production multiplier
+            const opsMultiplier = Math.min(0.5, state.ops / 1000);
+            if (opsMultiplier !== state.opsProductionMultiplier) {
+              batchedUpdates.opsProductionMultiplier = opsMultiplier;
+            }
+          }
+        }
+        
+        // Trust tick
+        const nextTrustThreshold = state.nextTrustAt || 100000;
+        if (state.totalPaperclipsMade >= nextTrustThreshold) {
+          const trustGain = Math.floor(state.totalPaperclipsMade / nextTrustThreshold);
+          const newTrust = state.trust + trustGain;
+          const newThreshold = nextTrustThreshold * Math.pow(10, trustGain);
+          
+          batchedUpdates.trust = newTrust;
+          batchedUpdates.trustLevel = state.trustLevel + trustGain;
+          batchedUpdates.nextTrustAt = newThreshold;
+        }
+        
+        // Creativity tick (only if unlocked)
+        if (state.creativityUnlocked && state.ops >= 10) {
+          const creativityGen = 0.01; // 0.1 per second
+          batchedUpdates.creativity = state.creativity + creativityGen;
+        }
+        
+        // STOCK MARKET TICK (only if bots are active - throttled)
+        if (state.stockMarketUnlocked && state.botTradingBudget > 0 && state.hasTradingBot) {
+          // Only run bot trading every 5th tick (500ms) to reduce load
+          const tickCount = Math.floor(Date.now() / 100);
+          if (tickCount % 5 === 0) {
+            // Bot trading logic would go here, but it's too complex to inline
+            // For now, just call the existing function
+            get().botAutoTrade();
+          }
+        }
+        
+        // Apply all batched updates at once
+        if (Object.keys(batchedUpdates).length > 0) {
+          set(batchedUpdates);
+        }
+      },
         
       // Prestige System Functions
       calculatePrestigePoints: () => {
@@ -3516,6 +3816,7 @@ const useGameStore = create<GameStore>(
           creativityUnlocked: false,
           unlockedOpsUpgrades: [],
           unlockedCreativityUpgrades: [],
+          unlockedMemoryUpgrades: [],
           
           // Space Age
           spaceAgeUnlocked: false,

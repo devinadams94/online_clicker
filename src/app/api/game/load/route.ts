@@ -260,7 +260,10 @@ export async function GET() {
       })(),
       
       // Space upgrades
-      unlockedSpaceUpgrades: parsedSpaceUpgrades
+      unlockedSpaceUpgrades: parsedSpaceUpgrades,
+      
+      // Highest run tracking
+      highestRun: gameState.highestRun || 0
     };
     
     return NextResponse.json(safeGameState);

@@ -324,14 +324,15 @@ export default function StockMarketPanel() {
     stockPriceHistory,
     portfolioValue,
     calculatePortfolioValue,
-    updateStockPrices
+    updateStockPrices,
+    transactionHistory
   } = useGameStore();
   
   // Ensure botIntelligence is never undefined or zero
   const botIntelligence = rawBotIntelligence || 1;
   
   const [stocks, setStocks] = useState<Stock[]>([]);
-  const [activeTab, setActiveTab] = useState<'stocks' | 'portfolio'>('stocks');
+  const [activeTab, setActiveTab] = useState<'stocks' | 'portfolio' | 'history'>('stocks');
   const [selectedStock, setSelectedStock] = useState<string | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [detailView, setDetailView] = useState<Stock | null>(null);
@@ -536,47 +537,68 @@ export default function StockMarketPanel() {
   
   if (!stockMarketUnlocked) {
     return (
-      <div className="card h-full flex flex-col justify-center items-center p-6">
-        <h2 className="text-xl font-bold mb-4">Stock Market</h2>
-        <p className="text-center mb-4">The stock market is locked. Unlock it in the Upgrades panel.</p>
+      <div className="min-h-screen p-4 relative">
+        {/* Neon green background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+          <div className="absolute inset-0 bg-gradient-to-tr from-green-500/20 via-transparent to-green-400/20" />
+        </div>
+        
+        <div className="relative z-10 max-w-4xl mx-auto mt-20">
+          <div className="backdrop-blur-md bg-gray-900/50 rounded-xl p-8 border border-green-400/30 shadow-[0_0_20px_rgba(74,222,128,0.3)] flex flex-col justify-center items-center">
+            <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-green-400 to-green-600 text-transparent bg-clip-text drop-shadow-[0_0_20px_rgba(74,222,128,0.8)]">Stock Market</h2>
+            <p className="text-center mb-4 text-green-300">The stock market is locked. Unlock it in the Upgrades panel.</p>
+          </div>
+        </div>
       </div>
     );
   }
   
   return (
     <>
-      <div className="card h-full overflow-y-auto">
-        <div className="mb-4 flex justify-between items-center">
-          <h2 className="text-xl font-bold">Stock Market</h2>
-          <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg flex items-center">
-            <span className="text-sm font-medium mr-1">Available:</span>
-            <span className="text-lg font-bold text-green-600">${money.toFixed(2)}</span>
-          </div>
+      <div className="min-h-screen p-4 relative">
+        {/* Neon green background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+          <div className="absolute inset-0 bg-gradient-to-tr from-green-500/20 via-transparent to-green-400/20" />
         </div>
         
+        {/* Content */}
+        <div className="relative z-10 max-w-7xl mx-auto">
+          <div className="backdrop-blur-md bg-gray-900/50 rounded-xl p-6 border border-green-400/30 shadow-[0_0_20px_rgba(74,222,128,0.3)] overflow-y-auto max-h-[calc(100vh-8rem)]">
+            <div className="mb-6 flex justify-between items-center">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-green-600 text-transparent bg-clip-text drop-shadow-[0_0_20px_rgba(74,222,128,0.8)]">Stock Market</h2>
+              <div className="backdrop-blur-md bg-gray-800/50 px-4 py-2 rounded-lg flex items-center border border-green-400/30">
+                <span className="text-sm font-medium mr-2 text-green-300">Available:</span>
+                <span className="text-lg font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">${money.toFixed(2)}</span>
+              </div>
+            </div>
+        
         {/* Portfolio Summary */}
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mt-2 mb-4">
+        <div className="backdrop-blur-md bg-gray-800/50 rounded-lg p-4 mb-6 border border-green-400/20 shadow-[0_0_15px_rgba(74,222,128,0.2)]">
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <div className="text-sm font-medium">Portfolio Value</div>
-              <div className="text-xl font-bold">${portfolioValue.toFixed(2)}</div>
+              <div className="text-sm font-medium text-green-300">Portfolio Value</div>
+              <div className="text-xl font-bold text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]">${portfolioValue.toFixed(2)}</div>
             </div>
             <div>
-              <div className="text-sm font-medium text-green-600">Total Profit</div>
-              <div className="text-xl font-bold text-green-600">${botTradingProfit.toFixed(2)}</div>
+              <div className="text-sm font-medium text-green-300">Total Profit</div>
+              <div className="text-xl font-bold text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]">${botTradingProfit.toFixed(2)}</div>
             </div>
             <div>
-              <div className="text-sm font-medium text-red-600">Total Losses</div>
-              <div className="text-xl font-bold text-red-600">${botTradingLosses.toFixed(2)}</div>
+              <div className="text-sm font-medium text-red-300">Total Losses</div>
+              <div className="text-xl font-bold text-red-400 drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]">${botTradingLosses.toFixed(2)}</div>
             </div>
             <div className="col-span-3 mt-2 flex items-center justify-between">
-              <div className="text-sm font-medium">Performance</div>
-              <div className={`text-xl font-bold ${getPerformanceColor()} flex items-center`}>
+              <div className="text-sm font-medium text-green-300">Performance</div>
+              <div className={`text-xl font-bold flex items-center ${
+                percentChange > 0 ? 'text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]' : 
+                percentChange < 0 ? 'text-red-400 drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]' : 
+                'text-gray-400'
+              }`}>
                 {formatPerformance()}
                 {/* Subtle animation when portfolio value updates */}
                 <span 
                   key={portfolioValue}
-                  className="ml-2 w-2 h-2 bg-blue-500 rounded-full opacity-0 animate-ping-once"
+                  className="ml-2 w-2 h-2 bg-green-400 rounded-full opacity-0 animate-ping-once shadow-[0_0_10px_rgba(74,222,128,0.8)]"
                 ></span>
               </div>
             </div>
@@ -584,19 +606,21 @@ export default function StockMarketPanel() {
         </div>
         
         {/* Trading Bots Section */}
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-4">
-          <h3 className="text-md font-medium mb-2">Trading Bots</h3>
+        <div className="backdrop-blur-md bg-gray-800/50 rounded-lg p-4 mb-6 border border-green-400/20 shadow-[0_0_15px_rgba(74,222,128,0.2)]">
+          <h3 className="text-lg font-bold mb-3 text-green-300">Trading Bots</h3>
           
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded">
-              <div className="text-sm font-medium">Bots</div>
-              <div className="text-md">{tradingBots} Active</div>
-              <div className="text-xs text-gray-500">
-                +{tradingBots}% trend accuracy<br />
-                -{tradingBots}% volatility
+            <div className="backdrop-blur-sm bg-gray-700/50 p-3 rounded-lg border border-green-400/10">
+              <div className="text-sm font-medium text-green-300">Bots</div>
+              <div className="text-lg font-bold text-green-400">{tradingBots} Active</div>
+              <div className="text-xs text-gray-400">
+                <span className="text-green-400">+{tradingBots}%</span> trend accuracy<br />
+                <span className="text-green-400">-{tradingBots}%</span> volatility
               </div>
               <button
-                className={`mt-2 w-full py-1 text-sm ${canBuyTradingBot ? 'bg-primary-600 text-white hover:bg-primary-700' : 'bg-gray-300 cursor-not-allowed'} rounded`}
+                className={`mt-2 w-full py-2 text-sm font-bold rounded-lg transition-all ${canBuyTradingBot 
+                  ? 'bg-green-600 hover:bg-green-500 text-white shadow-[0_0_15px_rgba(74,222,128,0.6)] hover:shadow-[0_0_20px_rgba(74,222,128,0.8)]' 
+                  : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                 onClick={buyTradingBot}
                 disabled={!canBuyTradingBot}
               >
@@ -604,16 +628,18 @@ export default function StockMarketPanel() {
               </button>
             </div>
             
-            <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded">
-              <div className="text-sm font-medium">Intelligence</div>
-              <div className="text-md">Level {botIntelligence}</div>
-              <div className="text-xs text-gray-500">
-                <span className="text-green-600 font-semibold">+{(botIntelligence * 10).toFixed(1)}%</span> trade success<br />
-                <span className="text-green-600 font-semibold">+{Math.floor(Math.pow(botIntelligence, 1.5) * 10)}%</span> profit factor<br />
-                <span className="text-green-600 font-semibold">+{Math.floor(Math.pow(botIntelligence, 2) * 5)}%</span> trend detection
+            <div className="backdrop-blur-sm bg-gray-700/50 p-3 rounded-lg border border-green-400/10">
+              <div className="text-sm font-medium text-green-300">Intelligence</div>
+              <div className="text-lg font-bold text-green-400">Level {botIntelligence}</div>
+              <div className="text-xs text-gray-400">
+                <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">+{(botIntelligence * 10).toFixed(1)}%</span> trade success<br />
+                <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">+{Math.floor(Math.pow(botIntelligence, 1.5) * 10)}%</span> profit factor<br />
+                <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">+{Math.floor(Math.pow(botIntelligence, 2) * 5)}%</span> trend detection
               </div>
               <button
-                className={`mt-2 w-full py-1 text-sm ${canUpgradeBotIntelligence ? 'bg-yellow-600 text-white hover:bg-yellow-700' : 'bg-gray-300 cursor-not-allowed'} rounded`}
+                className={`mt-2 w-full py-2 text-sm font-bold rounded-lg transition-all ${canUpgradeBotIntelligence 
+                  ? 'bg-yellow-500 hover:bg-yellow-400 text-gray-900 shadow-[0_0_15px_rgba(250,204,21,0.6)] hover:shadow-[0_0_20px_rgba(250,204,21,0.8)]' 
+                  : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                 onClick={handleUpgradeBotIntelligence}
                 disabled={!canUpgradeBotIntelligence}
               >
@@ -623,30 +649,30 @@ export default function StockMarketPanel() {
           </div>
           
           {/* Bot Trading Budget */}
-          <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded mb-2">
+          <div className="backdrop-blur-sm bg-gray-700/50 p-3 rounded-lg border border-green-400/10 mb-2">
             <div className="flex justify-between items-center mb-2">
               <div>
-                <div className="text-sm font-medium">Trading Budget</div>
-                <div className="text-md">${botTradingBudget.toFixed(2)}</div>
+                <div className="text-sm font-medium text-green-300">Trading Budget</div>
+                <div className="text-lg font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">${botTradingBudget.toFixed(2)}</div>
               </div>
               <div className="flex items-center space-x-2">
                 <input
                   type="number"
                   min="0"
                   max={money}
-                  className="w-20 px-2 py-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded"
+                  className="w-20 px-2 py-1 text-sm bg-gray-800 border border-green-400/30 rounded focus:border-green-400 focus:outline-none text-green-300"
                   value={botBudgetInput}
                   onChange={(e) => setBotBudgetInput(e.target.value)}
                 />
                 <button
-                  className="px-2 py-1 text-sm bg-green-600 text-white hover:bg-green-700 rounded"
+                  className="px-3 py-1 text-sm font-bold bg-green-600 text-white hover:bg-green-500 rounded shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)] transition-all"
                   onClick={handleSetBotBudget}
                   disabled={parseInt(botBudgetInput) <= 0 || parseInt(botBudgetInput) > money}
                 >
                   Add
                 </button>
                 <button
-                  className="px-2 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded"
+                  className="px-3 py-1 text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 rounded shadow-[0_0_10px_rgba(59,130,246,0.5)] hover:shadow-[0_0_15px_rgba(59,130,246,0.7)] transition-all"
                   onClick={() => {
                     if (money > 0) {
                       setBotTradingBudget(money);
@@ -661,11 +687,11 @@ export default function StockMarketPanel() {
             </div>
             
             {/* Withdraw Budget Section */}
-            <div className="flex justify-between items-center mb-2 border-t pt-2 dark:border-gray-600">
+            <div className="flex justify-between items-center mb-2 border-t pt-2 border-green-400/20">
               <div>
-                <div className="text-sm font-medium">Available Funds</div>
-                <div className="text-xs text-gray-500">
-                  You can withdraw up to ${botTradingBudget.toFixed(2)}
+                <div className="text-sm font-medium text-green-300">Available Funds</div>
+                <div className="text-xs text-gray-400">
+                  You can withdraw up to <span className="text-yellow-400">${botTradingBudget.toFixed(2)}</span>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -673,13 +699,13 @@ export default function StockMarketPanel() {
                   type="number"
                   min="0"
                   max={botTradingBudget}
-                  className="w-20 px-2 py-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded"
+                  className="w-20 px-2 py-1 text-sm bg-gray-800 border border-green-400/30 rounded focus:border-green-400 focus:outline-none text-green-300"
                   value={withdrawAmountInput}
                   onChange={(e) => setWithdrawAmountInput(e.target.value)}
                   placeholder="Amount"
                 />
                 <button
-                  className="px-2 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded"
+                  className="px-3 py-1 text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 rounded shadow-[0_0_10px_rgba(59,130,246,0.5)] hover:shadow-[0_0_15px_rgba(59,130,246,0.7)] transition-all"
                   onClick={handleWithdrawBudget}
                   disabled={!withdrawAmountInput || parseInt(withdrawAmountInput) <= 0 || parseInt(withdrawAmountInput) > botTradingBudget}
                 >
@@ -689,40 +715,62 @@ export default function StockMarketPanel() {
             </div>
             
             <div className="flex justify-between items-center mt-2">
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-400">
                 Bots will automatically trade with this budget
               </div>
             </div>
           </div>
           
           {/* Trading Activity Log */}
-          <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 p-2 rounded">
+          <div className="text-xs backdrop-blur-sm bg-gray-700/50 p-3 rounded-lg border border-green-400/10">
             {tradingBots > 0 && botTradingBudget > 0 ? (
               <div>
-                <div className="font-medium">Bot Trading Status: <span className="text-green-500">Active</span></div>
-                <div>Trading {tradingBots * 600} times per minute</div>
-                <div>Success rate: <span className="text-green-600 font-semibold">{Math.min(99, 80 + botIntelligence * 2).toFixed(1)}%</span></div>
-                <div>Profit multiplier: <span className="text-green-600 font-semibold">{(1 + (botIntelligence * 0.5)).toFixed(1)}x</span></div>
+                <div className="font-medium text-green-300">Bot Trading Status: <span className="text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.6)]">Active</span></div>
+                <div className="text-gray-400">Trading {tradingBots * 600} times per minute</div>
+                <div className="text-gray-400">Success rate: <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.6)]">{Math.min(99, 80 + botIntelligence * 2).toFixed(1)}%</span></div>
+                <div className="text-gray-400">Profit multiplier: <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.6)]">{(1 + (botIntelligence * 0.5)).toFixed(1)}x</span></div>
+                
+                {/* Test Bot Trade Button */}
+                <div className="mt-2 border-t pt-2 border-green-400/20">
+                  <button
+                    className="w-full px-3 py-1 text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white rounded mb-2 shadow-[0_0_10px_rgba(147,51,234,0.5)] hover:shadow-[0_0_15px_rgba(147,51,234,0.7)] transition-all"
+                    onClick={() => {
+                      console.log('Button clicked!');
+                      const store = useGameStore.getState();
+                      console.log('Store:', store);
+                      console.log('Forcing bot trade - bots:', store.tradingBots, 'budget:', store.botTradingBudget);
+                      if (store.botAutoTrade) {
+                        store.botAutoTrade();
+                        console.log('botAutoTrade called');
+                      } else {
+                        console.error('botAutoTrade function not found!');
+                      }
+                      alert(`Bot Trade Debug:\nBots: ${store.tradingBots}\nBudget: $${store.botTradingBudget}\nTransactions: ${store.transactionHistory?.length || 0}`);
+                    }}
+                  >
+                    Force Bot Trade (Debug)
+                  </button>
+                </div>
                 
                 {/* Risk Threshold Controls */}
-                <div className="mt-2 border-t pt-2 dark:border-gray-600">
-                  <div className="font-medium mb-1">Risk Threshold: {(botRiskThreshold * 100).toFixed(0)}%</div>
-                  <div className="text-xs mb-1">Higher threshold = higher profits but longer hold times</div>
+                <div className="mt-2 border-t pt-2 border-green-400/20">
+                  <div className="font-medium mb-1 text-green-300">Risk Threshold: <span className="text-yellow-400">{(botRiskThreshold * 100).toFixed(0)}%</span></div>
+                  <div className="text-xs mb-1 text-gray-400">Higher threshold = higher profits but longer hold times</div>
                   <div className="flex space-x-2 mt-1">
                     <button 
-                      className={`px-2 py-1 text-xs rounded ${botRiskThreshold === 0.15 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
+                      className={`px-3 py-1 text-xs font-bold rounded transition-all ${botRiskThreshold === 0.15 ? 'bg-blue-600 text-white shadow-[0_0_10px_rgba(59,130,246,0.6)]' : 'bg-gray-700 text-gray-400 hover:text-green-300 hover:border hover:border-green-400/30'}`}
                       onClick={() => setBotRiskThreshold(0.15)}
                     >
                       Low (15%)
                     </button>
                     <button 
-                      className={`px-2 py-1 text-xs rounded ${botRiskThreshold === 0.3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
+                      className={`px-3 py-1 text-xs font-bold rounded transition-all ${botRiskThreshold === 0.3 ? 'bg-blue-600 text-white shadow-[0_0_10px_rgba(59,130,246,0.6)]' : 'bg-gray-700 text-gray-400 hover:text-green-300 hover:border hover:border-green-400/30'}`}
                       onClick={() => setBotRiskThreshold(0.3)}
                     >
                       Medium (30%)
                     </button>
                     <button 
-                      className={`px-2 py-1 text-xs rounded ${botRiskThreshold === 0.5 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
+                      className={`px-3 py-1 text-xs font-bold rounded transition-all ${botRiskThreshold === 0.5 ? 'bg-blue-600 text-white shadow-[0_0_10px_rgba(59,130,246,0.6)]' : 'bg-gray-700 text-gray-400 hover:text-green-300 hover:border hover:border-green-400/30'}`}
                       onClick={() => setBotRiskThreshold(0.5)}
                     >
                       High (50%)
@@ -732,48 +780,60 @@ export default function StockMarketPanel() {
               </div>
             ) : (
               <div>
-                <div className="font-medium">Bot Trading Status: <span className="text-red-500">Inactive</span></div>
-                <div>{tradingBots === 0 ? "No trading bots available" : "No trading budget allocated"}</div>
+                <div className="font-medium text-green-300">Bot Trading Status: <span className="text-red-400 drop-shadow-[0_0_5px_rgba(239,68,68,0.6)]">Inactive</span></div>
+                <div className="text-gray-400">{tradingBots === 0 ? "No trading bots available" : "No trading budget allocated"}</div>
               </div>
             )}
           </div>
         </div>
         
         {/* Tab Navigation */}
-        <div className="flex border-b mb-4">
+        <div className="flex border-b border-green-400/30 mb-6">
           <button 
-            className={`px-4 py-2 ${activeTab === 'stocks' ? 'border-b-2 border-primary-600 font-bold' : 'text-gray-500'}`}
+            className={`px-6 py-3 font-bold transition-all ${activeTab === 'stocks' 
+              ? 'border-b-2 border-green-400 text-green-400 shadow-[0_0_10px_rgba(74,222,128,0.5)]' 
+              : 'text-gray-400 hover:text-green-300'}`}
             onClick={() => setActiveTab('stocks')}
           >
             Stocks
           </button>
           <button 
-            className={`px-4 py-2 ${activeTab === 'portfolio' ? 'border-b-2 border-primary-600 font-bold' : 'text-gray-500'}`}
+            className={`px-6 py-3 font-bold transition-all ${activeTab === 'portfolio' 
+              ? 'border-b-2 border-green-400 text-green-400 shadow-[0_0_10px_rgba(74,222,128,0.5)]' 
+              : 'text-gray-400 hover:text-green-300'}`}
             onClick={() => setActiveTab('portfolio')}
           >
             Portfolio
           </button>
+          <button 
+            className={`px-6 py-3 font-bold transition-all ${activeTab === 'history' 
+              ? 'border-b-2 border-green-400 text-green-400 shadow-[0_0_10px_rgba(74,222,128,0.5)]' 
+              : 'text-gray-400 hover:text-green-300'}`}
+            onClick={() => setActiveTab('history')}
+          >
+            History ({transactionHistory?.length || 0})
+          </button>
         </div>
         
         {/* Quantity Selector */}
-        <div className="mb-4 flex items-center">
-          <span className="mr-2 text-sm">Quantity:</span>
+        <div className="mb-6 flex items-center">
+          <span className="mr-3 text-sm font-medium text-green-300">Quantity:</span>
           <div className="flex">
             <button 
-              className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-l"
+              className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-green-300 rounded-l border border-green-400/30 transition-all"
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
             >
               -
             </button>
             <input 
               type="number" 
-              className="w-16 text-center bg-gray-50 dark:bg-gray-800 border-0" 
+              className="w-16 text-center bg-gray-800 border-y border-green-400/30 text-green-300 focus:outline-none" 
               value={quantity}
               onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
               min="1"
             />
             <button 
-              className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-r"
+              className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-green-300 rounded-r border border-green-400/30 transition-all"
               onClick={() => setQuantity(quantity + 1)}
             >
               +
@@ -783,11 +843,13 @@ export default function StockMarketPanel() {
         
         {/* Stocks Tab */}
         {activeTab === 'stocks' && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {stocks.map(stock => (
               <div 
                 key={stock.id} 
-                className={`p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer ${selectedStock === stock.id ? 'ring-2 ring-primary-600' : ''}`}
+                className={`p-4 backdrop-blur-sm bg-gray-800/50 rounded-lg cursor-pointer border transition-all ${selectedStock === stock.id 
+                  ? 'border-green-400 shadow-[0_0_15px_rgba(74,222,128,0.5)]' 
+                  : 'border-green-400/20 hover:border-green-400/40'}`}
                 onClick={() => {
                   setSelectedStock(stock.id); 
                   setDetailView(stock);
@@ -795,8 +857,8 @@ export default function StockMarketPanel() {
               >
                 <div className="flex justify-between items-center mb-1">
                   <div>
-                    <span className="font-bold">{stock.symbol}</span>
-                    <span className="text-sm text-gray-500 ml-2">{stock.name}</span>
+                    <span className="font-bold text-green-300">{stock.symbol}</span>
+                    <span className="text-sm text-gray-400 ml-2">{stock.name}</span>
                   </div>
                   <div className="font-semibold">
                     {formatPrice(stock.price, stock.previousPrice)}
@@ -806,9 +868,9 @@ export default function StockMarketPanel() {
                 <StockPriceChart stockId={stock.id} stockPriceHistory={stockPriceHistory} />
                 
                 {selectedStock === stock.id && (
-                  <div className="mt-2 flex space-x-2 pt-2 border-t dark:border-gray-700">
+                  <div className="mt-3 flex space-x-2 pt-3 border-t border-green-400/20">
                     <button 
-                      className="flex-1 py-1 px-3 rounded bg-green-600 text-white hover:bg-green-700 text-sm"
+                      className="flex-1 py-2 px-3 rounded-lg bg-green-600 text-white hover:bg-green-500 text-sm font-bold shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)] transition-all"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleBuy(stock.id);
@@ -819,7 +881,7 @@ export default function StockMarketPanel() {
                     
                     {stockPortfolio.some(h => h.stockId === stock.id) && (
                       <button 
-                        className="flex-1 py-1 px-3 rounded bg-red-600 text-white hover:bg-red-700 text-sm"
+                        className="flex-1 py-2 px-3 rounded-lg bg-red-600 text-white hover:bg-red-500 text-sm font-bold shadow-[0_0_10px_rgba(239,68,68,0.5)] hover:shadow-[0_0_15px_rgba(239,68,68,0.7)] transition-all"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSell(stock.id);
@@ -840,9 +902,9 @@ export default function StockMarketPanel() {
           <>
             {/* Add "Sell All Stocks" button at the top of portfolio view */}
             {stockPortfolio.length > 0 && (
-              <div className="mb-4">
+              <div className="mb-6">
                 <button 
-                  className="w-full py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium flex items-center justify-center"
+                  className="w-full py-3 px-4 bg-red-600 text-white rounded-lg hover:bg-red-500 font-bold flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.6)] hover:shadow-[0_0_20px_rgba(239,68,68,0.8)] transition-all"
                   onClick={() => {
                     // Confirm before selling all stocks
                     if (window.confirm(`Sell ALL stocks in your portfolio? This will sell ${stockPortfolio.length} different stocks.`)) {
@@ -864,9 +926,9 @@ export default function StockMarketPanel() {
               </div>
             )}
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               {stockPortfolio.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
+                <div className="p-8 text-center text-gray-400 backdrop-blur-sm bg-gray-800/30 rounded-lg border border-green-400/10">
                   Your portfolio is empty. Buy some stocks to get started!
                 </div>
               ) : (
@@ -884,38 +946,44 @@ export default function StockMarketPanel() {
                 return (
                   <div 
                     key={holding.stockId} 
-                    className={`p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer ${selectedStock === holding.stockId ? 'ring-2 ring-primary-600' : ''}`}
+                    className={`p-4 backdrop-blur-sm bg-gray-800/50 rounded-lg cursor-pointer border transition-all ${selectedStock === holding.stockId 
+                      ? 'border-green-400 shadow-[0_0_15px_rgba(74,222,128,0.5)]' 
+                      : 'border-green-400/20 hover:border-green-400/40'}`}
                     onClick={() => {
                       setSelectedStock(holding.stockId);
                       setDetailView(stock);
                     }}
                   >
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center">
-                        <span className="font-bold">{stock.symbol}</span>
+                        <span className="font-bold text-green-300">{stock.symbol}</span>
                         {/* Show quantity badge prominently */}
-                        <span className="ml-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full text-xs font-medium">
+                        <span className="ml-2 bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full text-xs font-medium border border-blue-400/30">
                           {holding.quantity} shares
                         </span>
-                        <span className="text-sm text-gray-500 ml-2">{stock.name}</span>
+                        <span className="text-sm text-gray-400 ml-2">{stock.name}</span>
                       </div>
                       <div className="font-semibold">
                         {formatPrice(stock.price, stock.previousPrice)}
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                       <div>
-                        <span className="text-gray-500">Total Value: </span>
-                        <span className="font-semibold">${currentValue.toFixed(2)}</span>
+                        <span className="text-gray-400">Total Value: </span>
+                        <span className="font-semibold text-green-300">${currentValue.toFixed(2)}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500">Avg Cost: </span>
-                        <span className="font-semibold">${holding.averagePurchasePrice.toFixed(2)}</span>
+                        <span className="text-gray-400">Avg Cost: </span>
+                        <span className="font-semibold text-gray-300">${holding.averagePurchasePrice.toFixed(2)}</span>
                       </div>
-                      <div className={`${profitColor} col-span-2`}>
-                        <span>Profit/Loss: </span>
-                        <span className="font-semibold">
+                      <div className="col-span-2">
+                        <span className="text-gray-400">Profit/Loss: </span>
+                        <span className={`font-semibold ${
+                          profit >= 0 
+                            ? 'text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]' 
+                            : 'text-red-400 drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]'
+                        }`}>
                           ${profit.toFixed(2)} ({profitPercent.toFixed(2)}%)
                         </span>
                       </div>
@@ -923,9 +991,9 @@ export default function StockMarketPanel() {
                     
                     <StockPriceChart stockId={holding.stockId} stockPriceHistory={stockPriceHistory} />
                     
-                    <div className="mt-2 flex space-x-2 pt-2 border-t dark:border-gray-700">
+                    <div className="mt-3 flex space-x-2 pt-3 border-t border-green-400/20">
                       <button 
-                        className="flex-1 py-1 px-2 rounded bg-green-600 text-white hover:bg-green-700 text-sm"
+                        className="flex-1 py-2 px-2 rounded-lg bg-green-600 text-white hover:bg-green-500 text-sm font-bold shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)] transition-all"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleBuy(holding.stockId);
@@ -934,7 +1002,7 @@ export default function StockMarketPanel() {
                         Buy More
                       </button>
                       <button 
-                        className="flex-1 py-1 px-2 rounded bg-red-600 text-white hover:bg-red-700 text-sm"
+                        className="flex-1 py-2 px-2 rounded-lg bg-red-600 text-white hover:bg-red-500 text-sm font-bold shadow-[0_0_10px_rgba(239,68,68,0.5)] hover:shadow-[0_0_15px_rgba(239,68,68,0.7)] transition-all"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSell(holding.stockId);
@@ -943,7 +1011,7 @@ export default function StockMarketPanel() {
                         Sell {quantity}
                       </button>
                       <button 
-                        className="flex-1 py-1 px-2 rounded bg-red-800 text-white hover:bg-red-900 text-sm"
+                        className="flex-1 py-2 px-2 rounded-lg bg-red-800 text-white hover:bg-red-700 text-sm font-bold shadow-[0_0_10px_rgba(127,29,29,0.5)] hover:shadow-[0_0_15px_rgba(127,29,29,0.7)] transition-all"
                         onClick={(e) => {
                           e.stopPropagation();
                           // Sell all shares of this particular stock
@@ -960,6 +1028,47 @@ export default function StockMarketPanel() {
             </div>
           </>
         )}
+        
+        {/* Transaction History Tab */}
+        {activeTab === 'history' && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-green-400 mb-4">Transaction History</h3>
+            {transactionHistory && transactionHistory.length > 0 ? (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {transactionHistory.slice().reverse().map((transaction: any, index: number) => (
+                  <div key={transaction.id || index} className="p-3 bg-gray-800/50 rounded-lg border border-green-400/20">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className={`font-bold ${transaction.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                          {transaction.type === 'buy' ? 'BUY' : 'SELL'}
+                        </span>
+                        <span className="ml-2 text-gray-300">{transaction.stockName}</span>
+                        <span className="ml-2 text-gray-400">x{transaction.quantity}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-yellow-400">${transaction.total.toFixed(2)}</div>
+                        {transaction.profit !== 0 && (
+                          <div className={`text-sm ${transaction.profit > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {transaction.profit > 0 ? '+' : ''}{transaction.profit.toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {new Date(transaction.timestamp).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-gray-400 py-8">
+                No transactions yet. Buy or sell stocks to see history.
+              </div>
+            )}
+          </div>
+        )}
+          </div>
+        </div>
       </div>
       
       {/* Detail Modal */}

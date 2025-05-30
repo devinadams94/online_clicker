@@ -160,37 +160,44 @@ const ResearchPanel = () => {
   const filteredResearchItems = researchItems.filter(item => item.category === activeCategory);
   
   return (
-    <div className="min-h-screen p-4">
-      <div className="card bg-white dark:bg-gray-800 p-4 mb-6">
-        <h2 className="text-xl font-bold mb-4">Research Lab</h2>
-        <div className="mb-6">
-          <div className="flex justify-between mb-1">
-            <span>Research Points:</span>
-            <span>{Math.floor(researchPoints)}</span>
+    <div className="min-h-screen p-4 relative">
+      {/* Neon green background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="absolute inset-0 bg-gradient-to-tr from-green-500/20 via-transparent to-green-400/20" />
+      </div>
+      
+      {/* Content */}
+      <div className="relative z-10 max-w-6xl mx-auto">
+        <div className="backdrop-blur-md bg-gray-900/50 rounded-xl p-6 mb-6 border border-green-400/30 shadow-[0_0_20px_rgba(74,222,128,0.3)]">
+          <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-green-400 to-green-600 text-transparent bg-clip-text drop-shadow-[0_0_20px_rgba(74,222,128,0.8)]">Research Lab</h2>
+          <div className="mb-6 space-y-2">
+            <div className="flex justify-between mb-1">
+              <span className="text-green-300">Research Points:</span>
+              <span className="text-green-400 font-bold drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]">{Math.floor(researchPoints)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-green-300">Generation Rate:</span>
+              <span className="text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]">{researchPointsPerSecond.toFixed(2)}/sec</span>
+            </div>
           </div>
-          <div className="flex justify-between text-sm">
-            <span>Generation Rate:</span>
-            <span>{researchPointsPerSecond.toFixed(2)}/sec</span>
+          
+          {/* Category Tabs */}
+          <div className="flex flex-wrap border-b border-green-400/30 mb-4">
+            {categories.map(category => (
+              <button
+                key={category}
+                className={`px-4 py-2 mr-2 mb-1 rounded-t transition-all ${activeCategory === category 
+                  ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(74,222,128,0.6)]' 
+                  : 'bg-gray-800/50 text-green-300 hover:bg-gray-700/50 hover:text-green-400 border border-green-400/20'}`}
+                onClick={() => setActiveCategory(category)}
+              >
+                {category}
+                {category === 'Special' && (
+                  <span className="ml-1 text-xs bg-yellow-500 text-white px-1 rounded shadow-[0_0_10px_rgba(250,204,21,0.6)]">★</span>
+                )}
+              </button>
+            ))}
           </div>
-        </div>
-        
-        {/* Category Tabs */}
-        <div className="flex flex-wrap border-b mb-4">
-          {categories.map(category => (
-            <button
-              key={category}
-              className={`px-3 py-1 mr-2 mb-1 rounded-t ${activeCategory === category 
-                ? 'bg-primary-600 text-white' 
-                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-              onClick={() => setActiveCategory(category)}
-            >
-              {category}
-              {category === 'Special' && (
-                <span className="ml-1 text-xs bg-yellow-500 text-white px-1 rounded">★</span>
-              )}
-            </button>
-          ))}
-        </div>
 
         {/* Research Items */}
         <div className="space-y-4">
@@ -198,48 +205,57 @@ const ResearchPanel = () => {
             const isUnlocked = unlockedResearch.includes(item.id);
             const canAfford = researchPoints >= item.cost;
             
-            // Special styles for different categories
+            // Special styles for different categories with neon effects
             let categoryStyle = '';
+            let glowColor = '';
             switch(item.category) {
               case 'Market':
-                categoryStyle = isUnlocked ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200' : '';
+                categoryStyle = isUnlocked ? 'bg-blue-900/30 border-blue-400' : '';
+                glowColor = isUnlocked ? 'shadow-[0_0_15px_rgba(59,130,246,0.5)]' : '';
                 break;
               case 'Production':
-                categoryStyle = isUnlocked ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200' : '';
+                categoryStyle = isUnlocked ? 'bg-purple-900/30 border-purple-400' : '';
+                glowColor = isUnlocked ? 'shadow-[0_0_15px_rgba(147,51,234,0.5)]' : '';
                 break;
               case 'Resources':
-                categoryStyle = isUnlocked ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200' : '';
+                categoryStyle = isUnlocked ? 'bg-yellow-900/30 border-yellow-400' : '';
+                glowColor = isUnlocked ? 'shadow-[0_0_15px_rgba(250,204,21,0.5)]' : '';
                 break;
               case 'Intelligence':
-                categoryStyle = isUnlocked ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200' : '';
+                categoryStyle = isUnlocked ? 'bg-indigo-900/30 border-indigo-400' : '';
+                glowColor = isUnlocked ? 'shadow-[0_0_15px_rgba(99,102,241,0.5)]' : '';
                 break;
               case 'Special':
-                categoryStyle = isUnlocked ? 'bg-red-50 dark:bg-red-900/20 border-red-200' : 'border-yellow-300 border-2';
+                categoryStyle = isUnlocked ? 'bg-red-900/30 border-red-400' : 'border-yellow-400 border-2';
+                glowColor = isUnlocked ? 'shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'shadow-[0_0_20px_rgba(250,204,21,0.6)]';
                 break;
               default:
-                categoryStyle = isUnlocked ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900' : '';
+                categoryStyle = isUnlocked ? 'bg-green-900/30 border-green-400' : '';
+                glowColor = isUnlocked ? 'shadow-[0_0_15px_rgba(74,222,128,0.5)]' : '';
             }
             
             return (
               <div 
                 key={item.id} 
-                className={`p-3 rounded-lg border ${isUnlocked 
-                  ? categoryStyle 
-                  : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}
+                className={`p-4 rounded-lg border backdrop-blur-sm transition-all ${isUnlocked 
+                  ? `${categoryStyle} ${glowColor}` 
+                  : 'bg-gray-800/50 border-gray-600 hover:border-green-400/50'}`}
               >
-                <div className="flex justify-between mb-1">
-                  <h3 className="font-medium">
+                <div className="flex justify-between mb-2">
+                  <h3 className="font-medium text-green-100">
                     {item.name}
-                    {item.category === 'Special' && <span className="ml-1 text-yellow-500">★</span>}
+                    {item.category === 'Special' && <span className="ml-1 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]">★</span>}
                   </h3>
-                  <span className={canAfford ? 'text-green-500 font-bold' : ''}>{item.cost} RP</span>
+                  <span className={`font-bold ${canAfford ? 'text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]' : 'text-gray-400'}`}>{item.cost} RP</span>
                 </div>
-                <p className="text-sm mb-2">{item.description}</p>
+                <p className="text-sm mb-3 text-gray-300">{item.description}</p>
                 {isUnlocked ? (
-                  <span className="text-green-600 text-sm">Researched</span>
+                  <span className="text-green-400 text-sm font-bold drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]">✓ Researched</span>
                 ) : (
                   <button
-                    className={`w-full btn ${canAfford ? 'btn-primary' : 'bg-gray-300 cursor-not-allowed'}`}
+                    className={`w-full py-2 px-4 rounded-lg font-bold transition-all ${canAfford 
+                      ? 'bg-green-600 hover:bg-green-500 text-white shadow-[0_0_15px_rgba(74,222,128,0.6)] hover:shadow-[0_0_20px_rgba(74,222,128,0.8)]' 
+                      : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                     onClick={() => {
                       // Purchase the research
                       buyResearch(item.id);
@@ -272,6 +288,7 @@ const ResearchPanel = () => {
               </div>
             );
           })}
+        </div>
         </div>
       </div>
     </div>
@@ -360,30 +377,42 @@ export default function GameInterface() {
   // Get the spaceTick function if it exists
   const { spaceTick } = useGameStore();
   
+  // Get the optimized batched tick function
+  const { batchedTick } = useGameStore();
+  
   // Tick function to update the game state every 100ms
   useEffect(() => {
     const interval = setInterval(() => {
-      // If space age is unlocked, only run space-related ticks
-      if (spaceAgeUnlocked) {
-        // Only run space tick and stats tick (for memory regen)
-        statsTick();     // Stats tick (regenerates memory)
-        stockMarketTick(); // Stock market tick (bots continue trading in space age)
-        
-        // Call spaceTick if it exists
-        if (typeof spaceTick === 'function') {
-          spaceTick();   // Space tick (handles probes and space resources)
+      try {
+        // Use the optimized batched tick for better performance
+        if (batchedTick) {
+          batchedTick();
+        } else {
+          // Fallback to individual ticks if batched tick is not available
+          if (spaceAgeUnlocked) {
+            // Only run space tick and stats tick (for memory regen)
+            statsTick();     // Stats tick (regenerates memory)
+            stockMarketTick(); // Stock market tick (bots continue trading in space age)
+            
+            // Call spaceTick if it exists
+            if (typeof spaceTick === 'function') {
+              spaceTick();   // Space tick (handles probes and space resources)
+            }
+          } else {
+            // Run normal game ticks only if space age is not unlocked
+            tick();          // Production tick (generates paperclips)
+            marketTick();    // Market tick (sells paperclips)
+            researchTick();  // Research tick (generates research points)
+            stockMarketTick(); // Stock market tick (generates returns)
+            statsTick();     // Stats tick (regenerates memory)
+          }
         }
-      } else {
-        // Run normal game ticks only if space age is not unlocked
-        tick();          // Production tick (generates paperclips)
-        marketTick();    // Market tick (sells paperclips)
-        researchTick();  // Research tick (generates research points)
-        stockMarketTick(); // Stock market tick (generates returns)
-        statsTick();     // Stats tick (regenerates memory)
+      } catch (error) {
+        console.error('Error in game tick:', error);
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [tick, marketTick, researchTick, stockMarketTick, statsTick, spaceTick, spaceAgeUnlocked]);
+  }, [tick, marketTick, researchTick, stockMarketTick, statsTick, spaceTick, spaceAgeUnlocked, batchedTick]);
 
   // Save game state periodically
   const saveGameState = useCallback(async () => {
@@ -502,6 +531,7 @@ export default function GameInterface() {
         unlockedCreativityUpgrades,
         metricsUnlocked,
         totalPaperclipsMade,
+        highestRun,
         yomi, // Added yomi to the list of values from the store
         honor, // Added honor for space combat
         battlesWon, // Added battles won count for space combat
@@ -600,6 +630,7 @@ export default function GameInterface() {
         clickMultiplier,
         totalClicks,
         totalPaperclipsMade,
+        highestRun,
         productionMultiplier,
         megaClippers,
         megaClipperCost,
@@ -1522,8 +1553,8 @@ export default function GameInterface() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-400 shadow-[0_0_20px_rgba(74,222,128,0.5)]"></div>
       </div>
     );
   }
@@ -1649,8 +1680,15 @@ export default function GameInterface() {
         
       case 'metrics':
         return (
-          <div className="min-h-screen p-4">
-            <MetricsPanel />
+          <div className="min-h-screen p-4 relative">
+            {/* Neon green background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+              <div className="absolute inset-0 bg-gradient-to-tr from-green-500/20 via-transparent to-green-400/20" />
+            </div>
+            
+            <div className="relative z-10">
+              <MetricsPanel />
+            </div>
           </div>
         );
         
@@ -1810,7 +1848,7 @@ export default function GameInterface() {
   return (
     <>
       {/* Navigation bar */}
-      <div className="bg-gray-800 text-white mb-4 sticky top-0 z-10 shadow-md">
+      <div className="backdrop-blur-md bg-gradient-to-r from-gray-900/95 via-green-900/95 to-emerald-900/95 text-white mb-4 sticky top-0 z-[9998] shadow-[0_0_15px_rgba(74,222,128,0.3)] border-b border-green-400/20">
         <div className="container mx-auto px-4">
           <nav className="flex justify-between items-center py-3">
             {/* Left side - Primary navigation items */}
@@ -1822,7 +1860,11 @@ export default function GameInterface() {
                 return (
                   <button
                     key={item.id}
-                    className={`px-2 md:px-3 py-1 rounded-md text-sm md:text-base ${currentPage === item.id ? 'bg-primary-600' : 'hover:bg-gray-700'}`}
+                    className={`px-2 md:px-3 py-1 rounded-md text-sm md:text-base font-medium transition-all duration-300 ${
+                      currentPage === item.id 
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 shadow-[0_0_10px_rgba(74,222,128,0.5)]' 
+                        : 'hover:bg-green-500/20 text-green-300 hover:text-green-400'
+                    }`}
                     onClick={() => setCurrentPage(item.id)}
                   >
                     {item.name}
@@ -1851,7 +1893,11 @@ export default function GameInterface() {
                   return (
                     <button
                       key={item.id}
-                      className={`px-3 py-1 rounded-md ${currentPage === item.id ? 'bg-primary-600' : 'hover:bg-gray-700'}`}
+                      className={`px-3 py-1 rounded-lg transition-all duration-300 ${
+                        currentPage === item.id 
+                          ? 'bg-gradient-to-r from-green-500/30 to-emerald-500/30 font-bold border border-green-400/50 shadow-[0_0_10px_rgba(74,222,128,0.5)]' 
+                          : 'bg-gray-800/50 hover:bg-gradient-to-r hover:from-green-600/20 hover:to-emerald-600/20 border border-gray-700/50 hover:border-green-500/30'
+                      }`}
                       onClick={() => setCurrentPage(item.id)}
                     >
                       {item.name}
@@ -1863,20 +1909,27 @@ export default function GameInterface() {
               </div>
               
               {/* Mobile view - Menu button and dropdown */}
-              <div className="md:hidden" ref={mobileMenuRef}>
+              <div className="md:hidden relative" ref={mobileMenuRef}>
                 <button 
-                  className="p-2 rounded-md bg-gray-700 hover:bg-gray-600 focus:outline-none"
+                  className="p-2 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 border border-green-400/30 hover:border-green-400/50 transition-all duration-300 shadow-[0_0_10px_rgba(74,222,128,0.3)] hover:shadow-[0_0_15px_rgba(74,222,128,0.5)]"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   aria-expanded={mobileMenuOpen}
                   aria-haspopup="true"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
                   </svg>
                 </button>
                 
-                {mobileMenuOpen && (
-                  <div className="absolute right-4 mt-2 w-48 bg-gray-800 rounded-md shadow-lg z-10 py-1 ring-1 ring-black ring-opacity-5">
+              </div>
+            </div>
+          </nav>
+        </div>
+      </div>
+      
+      {/* Mobile Menu Dropdown - Outside navigation container */}
+      {mobileMenuOpen && (
+        <div className="fixed right-4 top-16 w-48 backdrop-blur-md bg-gradient-to-br from-gray-900/95 via-green-900/95 to-emerald-900/95 rounded-lg shadow-[0_0_20px_rgba(74,222,128,0.4)] py-1 border border-green-400/30" style={{zIndex: 999999}}>
                     {secondaryNavItems.map(item => {
                       // Hide items when space age is unlocked if specified
                       if (item.hideWhenSpaceUnlocked && spaceAgeUnlocked) return null;
@@ -1893,10 +1946,10 @@ export default function GameInterface() {
                       return (
                         <button
                           key={item.id}
-                          className={`block w-full text-left px-4 py-2 text-sm ${
+                          className={`block w-full text-left px-4 py-2 text-sm transition-all duration-200 ${
                             currentPage === item.id 
-                              ? 'bg-primary-600 text-white' 
-                              : 'text-gray-200 hover:bg-gray-700'
+                              ? 'bg-gradient-to-r from-green-500/30 to-emerald-500/30 text-green-300 font-bold' 
+                              : 'text-green-200 hover:bg-green-500/20 hover:text-green-300'
                           }`}
                           onClick={() => {
                             setCurrentPage(item.id);
@@ -1910,68 +1963,63 @@ export default function GameInterface() {
                       );
                     })}
                   </div>
-                )}
-              </div>
-            </div>
-          </nav>
-        </div>
-      </div>
+              )}
       
       {/* Offline Progress Modal */}
       {showOfflineProgress && offlineProgress && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">While You Were Away</h2>
-            <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+        <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="backdrop-blur-md bg-gradient-to-br from-gray-900/95 via-green-900/95 to-emerald-900/95 rounded-lg p-6 max-w-md w-full mx-4 border border-green-400/30 shadow-[0_0_30px_rgba(74,222,128,0.4)]">
+            <h2 className="text-xl font-bold mb-4 text-green-400">While You Were Away</h2>
+            <p className="mb-2 text-sm text-green-200/70">
               You were offline for {Math.floor(offlineProgress.offlineTime / 60)} minutes and {offlineProgress.offlineTime % 60} seconds.
             </p>
             
             <div className="space-y-2 my-4">
               {offlineProgress.paperclipsProduced > 0 && (
-                <div className="flex justify-between">
+                <div className="flex justify-between text-green-200">
                   <span>Paperclips Produced:</span>
-                  <span className="font-medium">{Math.floor(offlineProgress.paperclipsProduced)}</span>
+                  <span className="font-medium text-green-400">{Math.floor(offlineProgress.paperclipsProduced)}</span>
                 </div>
               )}
               
               {offlineProgress.paperclipsSold > 0 && (
-                <div className="flex justify-between">
+                <div className="flex justify-between text-green-200">
                   <span>Paperclips Sold:</span>
-                  <span className="font-medium">{Math.floor(offlineProgress.paperclipsSold)}</span>
+                  <span className="font-medium text-green-400">{Math.floor(offlineProgress.paperclipsSold)}</span>
                 </div>
               )}
               
               {offlineProgress.salesRevenue > 0 && (
-                <div className="flex justify-between">
+                <div className="flex justify-between text-green-200">
                   <span>Revenue Generated:</span>
-                  <span className="font-medium text-green-600">${offlineProgress.salesRevenue.toFixed(2)}</span>
+                  <span className="font-medium text-yellow-500">${offlineProgress.salesRevenue.toFixed(2)}</span>
                 </div>
               )}
               
               {offlineProgress.wireUsed > 0 && (
-                <div className="flex justify-between">
+                <div className="flex justify-between text-green-200">
                   <span>Wire Used:</span>
-                  <span className="font-medium">{Math.floor(offlineProgress.wireUsed)}</span>
+                  <span className="font-medium text-green-400">{Math.floor(offlineProgress.wireUsed)}</span>
                 </div>
               )}
               
               {offlineProgress.researchPoints > 0 && (
-                <div className="flex justify-between">
+                <div className="flex justify-between text-green-200">
                   <span>Research Points Generated:</span>
-                  <span className="font-medium">{Math.floor(offlineProgress.researchPoints)}</span>
+                  <span className="font-medium text-green-400">{Math.floor(offlineProgress.researchPoints)}</span>
                 </div>
               )}
               
               {offlineProgress.stockMarketReturns > 0 && (
-                <div className="flex justify-between">
+                <div className="flex justify-between text-green-200">
                   <span>Stock Market Returns:</span>
-                  <span className="font-medium text-green-600">${offlineProgress.stockMarketReturns.toFixed(2)}</span>
+                  <span className="font-medium text-yellow-500">${offlineProgress.stockMarketReturns.toFixed(2)}</span>
                 </div>
               )}
             </div>
             
             <button
-              className="w-full py-2 px-4 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-md"
+              className="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium rounded-lg shadow-[0_0_15px_rgba(74,222,128,0.4)] hover:shadow-[0_0_20px_rgba(74,222,128,0.6)] transition-all duration-300"
               onClick={dismissOfflineProgress}
             >
               Continue
@@ -1981,8 +2029,10 @@ export default function GameInterface() {
       )}
       
       {/* Main content */}
-      <div className="container mx-auto">
-        {renderPage()}
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900/20 to-emerald-900/20 overflow-visible">
+        <div className="container mx-auto overflow-visible">
+          {renderPage()}
+        </div>
       </div>
     </>
   );

@@ -47,6 +47,23 @@ body {
   .input {
     @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-green-600 dark:text-green-400;
   }
+  
+  /* Custom green slider styles */
+  .slider-green::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 bg-green-500 rounded-full cursor-pointer shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)] transition-all duration-300;
+  }
+  
+  .slider-green::-moz-range-thumb {
+    @apply w-4 h-4 bg-green-500 rounded-full cursor-pointer shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)] transition-all duration-300 border-0;
+  }
+  
+  .slider-green::-webkit-slider-runnable-track {
+    @apply bg-gradient-to-r from-green-900/50 to-emerald-900/50;
+  }
+  
+  .slider-green::-moz-range-track {
+    @apply bg-gradient-to-r from-green-900/50 to-emerald-900/50;
+  }
 }
 
 .bounce-click {
@@ -109,4 +126,74 @@ body {
 
 .animate-ping-once {
   animation: ping-once 0.8s cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+
+/* NeonMint Theme Animations */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes gradient-x {
+  0%, 100% {
+    background-size: 200% 200%;
+    background-position: left center;
+  }
+  50% {
+    background-size: 200% 200%;
+    background-position: right center;
+  }
+}
+
+.animate-gradient-x {
+  animation: gradient-x 15s ease infinite;
+}
+
+/* Additional bouncing animation */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s ease-in-out infinite;
 }

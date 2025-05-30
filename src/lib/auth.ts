@@ -73,8 +73,22 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-    async redirect({ url, baseUrl: _baseUrl }) {
-      // Always redirect to paper-clips.com for consistency
+    async redirect({ url, baseUrl }) {
+      // In development, use the baseUrl
+      if (process.env.NODE_ENV === 'development') {
+        // If url is relative, append to baseUrl
+        if (url.startsWith('/')) {
+          return `${baseUrl}${url}`;
+        }
+        // If url is absolute but on same host, allow it
+        if (url.startsWith(baseUrl)) {
+          return url;
+        }
+        // Default to baseUrl
+        return baseUrl;
+      }
+      
+      // In production, redirect to paper-clips.com
       if (url.startsWith('/')) {
         return `https://paper-clips.com${url}`;
       }

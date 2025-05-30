@@ -106,9 +106,9 @@ export default function UpgradesPanel() {
   const canBuyMegaClipper = money >= megaClipperCost && megaClippersUnlocked;
 
   return (
-    <div className="card h-[420px]">
+    <div className="relative bg-gradient-to-br from-gray-900/80 via-green-900/20 to-emerald-900/30 backdrop-blur-md border border-green-400/30 rounded-lg p-6 shadow-[0_0_20px_rgba(74,222,128,0.3)] h-[420px]">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-bold">Upgrades</h2>
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 text-transparent bg-clip-text drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]">Upgrades</h2>
         <div className="flex items-center space-x-2">
           <div className="text-xs text-gray-500">Scroll for more</div>
           <button 
@@ -126,14 +126,14 @@ export default function UpgradesPanel() {
       
       {showSettings ? (
         <div className="space-y-4 mb-6">
-          <h3 className="text-lg font-semibold">Visual Settings</h3>
+          <h3 className="text-lg font-semibold text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">Visual Settings</h3>
           
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="text-sm">Click Animations</span>
               <button 
                 onClick={toggleClickAnimations}
-                className={`relative inline-flex items-center h-6 rounded-full w-11 ${visualFX.clickAnimations ? 'bg-primary-600' : 'bg-gray-300'}`}
+                className={`relative inline-flex items-center h-6 rounded-full w-11 ${visualFX.clickAnimations ? 'bg-green-500 shadow-[0_0_10px_rgba(74,222,128,0.5)]' : 'bg-gray-600'}`}
               >
                 <span className={`inline-block w-4 h-4 transform rounded-full bg-white transition ${visualFX.clickAnimations ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
@@ -143,7 +143,7 @@ export default function UpgradesPanel() {
               <span className="text-sm">Floating Text</span>
               <button 
                 onClick={toggleFloatingText}
-                className={`relative inline-flex items-center h-6 rounded-full w-11 ${visualFX.floatingText ? 'bg-primary-600' : 'bg-gray-300'}`}
+                className={`relative inline-flex items-center h-6 rounded-full w-11 ${visualFX.floatingText ? 'bg-green-500 shadow-[0_0_10px_rgba(74,222,128,0.5)]' : 'bg-gray-600'}`}
               >
                 <span className={`inline-block w-4 h-4 transform rounded-full bg-white transition ${visualFX.floatingText ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
@@ -161,7 +161,7 @@ export default function UpgradesPanel() {
                 step="0.5"
                 value={visualFX.particleIntensity} 
                 onChange={(e) => setParticleIntensity(parseFloat(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-green"
               />
             </div>
           </div>
@@ -169,8 +169,8 @@ export default function UpgradesPanel() {
       ) : (
         <div className="space-y-4 h-[340px] overflow-y-auto pr-1">
           {/* Autoclippers Upgrade */}
-          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Autoclippers</h3>
+          <div className="p-3 bg-gradient-to-br from-gray-800/50 to-green-900/20 rounded-lg border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+            <h3 className="text-lg font-semibold mb-2 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">Autoclippers</h3>
             <div className="flex justify-between text-sm mb-2">
               <span>Owned: {autoclippers}</span>
               <span>Production: {actualProductionPerSec.toFixed(1)}/sec</span>
@@ -179,7 +179,7 @@ export default function UpgradesPanel() {
               Autoclippers make paperclips for you automatically at a rate of 1 clip per second each{totalMultiplier > 1 ? ` (×${totalMultiplier.toFixed(1)} with multipliers)` : ''}.
             </p>
             <button
-              className={`w-full btn ${canBuyAutoclipper ? 'btn-primary' : 'bg-gray-300 cursor-not-allowed'}`}
+              className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 ${canBuyAutoclipper ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-black shadow-[0_0_15px_rgba(74,222,128,0.5)] hover:shadow-[0_0_20px_rgba(74,222,128,0.7)]' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
               onClick={buyAutoclipper}
               disabled={!canBuyAutoclipper}
             >
@@ -188,8 +188,8 @@ export default function UpgradesPanel() {
           </div>
           
           {/* Click Multiplier Upgrade */}
-          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Click Multiplier</h3>
+          <div className="p-3 bg-gradient-to-br from-gray-800/50 to-green-900/20 rounded-lg border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+            <h3 className="text-lg font-semibold mb-2 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">Click Multiplier</h3>
             <div className="flex justify-between text-sm mb-2">
               <span>Current: {clickMultiplier}x</span>
               <span>Next: {clickMultiplier + 1}x</span>
@@ -198,7 +198,7 @@ export default function UpgradesPanel() {
               Increases the number of paperclips you get per click. Each level adds +1 to your multiplier.
             </p>
             <button
-              className={`w-full btn ${canBuyMultiplier ? 'btn-primary' : 'bg-gray-300 cursor-not-allowed'}`}
+              className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 ${canBuyMultiplier ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-black shadow-[0_0_15px_rgba(74,222,128,0.5)] hover:shadow-[0_0_20px_rgba(74,222,128,0.7)]' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
               onClick={buyClickMultiplier}
               disabled={!canBuyMultiplier}
             >
@@ -207,11 +207,11 @@ export default function UpgradesPanel() {
           </div>
           
           {/* Mega-Clippers Upgrade */}
-          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Mega-Clippers</h3>
+          <div className="p-3 bg-gradient-to-br from-gray-800/50 to-green-900/20 rounded-lg border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+            <h3 className="text-lg font-semibold mb-2 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">Mega-Clippers</h3>
             
             {!megaClippersUnlocked ? (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-md">
+              <div className="bg-gradient-to-br from-yellow-900/30 to-green-900/20 p-3 rounded-md border border-yellow-400/30 shadow-[0_0_10px_rgba(250,204,21,0.3)]">
                 <div className="flex items-center">
                   <svg className="w-5 h-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
@@ -232,7 +232,7 @@ export default function UpgradesPanel() {
                   Mega-clippers enhance production efficiency. Each one increases your production multiplier by +1.
                 </p>
                 <button
-                  className={`w-full btn ${canBuyMegaClipper ? 'btn-primary' : 'bg-gray-300 cursor-not-allowed'}`}
+                  className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 ${canBuyMegaClipper ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-black shadow-[0_0_15px_rgba(74,222,128,0.5)] hover:shadow-[0_0_20px_rgba(74,222,128,0.7)]' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                   onClick={buyMegaClipper}
                   disabled={!canBuyMegaClipper}
                 >
@@ -243,8 +243,8 @@ export default function UpgradesPanel() {
           </div>
           
           {/* Market Demand Upgrade */}
-          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Market Expansion</h3>
+          <div className="p-3 bg-gradient-to-br from-gray-800/50 to-green-900/20 rounded-lg border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+            <h3 className="text-lg font-semibold mb-2 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">Market Expansion</h3>
             <div className="flex justify-between text-sm mb-2">
               <span>Level: {marketDemandLevel}</span>
               <span>Max Demand: {maxDemand}</span>
@@ -254,13 +254,13 @@ export default function UpgradesPanel() {
             </p>
             
             {marketDemandLevel < 20 ? (
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded text-xs mb-3">
+              <div className="bg-gradient-to-br from-blue-900/30 to-green-900/20 p-2 rounded text-xs mb-3 border border-blue-400/30 shadow-[0_0_10px_rgba(59,130,246,0.3)]">
                 <span className="text-blue-700 dark:text-blue-300">
                   At level 20, you'll be able to sell paperclips even at premium prices ($1.00 each)!
                 </span>
               </div>
             ) : (
-              <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded text-xs mb-3">
+              <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 p-2 rounded text-xs mb-3 border border-green-400/30 shadow-[0_0_10px_rgba(74,222,128,0.3)]">
                 <span className="text-green-700 dark:text-green-300">
                   Maximum level reached! You can now sell paperclips at premium prices ($1.00 each).
                 </span>
@@ -268,7 +268,7 @@ export default function UpgradesPanel() {
             )}
             
             <button
-              className={`w-full btn ${canUpgradeMarketDemand ? 'btn-primary' : 'bg-gray-300 cursor-not-allowed'}`}
+              className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 ${canUpgradeMarketDemand ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-black shadow-[0_0_15px_rgba(74,222,128,0.5)] hover:shadow-[0_0_20px_rgba(74,222,128,0.7)]' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
               onClick={upgradeMarketDemand}
               disabled={!canUpgradeMarketDemand}
             >
@@ -277,15 +277,15 @@ export default function UpgradesPanel() {
           </div>
           
           {/* Metrics Unlock */}
-          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Production Metrics</h3>
+          <div className="p-3 bg-gradient-to-br from-gray-800/50 to-green-900/20 rounded-lg border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+            <h3 className="text-lg font-semibold mb-2 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">Production Metrics</h3>
             {!metricsUnlocked ? (
               <>
                 <p className="text-sm mb-4">
                   Unlock advanced production metrics to track your paperclip empire's growth and efficiency.
                 </p>
                 <button
-                  className={`w-full btn ${canUnlockMetrics ? 'btn-primary' : 'bg-gray-300 cursor-not-allowed'}`}
+                  className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 ${canUnlockMetrics ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-black shadow-[0_0_15px_rgba(74,222,128,0.5)] hover:shadow-[0_0_20px_rgba(74,222,128,0.7)]' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                   onClick={unlockMetrics}
                   disabled={!canUnlockMetrics}
                 >
@@ -293,7 +293,7 @@ export default function UpgradesPanel() {
                 </button>
               </>
             ) : (
-              <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded text-sm">
+              <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 p-2 rounded text-sm border border-green-400/30 shadow-[0_0_10px_rgba(74,222,128,0.3)]">
                 <span className="flex items-center text-green-600">
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
@@ -306,15 +306,15 @@ export default function UpgradesPanel() {
           </div>
           
           {/* Stock Market Unlock */}
-          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Stock Market</h3>
+          <div className="p-3 bg-gradient-to-br from-gray-800/50 to-green-900/20 rounded-lg border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+            <h3 className="text-lg font-semibold mb-2 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">Stock Market</h3>
             {!stockMarketUnlocked ? (
               <>
                 <p className="text-sm mb-4">
                   Unlock the stock market to invest your money and earn passive income through trading.
                 </p>
                 <button
-                  className={`w-full btn ${canUnlockStockMarket ? 'btn-primary' : 'bg-gray-300 cursor-not-allowed'}`}
+                  className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 ${canUnlockStockMarket ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-black shadow-[0_0_15px_rgba(74,222,128,0.5)] hover:shadow-[0_0_20px_rgba(74,222,128,0.7)]' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                   onClick={unlockStockMarket}
                   disabled={!canUnlockStockMarket}
                 >
@@ -322,7 +322,7 @@ export default function UpgradesPanel() {
                 </button>
               </>
             ) : (
-              <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded text-sm">
+              <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 p-2 rounded text-sm border border-green-400/30 shadow-[0_0_10px_rgba(74,222,128,0.3)]">
                 <span className="flex items-center text-green-600">
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
@@ -336,8 +336,8 @@ export default function UpgradesPanel() {
           
           {/* Memory Upgrades Section */}
           {memory > 0 && (
-            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <h3 className="text-lg font-semibold mb-2">Memory Upgrades</h3>
+            <div className="p-3 bg-gradient-to-br from-gray-800/50 to-green-900/20 rounded-lg border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+              <h3 className="text-lg font-semibold mb-2 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">Memory Upgrades</h3>
               <div className="flex justify-between text-sm mb-2">
                 <span>Current Memory: {memory.toFixed(1)}/{memoryMax}</span>
               </div>
@@ -364,7 +364,7 @@ export default function UpgradesPanel() {
                         <span className="text-green-600 text-xs">✓ Purchased</span>
                       ) : (
                         <button
-                          className={`w-full btn btn-sm ${canAfford ? 'btn-primary' : 'bg-gray-300 cursor-not-allowed'} text-xs`}
+                          className={`w-full px-3 py-1.5 rounded-lg font-medium transition-all duration-300 text-xs ${canAfford ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-black shadow-[0_0_10px_rgba(74,222,128,0.4)] hover:shadow-[0_0_15px_rgba(74,222,128,0.6)]' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                           onClick={() => buyMemoryUpgrade(upgrade.id, upgrade.cost)}
                           disabled={!canAfford}
                         >

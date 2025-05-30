@@ -59,13 +59,31 @@ export function calculateDemand(
     // Much stronger exponential demand increase for lower prices
     // Lower the price by 50%, get 15-20x more demand
     const discountRatio = 1 - priceRatio; // 0 to 1, higher means bigger discount
-    const exponentialFactor = 3.5; // Steeper exponential growth for more demand at lower prices
     
-    // Apply exponential growth based on how much discount is offered
+    // Enhanced scaling: use a combination of exponential and power functions
+    // This creates a steeper curve that rewards lower prices more
+    const exponentialFactor = 8.0; // Increased from 5.0 for much steeper growth
+    const powerFactor = 3.5; // Increased power factor for additional scaling
+    
+    // Calculate base demand multiplier using both exponential and power scaling
+    const exponentialBoost = Math.pow(Math.E, exponentialFactor * discountRatio * elasticity);
+    const powerBoost = Math.pow(1 + discountRatio * 5, powerFactor); // Increased from 3 to 5
+    
+    // Combine both factors for stronger scaling at lower prices
     demandFactor = Math.min(
-      maxDemand * Math.pow(Math.E, exponentialFactor * discountRatio * elasticity),
-      20 * maxDemand // Higher cap for very low prices to incentivize volume
+      maxDemand * exponentialBoost * powerBoost * 10, // Added 10x multiplier
+      500 * maxDemand // Increased cap from 50x to 500x for very low prices
     );
+    
+    // Special boost for prices below $0.20 (80% of base price)
+    // This ensures noticeable demand increase when dropping below key thresholds
+    if (priceRatio < 0.8) {
+      // Additional 20x multiplier for each 10 cent drop below $0.20 (was 2x)
+      const priceBelow20 = 0.20 - price;
+      const additional10CentDrops = Math.floor(priceBelow20 / 0.10);
+      const additionalMultiplier = Math.pow(20, additional10CentDrops);
+      demandFactor *= additionalMultiplier;
+    }
   } else if (priceRatio < 4) { // Price is between base price and $1.00 (4x base price)
     // More gradual decline in this range to make these prices viable
     const premiumRatio = priceRatio - 1; // How much above base price

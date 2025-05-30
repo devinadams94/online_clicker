@@ -36,6 +36,25 @@ export default function RootLayout({
           <main className="flex-grow">{children}</main>
           <Footer />
         </AuthProvider>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            // Global error handler to prevent audio context errors from crashing the app
+            window.addEventListener('error', function(event) {
+              if (event.error && event.error.message && event.error.message.includes('suspend')) {
+                console.warn('Suppressed audio context error:', event.error);
+                event.preventDefault();
+              }
+            });
+            
+            // Also catch unhandled promise rejections
+            window.addEventListener('unhandledrejection', function(event) {
+              if (event.reason && event.reason.message && event.reason.message.includes('suspend')) {
+                console.warn('Suppressed audio context promise rejection:', event.reason);
+                event.preventDefault();
+              }
+            });
+          `
+        }} />
       </body>
     </html>
   );
