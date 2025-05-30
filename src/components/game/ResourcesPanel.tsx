@@ -108,7 +108,7 @@ export default function ResourcesPanel() {
             OPs Generation: {(cpuLevel * 1.0).toFixed(1)}/sec
           </div>
           <div className="text-xs bg-green-900/20 border border-green-400/30 p-1 rounded mt-2 text-green-400">
-            Production bonus: +{opsProductionMultiplier.toFixed(2)}x ({(ops/100).toFixed(2)}x at {Math.floor(ops)} OPs)
+            Production bonus: +{(ops/100).toFixed(2)}x at {Math.floor(ops)} OPs (CPU adds {cpuLevel * 50} OPs max)
           </div>
         </div>
         
@@ -163,16 +163,16 @@ export default function ResourcesPanel() {
       {/* Production Stats */}
       <div className="backdrop-blur-sm bg-gray-800/50 rounded-lg p-3 mb-4 border border-green-400/20 hover:border-green-400/40 transition-all duration-300">
         <div className="flex justify-between items-center">
-          <div className="text-sm font-medium text-green-300">Production Multiplier:</div>
-          <div className="text-lg font-bold text-green-400">
-            {((productionMultiplier || 1) + (opsProductionMultiplier || 0)).toFixed(1)}x
+          <div className="text-sm font-medium text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">Production Multiplier:</div>
+          <div className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">
+            {((productionMultiplier || 1) * (1 + (ops / 100))).toFixed(1)}x
           </div>
         </div>
         <div className="flex flex-col text-xs text-green-300/60 mt-1">
           <div>Increases paperclip production rate</div>
           <div className="mt-1 flex justify-between">
             <span>Base: {(productionMultiplier || 1).toFixed(1)}x</span>
-            <span>OPs Bonus: +{(opsProductionMultiplier || 0).toFixed(1)}x</span>
+            <span>OPs Bonus: +{(ops / 100).toFixed(2)}x</span>
           </div>
         </div>
       </div>

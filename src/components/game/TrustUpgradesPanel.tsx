@@ -79,13 +79,13 @@ export default function TrustUpgradesPanel() {
   };
   
   return (
-    <div className="card bg-indigo-50 dark:bg-gray-800 p-4">
+    <div className="backdrop-blur-md bg-gray-900/50 rounded-xl p-4 border border-green-400/30 shadow-[0_0_20px_rgba(74,222,128,0.3)]">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-bold text-indigo-700 dark:text-indigo-300">Trust Upgrades</h2>
+        <h2 className="text-lg font-bold bg-gradient-to-r from-yellow-400 to-amber-500 text-transparent bg-clip-text drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]">Trust Upgrades</h2>
         <div className="flex items-center space-x-2">
-          <div className="text-xs text-gray-500">Scroll for more</div>
+          <div className="text-xs text-green-300">Scroll for more</div>
           <button 
-            className="text-indigo-500 hover:text-indigo-700 text-xs font-medium"
+            className="text-green-400 hover:text-green-300 text-xs font-medium drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]"
             onClick={() => setExpanded(!expanded)}
           >
             {expanded ? 'Hide Info' : 'Info'}
@@ -94,23 +94,23 @@ export default function TrustUpgradesPanel() {
       </div>
       
       {expanded && (
-        <div className="bg-indigo-100 dark:bg-indigo-900/20 p-2 rounded mb-3 text-sm">
-          <p className="mb-1">Trust points allow you to unlock powerful abilities that permanently enhance your paperclip production.</p>
-          <p>Purchase trust with money, then spend trust on abilities.</p>
+        <div className="backdrop-blur-sm bg-gray-800/50 p-2 rounded mb-3 text-sm border border-green-400/20">
+          <p className="mb-1 text-green-300">Trust points allow you to unlock powerful abilities that permanently enhance your paperclip production.</p>
+          <p className="text-green-300">Purchase trust with money, then spend trust on abilities.</p>
         </div>
       )}
       
       <div className="mb-3">
         <div className="flex justify-between mb-1">
-          <span className="font-medium text-indigo-700 dark:text-indigo-300">Trust Points:</span>
-          <span className="font-bold text-indigo-600">{Math.floor(trust)}</span>
+          <span className="font-medium text-green-300">Trust Points:</span>
+          <span className="font-bold text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.6)]">{Math.floor(trust)}</span>
         </div>
       </div>
       
       <div className="h-[300px] overflow-y-auto pr-1 space-y-4">
         {/* Trust Purchases Section */}
         <div>
-          <h3 className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 mb-2">Purchase Trust</h3>
+          <h3 className="text-sm font-semibold text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)] mb-2">Purchase Trust</h3>
           <div className="space-y-2">
             {trustUpgrades.map((upgrade) => {
               const canAfford = money >= upgrade.cost;
@@ -122,22 +122,22 @@ export default function TrustUpgradesPanel() {
               return (
                 <div 
                   key={`trust-level-${upgrade.level}`}
-                  className={`p-2 rounded border ${
+                  className={`p-2 rounded border backdrop-blur-sm ${
                     isPurchased 
-                      ? 'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800' 
-                      : 'bg-white dark:bg-gray-800 border-indigo-200 dark:border-indigo-900'
+                      ? 'bg-green-900/20 border-green-400/40 shadow-[0_0_10px_rgba(74,222,128,0.3)]' 
+                      : 'bg-gray-800/50 border-green-400/20'
                   }`}
                 >
                   <div className="flex justify-between mb-1">
-                    <span className={`font-medium text-sm ${isPurchased ? 'text-indigo-700' : ''}`}>Trust Level {upgrade.level}</span>
-                    <span className={`text-sm ${canAfford && !isPurchased ? 'text-green-500 font-bold' : ''}`}>
+                    <span className={`font-medium text-sm ${isPurchased ? 'text-green-400' : 'text-green-300'}`}>Trust Level {upgrade.level}</span>
+                    <span className={`text-sm ${canAfford && !isPurchased ? 'text-green-400 font-bold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]' : 'text-gray-400'}`}>
                       ${formatNumber(upgrade.cost)}
                     </span>
                   </div>
-                  <p className="text-xs mb-2">Gain {upgrade.trustGain} trust points</p>
+                  <p className="text-xs mb-2 text-green-200">Gain {upgrade.trustGain} trust points</p>
                   
                   {isPurchased ? (
-                    <span className="text-green-600 text-xs flex items-center">
+                    <span className="text-green-400 text-xs flex items-center drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">
                       <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
@@ -147,8 +147,8 @@ export default function TrustUpgradesPanel() {
                     <button
                       className={`w-full py-1 px-2 rounded text-xs ${
                         canAfford && !isPurchased
-                          ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          ? 'bg-green-600 text-white hover:bg-green-500 shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)]' 
+                          : 'bg-gray-700 text-gray-400 cursor-not-allowed'
                       }`}
                       onClick={() => {
                         // Check if the level is already purchased using multiple methods
@@ -181,8 +181,8 @@ export default function TrustUpgradesPanel() {
         
         {/* Trust Abilities Section */}
         <div>
-          <h3 className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 mb-2">Trust Abilities</h3>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 italic">Trust is required but not consumed when unlocking abilities</p>
+          <h3 className="text-sm font-semibold text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)] mb-2">Trust Abilities</h3>
+          <p className="text-xs text-green-200 mb-2 italic">Trust is required but not consumed when unlocking abilities</p>
           <div className="space-y-2">
             {trustAbilities.map((ability) => {
               const isUnlocked = unlockedTrustAbilities.includes(ability.id);
@@ -191,23 +191,23 @@ export default function TrustUpgradesPanel() {
               return (
                 <div 
                   key={ability.id}
-                  className={`p-2 rounded border ${
+                  className={`p-2 rounded-lg border backdrop-blur-sm ${
                     isUnlocked 
-                      ? 'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800' 
-                      : 'bg-white dark:bg-gray-800 border-indigo-200 dark:border-indigo-900'
+                      ? 'bg-green-900/20 border-green-400/40 shadow-[0_0_10px_rgba(74,222,128,0.3)]' 
+                      : 'bg-gray-800/50 border-green-400/20'
                   }`}
                 >
                   <div className="flex justify-between mb-1">
-                    <span className={`font-medium text-sm ${isUnlocked ? 'text-indigo-700' : ''}`}>
+                    <span className={`font-medium text-sm ${isUnlocked ? 'text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]' : 'text-green-300'}`}>
                       {ability.name}
                     </span>
-                    <span className={`text-sm ${canAfford && !isUnlocked ? 'text-green-500 font-bold' : ''}`}>
+                    <span className={`text-sm ${canAfford && !isUnlocked ? 'text-green-400 font-bold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]' : 'text-green-200'}`}>
                       Requires {ability.cost} Trust
                     </span>
                   </div>
-                  <p className="text-xs mb-2">{ability.description}</p>
+                  <p className="text-xs mb-2 text-green-200">{ability.description}</p>
                   {isUnlocked ? (
-                    <span className="text-green-600 text-xs flex items-center">
+                    <span className="text-green-400 text-xs flex items-center drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">
                       <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
@@ -217,8 +217,8 @@ export default function TrustUpgradesPanel() {
                     <button
                       className={`w-full py-1 px-2 rounded text-xs ${
                         canAfford 
-                          ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          ? 'bg-green-600 text-white hover:bg-green-500 shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)]' 
+                          : 'bg-gray-700 text-gray-400 cursor-not-allowed'
                       }`}
                       onClick={() => canAfford && buyTrustAbility(ability.id, ability.cost)}
                       disabled={!canAfford}
@@ -236,62 +236,62 @@ export default function TrustUpgradesPanel() {
 
       {/* Space Age Upgrade Panel - Always visible */}
       {!spaceAgeUnlocked && (
-        <div className="mt-6 card bg-purple-50 dark:bg-gray-800 p-4 border-2 border-purple-300 dark:border-purple-600">
+        <div className="mt-6 backdrop-blur-md bg-gray-900/60 p-4 rounded-xl border-2 border-green-400/40 shadow-[0_0_25px_rgba(74,222,128,0.4)]">
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-lg font-bold text-purple-700 dark:text-purple-300 flex items-center">
+            <h2 className="text-lg font-bold bg-gradient-to-r from-yellow-400 to-amber-500 text-transparent bg-clip-text drop-shadow-[0_0_20px_rgba(250,204,21,0.8)] flex items-center">
               <span>Space Age</span>
-              <span className="ml-2 text-xs bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full">Ultimate Upgrade</span>
+              <span className="ml-2 text-xs bg-red-900/60 text-red-300 px-2 py-0.5 rounded-full border border-red-400/30 shadow-[0_0_10px_rgba(248,113,113,0.6)]">Ultimate Upgrade</span>
             </h2>
           </div>
           
-          <div className="p-3 rounded bg-white dark:bg-gray-700 shadow-sm mb-4">
+          <div className="p-3 rounded-lg backdrop-blur-sm bg-gray-800/50 border border-green-400/20 shadow-[0_0_15px_rgba(74,222,128,0.2)] mb-4">
             <div className="flex justify-between mb-1">
-              <span className="font-bold text-sm text-purple-700 dark:text-purple-300">
+              <span className="font-bold text-sm text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">
                 {spaceAgeUpgrade.name}
               </span>
-              <span className={`text-sm ${trust >= spaceAgeUpgrade.cost ? 'text-green-500 font-bold' : ''}`}>
+              <span className={`text-sm ${trust >= spaceAgeUpgrade.cost ? 'text-green-400 font-bold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]' : 'text-green-200'}`}>
                 {spaceAgeUpgrade.cost} Trust
               </span>
             </div>
-            <p className="text-sm mb-3">{spaceAgeUpgrade.description}</p>
+            <p className="text-sm mb-3 text-green-200">{spaceAgeUpgrade.description}</p>
             
-            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded mb-3 text-xs">
-              <h4 className="font-semibold mb-1">Requirements:</h4>
+            <div className="bg-gray-900/70 p-3 rounded-lg mb-3 text-xs border border-green-400/20">
+              <h4 className="font-semibold mb-1 text-green-300">Requirements:</h4>
               <ul className="space-y-1">
                 <li className="flex items-center">
-                  <span className={trust >= spaceAgeUpgrade.cost ? 'text-green-600' : 'text-red-600'}>
+                  <span className={trust >= spaceAgeUpgrade.cost ? 'text-green-400' : 'text-red-400'}>
                     {trust >= spaceAgeUpgrade.cost ? '✓' : '✗'}
                   </span>
-                  <span className="ml-2">
+                  <span className="ml-2 text-green-200">
                     {trust >= spaceAgeUpgrade.cost 
-                      ? `Trust: ${Math.floor(trust)}/${spaceAgeUpgrade.cost} (Met)`
-                      : `Trust: ${Math.floor(trust)}/${spaceAgeUpgrade.cost} (Need ${spaceAgeUpgrade.cost - Math.floor(trust)} more)`
+                      ? <span>Trust: <span className="text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">{Math.floor(trust)}/{spaceAgeUpgrade.cost}</span> (Met)</span>
+                      : <span>Trust: {Math.floor(trust)}/{spaceAgeUpgrade.cost} (Need {spaceAgeUpgrade.cost - Math.floor(trust)} more)</span>
                     }
                   </span>
                 </li>
                 <li className="flex items-center">
-                  <span className={ops >= spaceAgeUpgrade.minOps ? 'text-green-600' : 'text-red-600'}>
+                  <span className={ops >= spaceAgeUpgrade.minOps ? 'text-green-400' : 'text-red-400'}>
                     {ops >= spaceAgeUpgrade.minOps ? '✓' : '✗'}
                   </span>
-                  <span className="ml-2">
+                  <span className="ml-2 text-green-200">
                     {ops >= spaceAgeUpgrade.minOps 
-                      ? `Operations: ${Math.floor(ops)}/${spaceAgeUpgrade.minOps} (Met)`
-                      : `Operations: ${Math.floor(ops)}/${spaceAgeUpgrade.minOps} (Need ${spaceAgeUpgrade.minOps - Math.floor(ops)} more)`
+                      ? <span>Operations: <span className="text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">{Math.floor(ops)}/{spaceAgeUpgrade.minOps}</span> (Met)</span>
+                      : <span>Operations: {Math.floor(ops)}/{spaceAgeUpgrade.minOps} (Need {spaceAgeUpgrade.minOps - Math.floor(ops)} more)</span>
                     }
                   </span>
                 </li>
               </ul>
             </div>
             
-            <p className="text-xs bg-yellow-100 dark:bg-yellow-900/20 p-2 rounded mb-3 text-yellow-800 dark:text-yellow-300">
+            <p className="text-xs bg-yellow-900/30 p-2 rounded-lg mb-3 text-yellow-300 border border-yellow-500/30">
               <span className="font-medium">Warning:</span> This will radically transform your game interface into an interplanetary paperclip empire
             </p>
             
             <button
               className={`w-full py-2 px-3 rounded text-sm font-medium ${
                 trust >= spaceAgeUpgrade.cost && ops >= spaceAgeUpgrade.minOps
-                  ? 'bg-purple-600 text-white hover:bg-purple-700' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-green-600 text-white hover:bg-green-500 shadow-[0_0_10px_rgba(74,222,128,0.5)] hover:shadow-[0_0_15px_rgba(74,222,128,0.7)]' 
+                  : 'bg-gray-700 text-gray-400 cursor-not-allowed'
               }`}
               onClick={() => trust >= spaceAgeUpgrade.cost && ops >= spaceAgeUpgrade.minOps && 
                 buyTrustAbility(spaceAgeUpgrade.id, spaceAgeUpgrade.cost)}

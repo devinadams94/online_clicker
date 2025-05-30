@@ -21,31 +21,68 @@
  * @returns {Number} - Opportunity score (higher = better time to trade)
  */
 export function calculateMarketOpportunityScore(state, stocks, botIntelligence) {
-  let marketOpportunityScore = 1.0;
+  // Start with a higher base score for better performance
+  let marketOpportunityScore = 1.2;
   
   if (stocks.length > 0) {
     let goodOpportunityCount = 0;
+    let strongOpportunityCount = 0;
     
     stocks.forEach((stock) => {
       const history = state.stockPriceHistory[stock.id] || [];
+      
+      // More sophisticated opportunity detection
       if (history.length >= 5) {
         const recentAverage = history.slice(-5).reduce((sum, price) => sum + price, 0) / 5;
-        // Price at least 3% below average is a good opportunity
-        if (stock.price < recentAverage * 0.97) {
+        
+        // Price at least 2% below average is a good opportunity (lowered threshold)
+        if (stock.price < recentAverage * 0.98) {
           goodOpportunityCount++;
+          
+          // Strong opportunity if price is 4%+ below average
+          if (stock.price < recentAverage * 0.96) {
+            strongOpportunityCount++;
+          }
+        }
+        
+        // Advanced pattern detection for higher intelligence bots
+        if (botIntelligence >= 3 && history.length >= 8) {
+          // Detect rebounding patterns (downtrend followed by uptick)
+          const recent3 = history.slice(-3);
+          const previous3 = history.slice(-6, -3);
+          
+          if (recent3.length >= 3 && previous3.length >= 3) {
+            const recentTrend = (recent3[2] - recent3[0]) / recent3[0];
+            const previousTrend = (previous3[2] - previous3[0]) / previous3[0];
+            
+            // Previous downtrend followed by uptick indicates potential rebound
+            if (previousTrend < -0.02 && recentTrend > 0) {
+              goodOpportunityCount++;
+              // Count as strong opportunity for higher intelligence bots
+              if (botIntelligence >= 6) {
+                strongOpportunityCount++;
+              }
+            }
+          }
         }
       }
     });
     
-    // Increase opportunity score if there are good opportunities
+    // Enhance opportunity score based on detected opportunities
     if (goodOpportunityCount > 0) {
       const opportunityRatio = goodOpportunityCount / stocks.length;
-      marketOpportunityScore += opportunityRatio * 2.0;
+      // Increased multiplier from 2.0 to 2.5
+      marketOpportunityScore += opportunityRatio * 2.5;
       
-      // High intelligence bots can detect these opportunities better
-      if (botIntelligence >= 5) {
-        marketOpportunityScore *= (1 + (botIntelligence * 0.05));
+      // Add bonus for strong opportunities
+      if (strongOpportunityCount > 0) {
+        const strongRatio = strongOpportunityCount / stocks.length;
+        marketOpportunityScore += strongRatio * 3.0;
       }
+      
+      // Intelligence scaling starts at level 2 instead of 5
+      // Increased multiplier from 0.05 to 0.08
+      marketOpportunityScore *= (1 + (botIntelligence * 0.08));
     }
   }
   
@@ -160,6 +197,12 @@ export function calculateSellPercentage(stock, stockPrice, avgPurchasePrice, inP
   // Default to not selling
   let sellPercentage = 0;
   
+  // NEW: Completely liquidate position if profit reaches risk threshold exactly
+  // This triggers a full sell when profit exactly matches the configured risk threshold
+  if (inProfit && Math.abs(profitPercentage - riskThreshold) < 0.01) {
+    return 1.0; // Sell 100% of holdings
+  }
+  
   if (inProfit) {
     // Only consider selling if price is above purchase price
     
@@ -200,30 +243,61 @@ export function calculateSellPercentage(stock, stockPrice, avgPurchasePrice, inP
     }
     
     // Intelligence-based analysis bonus - smarter bots are better at detecting peaks
-    const detectionBonus = Math.min(1, botIntelligence / 8); // Max out at intelligence 8
+    // Enhanced detection scaling - maxes out at intelligence 6 instead of 8
+    const detectionBonus = Math.min(1, botIntelligence / 6); 
     
-    // Advanced trading logic that scales with bot intelligence
-    if (isPriceAtPeak && profitPercentage >= riskThreshold * 1.2) {
-      // Clear peak with good profit - excellent time to sell
-      sellPercentage = 0.8;
-    } else if (isPriceNearPeak && profitPercentage >= riskThreshold * 1.5 && detectionBonus > 0.6) {
-      // High intelligence bots can detect we might be just past the peak
-      sellPercentage = 0.6;
-    } else if (isUptrendExhausting && profitPercentage >= riskThreshold * 1.3 && detectionBonus > 0.8) {
-      // Very high intelligence bots can detect uptrend exhaustion
-      sellPercentage = 0.5;
-    } else if (profitPercentage >= riskThreshold * 2.5) {
-      // Exceptionally high profit - sell most but not all
-      sellPercentage = 0.9;
-    } else if (profitPercentage >= riskThreshold * 2.0) {
-      // Very high profit - sell a good portion
-      sellPercentage = 0.7;
-    } else if (profitPercentage >= riskThreshold * 1.5) {
-      // Good profit - sell some if near peak
-      sellPercentage = isPriceNearPeak ? 0.4 : 0.2;
-    } else if (isPriceAtPeak && profitPercentage >= riskThreshold) {
-      // Price is clearly peaking with decent profit
-      sellPercentage = 0.3;
+    // Advanced trading logic with enhanced intelligence scaling
+    
+    // NEW: Increase sell percentages and lower thresholds to make bots sell more frequently
+    if (isPriceAtPeak && profitPercentage >= riskThreshold * 0.8) { // Lowered threshold from 1.0 to 0.8
+      // Clear peak with minimum profit - excellent time to sell
+      // Base sell percentage with intelligence scaling - increased from 0.7 to 0.85
+      sellPercentage = 0.85 + (detectionBonus * 0.15); // 85-100% based on intelligence
+    } else if (isPriceNearPeak && profitPercentage >= riskThreshold) { // Lowered threshold from 1.2 to 1.0
+      // Near peak detection with intelligence scaling
+      // Lower intelligence requirement (was 0.6)
+      if (detectionBonus > 0.4) {
+        // Increased from 0.5 to 0.7
+        sellPercentage = 0.7 + (detectionBonus * 0.3); // 70-100% based on intelligence
+      } else {
+        // Increased from 0.4 to 0.6
+        sellPercentage = 0.6; // Minimum sell percentage for low intelligence
+      }
+    } else if (isUptrendExhausting && profitPercentage >= riskThreshold) { // Lowered threshold from 1.2 to 1.0
+      // Uptrend exhaustion detection with intelligence scaling
+      // Lower intelligence requirement (was 0.8)
+      if (detectionBonus > 0.5) {
+        // Increased from 0.4 to 0.6
+        sellPercentage = 0.6 + (detectionBonus * 0.4); // 60-100% based on intelligence
+      } else {
+        // Increased from 0.3 to 0.5
+        sellPercentage = 0.5; // Minimum sell percentage for low intelligence
+      }
+    } else if (profitPercentage >= riskThreshold * 2.0) { // Lowered threshold from 2.5 to 2.0
+      // Exceptionally high profit - more aggressive selling
+      // Increased from 0.9 to 1.0 (always sell all)
+      sellPercentage = 1.0; // Sell 100% regardless of intelligence
+    } else if (profitPercentage >= riskThreshold * 1.5) { // Lowered threshold from 2.0 to 1.5
+      // Very high profit - sell a good portion with intelligence scaling
+      // Increased from 0.7 to 0.85
+      sellPercentage = 0.85 + (detectionBonus * 0.15); // 85-100% based on intelligence
+    } else if (profitPercentage >= riskThreshold * 1.2) { // Lowered threshold from 1.5 to 1.2
+      // Good profit - more aggressive selling
+      sellPercentage = isPriceNearPeak ? 
+                      (0.7 + (detectionBonus * 0.3)) : // 70-100% if near peak (increased from 50-80%)
+                      (0.5 + (detectionBonus * 0.3));  // 50-80% otherwise (increased from 30-50%)
+    } else if (profitPercentage >= riskThreshold * 0.9) { // Lowered threshold from 1.1 to 0.9
+      // Small profit near threshold - conservative selling with intelligence scaling
+      // Increased from 0.2 to 0.3
+      sellPercentage = 0.3 + (detectionBonus * 0.3); // 30-60% based on intelligence
+    } 
+    // NEW: Add small probability of selling even with smaller profits
+    else if (profitPercentage > 0) {
+      // Random chance to sell based on intelligence (smarter bots are more patient)
+      const randomSellThreshold = 0.3 - (detectionBonus * 0.2); // 10-30% chance to sell
+      if (Math.random() < randomSellThreshold) {
+        sellPercentage = 0.1 + (detectionBonus * 0.1); // 10-20% of position
+      }
     }
   } else {
     // Advanced loss mitigation strategy that scales with intelligence
@@ -248,21 +322,50 @@ export function calculateSellPercentage(stock, stockPrice, avgPurchasePrice, inP
       }
     }
     
-    // More sophisticated loss management based on trend analysis and bot intelligence
+    // Enhanced loss management with improved intelligence scaling
     const lossPercentage = Math.abs(profitPercentage); // Convert negative profit to positive loss
     
-    if (stock.trendDirection < 0 && stock.trendStrength > 0.8 && lossPercentage > 0.15) {
-      // Strong confirmed downtrend with significant loss - cut losses
-      sellPercentage = 0.3;
-    } else if (trendAccelerating && trendStrength > 0.05 && botIntelligence >= 6 && lossPercentage > 0.12) {
-      // High intelligence bots can detect accelerating downtrends early
-      sellPercentage = 0.2;
-    } else if (stock.trendDirection < 0 && stock.trendStrength > 0.5 && lossPercentage > 0.20) {
-      // Moderate downtrend with large loss - cut some losses
-      sellPercentage = 0.15;
+    // Create intelligence factor for more gradual scaling (maxes out at intelligence 5)
+    const intelligenceFactor = Math.min(1, botIntelligence / 5);
+    
+    // Progressive loss thresholds that decrease with higher intelligence
+    // Higher intelligence bots cut losses earlier
+    // NEW: Lower thresholds to cut losses faster
+    const significantLossThreshold = 0.12 - (intelligenceFactor * 0.05); // 12% down to 7% (was 15% to 10%)
+    const moderateLossThreshold = 0.09 - (intelligenceFactor * 0.04);    // 9% down to 5% (was 12% to 8%)
+    const smallLossThreshold = 0.07 - (intelligenceFactor * 0.04);       // 7% down to 3% (was 10% to 6%)
+    
+    // NEW: Increase sell percentages to cut losses more aggressively
+    if (stock.trendDirection < 0 && stock.trendStrength > 0.7 && lossPercentage > significantLossThreshold) {
+      // Strong confirmed downtrend with significant loss - cut losses aggressively
+      // More intelligent bots sell more to minimize losses
+      // Increased from 0.4 to 0.6
+      sellPercentage = 0.6 + (intelligenceFactor * 0.4); // 60-100% based on intelligence
+    } else if (trendAccelerating && trendStrength > 0.05 && lossPercentage > moderateLossThreshold) {
+      // Accelerating downtrends - cut losses earlier
+      // Lower intelligence requirement (removed botIntelligence >= 6)
+      // Scale selling amount with intelligence
+      // Increased from 0.25 to 0.4
+      sellPercentage = 0.4 + (intelligenceFactor * 0.4); // 40-80% based on intelligence
+    } else if (stock.trendDirection < 0 && stock.trendStrength > 0.4 && lossPercentage > smallLossThreshold) {
+      // Moderate downtrend with smaller loss - cut losses conservatively
+      // Lower strength threshold (0.5 to 0.4) and loss threshold
+      // Increased from 0.15 to 0.25
+      sellPercentage = 0.25 + (intelligenceFactor * 0.35); // 25-60% based on intelligence
+    } else if (lossPercentage > significantLossThreshold * 1.5) {
+      // Significant loss regardless of trend - limit potential further losses
+      // This prevents holding onto big losers even without a clear trend
+      // Increased from 0.2 to 0.3
+      sellPercentage = 0.3 + (intelligenceFactor * 0.4); // 30-70% based on intelligence
     } else {
-      // No clear negative trend or loss is still small - hold and wait for recovery
-      sellPercentage = 0;
+      // NEW: Small chance of selling even with small losses
+      const randomSellThreshold = 0.15 - (intelligenceFactor * 0.1); // 5-15% chance to sell
+      if (Math.random() < randomSellThreshold) {
+        sellPercentage = 0.1; // Sell 10% of position
+      } else {
+        // No clear negative trend or loss is still small - hold and wait for recovery
+        sellPercentage = 0;
+      }
     }
   }
   
@@ -277,16 +380,21 @@ export function calculateSellPercentage(stock, stockPrice, avgPurchasePrice, inP
  * @returns {Number} - Probability of trading (0-1)
  */
 export function calculateTradingProbability(botIntelligence, marketVolatility, marketOpportunityScore) {
-  // Base chance is 10% per tick (increased from 2% for testing)
+  // Base chance is 20% per tick (doubled for better performance)
   // Lower intelligence bots trade more frequently but less effectively
   // Higher intelligence bots are more selective but make better trades
-  const baseTradeProbability = 0.10 * (1 / Math.sqrt(botIntelligence));
+  const baseTradeProbability = 0.20 * (1 / Math.pow(botIntelligence, 0.3)); // Reduced penalty for high intelligence
   
   // Adjust probability based on market conditions and opportunity score
   // More volatile markets and better opportunities increase trading frequency
-  // Ensure minimum probability of 5% for testing
-  const calculatedProbability = baseTradeProbability * (1 + (marketVolatility * 2)) * marketOpportunityScore;
-  return Math.max(0.05, calculatedProbability);
+  // Enhanced opportunity score impact for higher intelligence bots
+  const intelligenceBonus = Math.pow(botIntelligence, 1.5) / 10; // Gives higher intelligence bots more weight
+  const calculatedProbability = baseTradeProbability * 
+                               (1 + (marketVolatility * (1 + intelligenceBonus))) * 
+                               (marketOpportunityScore * (1 + intelligenceBonus));
+  
+  // Higher minimum probability (8%) ensures more consistent trading
+  return Math.max(0.08, calculatedProbability);
 }
 
 /**
@@ -297,13 +405,13 @@ export function calculateTradingProbability(botIntelligence, marketVolatility, m
 export function getRiskThreshold(riskLevel) {
   switch(riskLevel.toLowerCase()) {
     case 'low':
-      return 0.10; // 10% for low risk (more conservative)
+      return 0.08; // 8% for low risk - faster profit taking for more consistent gains
     case 'medium':
-      return 0.20; // 20% for medium risk (more conservative)
+      return 0.15; // 15% for medium risk - balanced approach
     case 'high':
-      return 0.30; // 30% for high risk (more conservative)
+      return 0.25; // 25% for high risk - still aggressive but more reasonable
     default:
-      return 0.15; // Default (more conservative)
+      return 0.12; // Default - slightly lower threshold for better profit locking
   }
 }
 
@@ -320,15 +428,18 @@ export function selectStocksToBuy(stocks, buyingOpportunities, budget, botIntell
     return [];
   }
   
-  // Determine how many different stocks to buy based on intelligence
-  // Higher intelligence = more diversification
+  // Enhanced diversification strategy based on intelligence
+  // Higher intelligence = more diversification, with better scaling
+  // Intelligence 1-3: 1-2 stocks, Intelligence 4-6: 2-3 stocks, Intelligence 7+: 3-5 stocks
   const maxStocksToBuy = Math.min(
     buyingOpportunities.length,
-    Math.max(1, Math.ceil(botIntelligence / 2))
+    Math.max(1, Math.ceil(Math.pow(botIntelligence, 0.7)))
   );
   
-  // Allocate budget across stocks
-  const baseAllocation = budget / maxStocksToBuy;
+  // More intelligent allocation of budget - retain some budget for future opportunities
+  // Higher intelligence bots allocate budget more efficiently
+  const allocationPercent = 0.7 + (Math.min(0.25, botIntelligence * 0.025)); // 70-95% based on intelligence
+  const baseAllocation = (budget * allocationPercent) / maxStocksToBuy;
   
   // Select stocks and determine quantities
   const selectedStocks = [];

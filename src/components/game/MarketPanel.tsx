@@ -63,7 +63,7 @@ export default function MarketPanel() {
   
   return (
     <div className="backdrop-blur-md bg-gradient-to-br from-gray-900/90 via-green-900/90 to-emerald-900/90 rounded-lg shadow-[0_0_20px_rgba(74,222,128,0.3)] p-4 border border-green-400/20">
-      <h2 className="text-lg font-bold mb-3 text-green-400">Paperclip Market</h2>
+      <h2 className="text-lg font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">Paperclip Market</h2>
       
       <div className="space-y-3">
         {/* Inventory and Money + Price Control - Side by side on medium screens and up */}

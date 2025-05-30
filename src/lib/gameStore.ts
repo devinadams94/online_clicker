@@ -1349,7 +1349,10 @@ const useGameStore = create<GameStore>(
         
       botAutoTrade: () =>
         set((state: GameState) => {
-          console.log('botAutoTrade called - tradingBots:', state.tradingBots, 'budget:', state.botTradingBudget, 'intelligence:', state.botIntelligence);
+          console.log('[BOT TRADING] botAutoTrade called - tradingBots:', state.tradingBots, 'budget:', state.botTradingBudget, 'intelligence:', state.botIntelligence);
+          // Add a timestamp for tracking when trading happens
+          const timestamp = new Date().toISOString();
+          console.log(`[BOT TRADING] Timestamp: ${timestamp}`);
           
           // Attempt to use the enhanced trading algorithm from the separate module
           let useAdvancedAlgorithm = false;
@@ -2235,12 +2238,12 @@ const useGameStore = create<GameStore>(
             symbol: 'PAPR',
             price: 10.00,
             previousPrice: 9.85,
-            volatility: 0.15,
-            trend: 0.01,
+            volatility: 0.11, // Reduced volatility from 0.15
+            trend: 0.02, // Increased upward trend from 0.01
             volume: 10000,
             lastUpdate: new Date(),
             // Add trend data
-            trendDirection: 0, // 0 neutral, 1 bullish, -1 bearish
+            trendDirection: 1, // Changed from 0 (neutral) to 1 (bullish)
             trendStrength: 0, // 0-1, how strong the trend is
             trendStartTime: new Date(), // When the trend started
             trendDuration: 0 // How long the trend has been active in ms
@@ -2251,13 +2254,13 @@ const useGameStore = create<GameStore>(
             symbol: 'WIRE',
             price: 25.50,
             previousPrice: 25.75,
-            volatility: 0.2,
-            trend: -0.005,
+            volatility: 0.14, // Reduced volatility from 0.2
+            trend: 0.01, // Changed from -0.005 to positive trend
             volume: 8500,
             lastUpdate: new Date(),
             // Add trend data
-            trendDirection: 0,
-            trendStrength: 0,
+            trendDirection: 1, // Changed from 0 (neutral) to 1 (bullish)
+            trendStrength: 0.5, // Added initial trend strength
             trendStartTime: new Date(),
             trendDuration: 0
           },
@@ -2267,13 +2270,13 @@ const useGameStore = create<GameStore>(
             symbol: 'CLIP',
             price: 15.25,
             previousPrice: 14.90,
-            volatility: 0.25,
-            trend: 0.02,
+            volatility: 0.18, // Reduced volatility from 0.25
+            trend: 0.025, // Increased upward trend from 0.02
             volume: 12000,
             lastUpdate: new Date(),
             // Add trend data
-            trendDirection: 0,
-            trendStrength: 0,
+            trendDirection: 1, // Changed from 0 (neutral) to 1 (bullish)
+            trendStrength: 0.5, // Added initial trend strength
             trendStartTime: new Date(),
             trendDuration: 0
           },
@@ -2283,13 +2286,13 @@ const useGameStore = create<GameStore>(
             symbol: 'MACH',
             price: 45.75,
             previousPrice: 46.00,
-            volatility: 0.3,
-            trend: -0.01,
+            volatility: 0.22, // Reduced volatility from 0.3
+            trend: 0.005, // Changed from -0.01 to positive trend
             volume: 5000,
             lastUpdate: new Date(),
             // Add trend data
-            trendDirection: 0,
-            trendStrength: 0,
+            trendDirection: 1, // Changed from 0 (neutral) to 1 (bullish)
+            trendStrength: 0.5, // Added initial trend strength
             trendStartTime: new Date(),
             trendDuration: 0
           },
@@ -2299,13 +2302,13 @@ const useGameStore = create<GameStore>(
             symbol: 'TECH',
             price: 75.25,
             previousPrice: 73.50,
-            volatility: 0.4,
-            trend: 0.015,
+            volatility: 0.28, // Reduced volatility from 0.4
+            trend: 0.03, // Doubled from 0.015 for stronger upward trend
             volume: 7500,
             lastUpdate: new Date(),
             // Add trend data
-            trendDirection: 0,
-            trendStrength: 0,
+            trendDirection: 1, // Changed from 0 (neutral) to 1 (bullish)
+            trendStrength: 0.5, // Added initial trend strength
             trendStartTime: new Date(),
             trendDuration: 0
           }
@@ -2582,21 +2585,21 @@ const useGameStore = create<GameStore>(
             const currentTrendDuration = now.getTime() - stock.trendStartTime.getTime();
             
             // Check if we need to create a new trend (randomly or if current trend expired)
-            // Max trend duration is increased significantly for longer-lasting trends
-            const maxTrendDuration = 20 * 60 * 1000; // 20 minutes in milliseconds (increased from 10)
-            const randomTrendChange = Math.random() < 0.005; // 0.5% chance of a trend change per tick (reduced from 1%)
+            // Extended trend duration for more stable trends
+            const maxTrendDuration = 30 * 60 * 1000; // 30 minutes in milliseconds (increased from 20)
+            const randomTrendChange = Math.random() < 0.003; // 0.3% chance of a trend change per tick (reduced from 0.5%)
             const trendExpired = stock.trendDirection !== 0 && currentTrendDuration >= maxTrendDuration;
             
             // Create a new trend if needed
             if (randomTrendChange || trendExpired || stock.trendDirection === 0) {
               // Determine if we'll have a trend and in which direction
-              // Higher chance of neutral (no trend) than strong trends
+              // Higher chance of having a trend for more predictable movements
               const trendRoll = Math.random();
               
-              if (trendRoll < 0.75) { // 75% chance of a significant trend (increased from 60%)
+              if (trendRoll < 0.85) { // 85% chance of a significant trend (increased from 75%)
                 // Determine direction: bullish (1) or bearish (-1)
-                // Bias toward upward trends (65% chance of upward, 35% chance of downward)
-                updatedStock.trendDirection = Math.random() < 0.65 ? 1 : -1;
+                // Stronger bias toward upward trends (75% chance of upward, 25% chance of downward)
+                updatedStock.trendDirection = Math.random() < 0.75 ? 1 : -1;
                 // Determine strength (0.3 to 1.0 - stronger trends are rarer)
                 // Stronger trends for all directions
                 updatedStock.trendStrength = 0.4 + (Math.random() * 0.6);
@@ -2623,23 +2626,28 @@ const useGameStore = create<GameStore>(
             // Calculate price change based on trend
             let trendImpact = 0;
             if (updatedStock.trendDirection !== 0) {
-              // Stronger trends have larger price movements, but reduced impact for more gradual changes
-              trendImpact = updatedStock.trendDirection * updatedStock.trendStrength * 0.01; // Up to 1% per tick from trend (reduced from 3%)
+              // Enhanced trend impact for more predictable price movements
+              // Stronger for upward trends, milder for downward trends
+              const directionMultiplier = updatedStock.trendDirection === 1 ? 1.5 : 0.8;
+              trendImpact = updatedStock.trendDirection * updatedStock.trendStrength * 0.012 * directionMultiplier; // Up to 1.8% for uptrends, 0.96% for downtrends
             }
             
-            // Base trend factor (from the original model)
-            const baseTrendFactor = updatedStock.trend * (1 + (state.tradingBots * 0.01));
+            // Enhanced base trend factor with stronger bot influence
+            const baseTrendFactor = updatedStock.trend * (1 + (state.tradingBots * 0.015));
             
-            // Random price movement with trend bias
+            // Random price movement with reduced volatility
             const randomFactor = (Math.random() - 0.5) * 2; // -1 to 1
-            const volatilityFactor = updatedStock.volatility * (1 - (state.tradingBots * 0.01)); // Trading bots reduce volatility
+            // Significantly reduced volatility based on trading bots
+            const volatilityFactor = updatedStock.volatility * (1 - (state.tradingBots * 0.02)) * 0.75; // Trading bots reduce volatility by up to 2% per bot, plus 25% flat reduction
             
-            // Calculate price change percentage (combining base trend, trend impact, and random movement)
-            const changePercent = baseTrendFactor + trendImpact + (randomFactor * volatilityFactor);
+            // Calculate price change percentage with stronger trend influence
+            const trendWeight = 1.2; // Increase trend weight by 20%
+            const randomWeight = 0.8; // Decrease random weight by 20%
+            const changePercent = (baseTrendFactor + trendImpact) * trendWeight + (randomFactor * volatilityFactor) * randomWeight;
             
-            // Calculate new price (with limits to prevent excessive changes per tick)
-            // Reduced maximum price changes by 67% to make fluctuations more gradual
-            const maxChange = updatedStock.trendDirection !== 0 ? 0.05 : 0.02; // Reduced from 0.15/0.05 to 0.05/0.02
+            // Calculate new price with tighter limits to prevent excessive changes per tick
+            // Further reduced maximum price changes for smoother price movements
+            const maxChange = updatedStock.trendDirection !== 0 ? 0.04 : 0.015; // Reduced from 0.05/0.02 to 0.04/0.015
             const limitedChangePercent = Math.max(Math.min(changePercent, maxChange), -maxChange);
             const newPrice = Math.max(0.01, updatedStock.price * (1 + limitedChangePercent));
             
@@ -2729,24 +2737,28 @@ const useGameStore = create<GameStore>(
         const tickCount = (state.tickCount || 0) + 1;
         set({ tickCount });
         
-        // Debug logging - temporarily every tick for debugging
-        console.log(`[Stock Market Tick ${tickCount}] Bots: ${tradingBots}, Budget: $${botBudget.toFixed(2)}, Next trade in ${5 - (tickCount % 5)} ticks`);
+        // Calculate ticks needed for a 60-second trade interval (600 ticks per minute since ticks occur every 100ms)
+        const ticksPerTrade = 600; // 600 ticks = 60 seconds
         
-        // Trade every 5 ticks if we have bots and budget
+        // Debug logging with updated interval info
+        console.log(`[Stock Market Tick ${tickCount}] Bots: ${tradingBots}, Budget: $${botBudget.toFixed(2)}, Next trade in ${ticksPerTrade - (tickCount % ticksPerTrade)} ticks`);
+        
+        // Trade every 600 ticks (60 seconds) if we have bots and budget
         if (tradingBots > 0 && botBudget >= 10) {
-          if (tickCount % 5 === 0) {
-            console.log(`[TRADING NOW] Tick ${tickCount} - Executing bot auto-trade with ${tradingBots} bots and $${botBudget.toFixed(2)} budget`);
+          if (tickCount % ticksPerTrade === 0) {
+            console.log(`[BOT TRADING TRIGGERED] Tick ${tickCount} - Executing bot auto-trade with ${tradingBots} bots and $${botBudget.toFixed(2)} budget`);
             const result = get().botAutoTrade();
-            console.log('[TRADE RESULT]', result);
+            console.log('[BOT TRADING COMPLETED] Result:', result);
           }
         } else if (tradingBots > 0 && botBudget < 10 && tickCount % 50 === 0) {
-          console.log(`[TRADE SKIPPED] Insufficient budget: $${botBudget.toFixed(2)} (need at least $10)`);
+          console.log(`[BOT TRADING SKIPPED] Insufficient budget: $${botBudget.toFixed(2)} (need at least $10)`);
         } else if (tradingBots === 0 && tickCount % 50 === 0) {
-          console.log('[TRADE SKIPPED] No trading bots purchased');
+          console.log('[BOT TRADING SKIPPED] No trading bots purchased');
         }
           
-          // Remove the else if that was preventing simple auto-trading
-          if (false) {
+          // Advanced trading algorithm for more sophisticated bot trading
+          // Previous if (false) condition was preventing this from running
+          {
             try {
               // Use enhanced trading algorithm from tradingBotAlgorithm.js
               const botIntelligence = state.botIntelligence || 1;
@@ -3593,13 +3605,34 @@ const useGameStore = create<GameStore>(
         }
         
         // STOCK MARKET TICK (only if bots are active - throttled)
-        if (state.stockMarketUnlocked && state.botTradingBudget > 0 && state.hasTradingBot) {
-          // Only run bot trading every 5th tick (500ms) to reduce load
+        if (state.stockMarketUnlocked) {
+          // Only log debug info occasionally to avoid console spam
+          const now = new Date();
+          if (now.getSeconds() % 15 === 0 && now.getMilliseconds() < 150) {
+            console.log(`[BATCHED_TICK] Stock market status - unlocked: ${state.stockMarketUnlocked}, bots: ${state.tradingBots}, budget: $${state.botTradingBudget?.toFixed(2) || 0}`);
+          }
+          
+          if (state.botTradingBudget > 0 && state.tradingBots > 0) {
+          // Only run bot trading every 600 ticks (60 seconds) to reduce frequency
           const tickCount = Math.floor(Date.now() / 100);
-          if (tickCount % 5 === 0) {
+          const ticksPerTrade = 600; // 600 ticks = 60 seconds
+          if (tickCount % ticksPerTrade === 0) {
             // Bot trading logic would go here, but it's too complex to inline
             // For now, just call the existing function
+            console.log('[BATCHED_TICK] Calling botAutoTrade from batchedTick - bots:', state.tradingBots, 'budget:', state.botTradingBudget.toFixed(2));
             get().botAutoTrade();
+            console.log('[BATCHED_TICK] botAutoTrade completed');
+          }
+          } else {
+            // Only log occasionally to avoid spam
+            const now = new Date();
+            if (now.getSeconds() % 30 === 0 && now.getMilliseconds() < 150) {
+              if (state.tradingBots <= 0) {
+                console.log('[BATCHED_TICK] No bot trading: No trading bots purchased');
+              } else if (state.botTradingBudget <= 0) {
+                console.log('[BATCHED_TICK] No bot trading: Insufficient budget');
+              }
+            }
           }
         }
         

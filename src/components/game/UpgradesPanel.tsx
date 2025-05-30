@@ -108,7 +108,7 @@ export default function UpgradesPanel() {
   return (
     <div className="relative bg-gradient-to-br from-gray-900/80 via-green-900/20 to-emerald-900/30 backdrop-blur-md border border-green-400/30 rounded-lg p-6 shadow-[0_0_20px_rgba(74,222,128,0.3)] h-[420px]">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 text-transparent bg-clip-text drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]">Upgrades</h2>
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-amber-500 text-transparent bg-clip-text drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]">Upgrades</h2>
         <div className="flex items-center space-x-2">
           <div className="text-xs text-gray-500">Scroll for more</div>
           <button 

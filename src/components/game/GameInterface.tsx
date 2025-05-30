@@ -386,6 +386,11 @@ export default function GameInterface() {
       try {
         // Use the optimized batched tick for better performance
         if (batchedTick) {
+          // Add debug statement once in a while to verify batched tick is being used
+          const now = new Date();
+          if (now.getSeconds() % 10 === 0 && now.getMilliseconds() < 200) {
+            console.log('[GAME_INTERFACE] Using batchedTick for optimization');
+          }
           batchedTick();
         } else {
           // Fallback to individual ticks if batched tick is not available
@@ -1862,8 +1867,8 @@ export default function GameInterface() {
                     key={item.id}
                     className={`px-2 md:px-3 py-1 rounded-md text-sm md:text-base font-medium transition-all duration-300 ${
                       currentPage === item.id 
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 shadow-[0_0_10px_rgba(74,222,128,0.5)]' 
-                        : 'hover:bg-green-500/20 text-green-300 hover:text-green-400'
+                        ? 'bg-gradient-to-r from-yellow-500 to-amber-500 shadow-[0_0_10px_rgba(250,204,21,0.6)]' 
+                        : 'hover:bg-yellow-500/20 text-yellow-300 hover:text-yellow-400'
                     }`}
                     onClick={() => setCurrentPage(item.id)}
                   >

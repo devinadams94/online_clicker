@@ -1,0 +1,71 @@
+# CPU adds 50 OPs per level and OPs production bonus fix
+
+This patch updates the gameStore.ts file to make CPU add 50 OPs per level and fix the OPs production bonus calculation to make it ops/100 instead of ops/1000.
+
+## Changes to implement:
+
+1. Modify the `upgradeCpu` function to add 50 OPs per level:
+```javascript
+// Find the upgradeCpu function and modify it to:
+upgradeCpu: () => 
+  set((state: GameState) => {
+    // Check if player has enough money
+    if (state.money < state.cpuCost) {
+      return state;
+    }
+    
+    const newCpuLevel = state.cpuLevel + 1;
+    
+    // New implementation: Add 50 OPs per CPU level
+    const newOpsMax = newCpuLevel * 50 + state.memoryMax * 50;
+    
+    return {
+      money: state.money - state.cpuCost,
+      cpuLevel: newCpuLevel,
+      // Increase cost by 25% per level (similar to original)
+      cpuCost: Math.floor(state.cpuCost * 1.25),
+      opsMax: newOpsMax,
+    };
+  }),
+```
+
+2. Update the OPs production multiplier calculation to use ops/100:
+```javascript
+// Find the function that updates opsProductionMultiplier (often in a tick function) and change it to:
+// FROM:
+const opsMultiplier = Math.min(0.5, state.ops / 1000);
+if (opsMultiplier !== state.opsProductionMultiplier) {
+  batchedUpdates.opsProductionMultiplier = opsMultiplier;
+}
+
+// TO:
+const opsMultiplier = state.ops / 100;
+if (opsMultiplier !== state.opsProductionMultiplier) {
+  batchedUpdates.opsProductionMultiplier = opsMultiplier;
+}
+```
+
+3. In any function that recalculates opsMax (like memory upgrades), ensure it includes the CPU component:
+```javascript
+// When memory changes, update opsMax with the CPU component:
+// FROM:
+updatedState.opsMax = updatedState.memoryMax * 50;
+
+// TO:
+updatedState.opsMax = updatedState.memoryMax * 50 + updatedState.cpuLevel * 50;
+```
+
+4. In the initial state setup, ensure opsMax includes the CPU component:
+```javascript
+// In the initial state, update opsMax to include CPU:
+// FROM:
+opsMax: 50,
+
+// TO:
+opsMax: 50, // This should be memoryMax * 50 + cpuLevel * 50
+```
+
+## Implementation notes:
+- The CPU now adds 50 OPs per level
+- The OPs production multiplier is now calculated as ops/100, so 1650 OPs will give a 16.50x bonus
+- When upgrading memory, the opsMax should include both memory and CPU contributions

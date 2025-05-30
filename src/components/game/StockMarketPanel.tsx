@@ -565,7 +565,7 @@ export default function StockMarketPanel() {
         <div className="relative z-10 max-w-7xl mx-auto">
           <div className="backdrop-blur-md bg-gray-900/50 rounded-xl p-6 border border-green-400/30 shadow-[0_0_20px_rgba(74,222,128,0.3)] overflow-y-auto max-h-[calc(100vh-8rem)]">
             <div className="mb-6 flex justify-between items-center">
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-green-600 text-transparent bg-clip-text drop-shadow-[0_0_20px_rgba(74,222,128,0.8)]">Stock Market</h2>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-amber-500 text-transparent bg-clip-text drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]">Stock Market</h2>
               <div className="backdrop-blur-md bg-gray-800/50 px-4 py-2 rounded-lg flex items-center border border-green-400/30">
                 <span className="text-sm font-medium mr-2 text-green-300">Available:</span>
                 <span className="text-lg font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">${money.toFixed(2)}</span>
@@ -577,7 +577,7 @@ export default function StockMarketPanel() {
           <div className="grid grid-cols-3 gap-2">
             <div>
               <div className="text-sm font-medium text-green-300">Portfolio Value</div>
-              <div className="text-xl font-bold text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]">${portfolioValue.toFixed(2)}</div>
+              <div className="text-xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">${portfolioValue.toFixed(2)}</div>
             </div>
             <div>
               <div className="text-sm font-medium text-green-300">Total Profit</div>
@@ -607,7 +607,7 @@ export default function StockMarketPanel() {
         
         {/* Trading Bots Section */}
         <div className="backdrop-blur-md bg-gray-800/50 rounded-lg p-4 mb-6 border border-green-400/20 shadow-[0_0_15px_rgba(74,222,128,0.2)]">
-          <h3 className="text-lg font-bold mb-3 text-green-300">Trading Bots</h3>
+          <h3 className="text-lg font-bold mb-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-transparent bg-clip-text drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]">Trading Bots</h3>
           
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="backdrop-blur-sm bg-gray-700/50 p-3 rounded-lg border border-green-400/10">
@@ -632,9 +632,9 @@ export default function StockMarketPanel() {
               <div className="text-sm font-medium text-green-300">Intelligence</div>
               <div className="text-lg font-bold text-green-400">Level {botIntelligence}</div>
               <div className="text-xs text-gray-400">
-                <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">+{(botIntelligence * 10).toFixed(1)}%</span> trade success<br />
-                <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">+{Math.floor(Math.pow(botIntelligence, 1.5) * 10)}%</span> profit factor<br />
-                <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">+{Math.floor(Math.pow(botIntelligence, 2) * 5)}%</span> trend detection
+                <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">+{(botIntelligence * 15).toFixed(1)}%</span> trade success<br />
+                <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">+{Math.floor(Math.pow(botIntelligence, 1.8) * 12)}%</span> profit factor<br />
+                <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">+{Math.floor(Math.pow(botIntelligence, 1.5) * 15)}%</span> trend detection
               </div>
               <button
                 className={`mt-2 w-full py-2 text-sm font-bold rounded-lg transition-all ${canUpgradeBotIntelligence 
@@ -719,6 +719,23 @@ export default function StockMarketPanel() {
                 Bots will automatically trade with this budget
               </div>
             </div>
+            
+            {/* Bot Profit Display */}
+            {botTradingProfit > 0 && (
+              <div className="mt-2 pt-2 border-t border-green-400/20">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-green-300">Return on Investment:</span>
+                  <span className="text-green-400 font-bold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">
+                    {(botTradingProfit > 0 && botTradingBudget > 0) ? 
+                      ((botTradingProfit / (botTradingBudget + botTradingProfit)) * 100).toFixed(1) + '%' 
+                      : '0%'}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-400">
+                  Enhanced trading algorithms with improved performance
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Trading Activity Log */}
@@ -726,30 +743,17 @@ export default function StockMarketPanel() {
             {tradingBots > 0 && botTradingBudget > 0 ? (
               <div>
                 <div className="font-medium text-green-300">Bot Trading Status: <span className="text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.6)]">Active</span></div>
-                <div className="text-gray-400">Trading {tradingBots * 600} times per minute</div>
-                <div className="text-gray-400">Success rate: <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.6)]">{Math.min(99, 80 + botIntelligence * 2).toFixed(1)}%</span></div>
-                <div className="text-gray-400">Profit multiplier: <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.6)]">{(1 + (botIntelligence * 0.5)).toFixed(1)}x</span></div>
+                <div className="text-gray-400">Trading {tradingBots} time{tradingBots > 1 ? 's' : ''} per minute</div>
+                <div className="text-gray-400">Success rate: <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.6)]">{Math.min(99, 85 + botIntelligence * 2).toFixed(1)}%</span></div>
+                <div className="text-gray-400">Profit multiplier: <span className="text-green-400 font-semibold drop-shadow-[0_0_5px_rgba(74,222,128,0.6)]">{(1.5 + (botIntelligence * 0.6)).toFixed(1)}x</span></div>
+                <div className="text-gray-400">Trading interval: <span className="text-blue-400 font-semibold drop-shadow-[0_0_5px_rgba(59,130,246,0.6)]">60 seconds</span></div>
                 
-                {/* Test Bot Trade Button */}
+                {/* Additional trading info section */}
                 <div className="mt-2 border-t pt-2 border-green-400/20">
-                  <button
-                    className="w-full px-3 py-1 text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white rounded mb-2 shadow-[0_0_10px_rgba(147,51,234,0.5)] hover:shadow-[0_0_15px_rgba(147,51,234,0.7)] transition-all"
-                    onClick={() => {
-                      console.log('Button clicked!');
-                      const store = useGameStore.getState();
-                      console.log('Store:', store);
-                      console.log('Forcing bot trade - bots:', store.tradingBots, 'budget:', store.botTradingBudget);
-                      if (store.botAutoTrade) {
-                        store.botAutoTrade();
-                        console.log('botAutoTrade called');
-                      } else {
-                        console.error('botAutoTrade function not found!');
-                      }
-                      alert(`Bot Trade Debug:\nBots: ${store.tradingBots}\nBudget: $${store.botTradingBudget}\nTransactions: ${store.transactionHistory?.length || 0}`);
-                    }}
-                  >
-                    Force Bot Trade (Debug)
-                  </button>
+                  <div className="text-xs text-green-200">
+                    <div>Bots will automatically analyze market conditions and trade when profitable opportunities arise.</div>
+                    <div className="mt-1">At {botRiskThreshold * 100}% profit, bots will completely liquidate positions.</div>
+                  </div>
                 </div>
                 
                 {/* Risk Threshold Controls */}

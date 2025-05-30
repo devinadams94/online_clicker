@@ -30,12 +30,12 @@ export default function Header() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-lime-400 drop-shadow-[0_0_15px_rgba(74,222,128,0.5)] hover:drop-shadow-[0_0_25px_rgba(74,222,128,0.8)] transition-all duration-300">
+              <Link href="/" className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-500 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)] hover:drop-shadow-[0_0_25px_rgba(250,204,21,0.8)] transition-all duration-300">
                 PAPERCLIP CLICKER
               </Link>
             </div>
             <div className="ml-6 flex items-center space-x-4">
-              <Link href="/game" className="text-green-300 hover:text-green-400 font-bold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)] transition-all duration-300 hover:scale-110">
+              <Link href="/game" className="text-blue-300 hover:text-blue-400 font-bold drop-shadow-[0_0_5px_rgba(59,130,246,0.6)] transition-all duration-300 hover:scale-110">
                 PLAY
               </Link>
             </div>
