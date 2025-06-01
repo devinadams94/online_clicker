@@ -1480,11 +1480,20 @@ export default function GameInterface() {
           };
           
           // Required space fields with defaults
-          gameData.spaceMatter = 0;
+          gameData.spaceMatter = 6e30; // 6 nonillion
           gameData.spaceOre = 0;
           gameData.spaceWire = 0;
-          gameData.totalSpaceMatter = 0;
-          gameData.discoveredPlanets = [];
+          gameData.totalSpaceMatter = 6e30; // 6 nonillion
+          // Initialize Earth as the first planet
+          gameData.discoveredPlanets = [{
+            id: 'earth',
+            name: 'Earth',
+            icon: '🌎',
+            matter: 6e30, // 6 nonillion
+            totalMatter: 6e30,
+            description: 'Our home planet. Rich in resources but limited compared to what lies beyond.',
+            discoveredAt: 0
+          }];
           gameData.currentPlanetIndex = 0;
           gameData.discoveredCelestialBodies = [];
           gameData.opsProductionMultiplier = 1;

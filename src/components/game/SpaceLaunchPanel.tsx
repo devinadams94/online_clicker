@@ -36,7 +36,7 @@ export default function SpaceLaunchPanel() {
   const calculateBulkCost = (baseCost: number, currentCount: number, amount: number) => {
     let totalCost = 0;
     for (let i = 0; i < amount; i++) {
-      const scaleFactor = Math.pow(1.0125, currentCount + i); // Changed from 1.05 to 1.0125
+      const scaleFactor = Math.pow(1.00125, currentCount + i); // Changed from 1.0125 to 1.00125 (90% cheaper scaling)
       totalCost += Math.floor(baseCost * scaleFactor);
     }
     return totalCost;
@@ -64,11 +64,11 @@ export default function SpaceLaunchPanel() {
       return;
     }
     
-    // Update state directly with the new count and reduced paperclips
-    useGameStore.setState({
-      wireHarvesters: wireHarvesters + amount,
-      aerogradePaperclips: (aerogradePaperclips || 0) - totalCost
-    });
+    // Use the game store function directly multiple times to ensure proper initialization
+    // This is safer than updating state directly, which might bypass initialization logic
+    for (let i = 0; i < amount; i++) {
+      launchWireHarvester(); // Call the proper function from the game store for each harvester
+    }
     
     // Save the game state
     setTimeout(triggerGameSave, 200);
@@ -83,11 +83,11 @@ export default function SpaceLaunchPanel() {
       return;
     }
     
-    // Update state directly with the new count and reduced paperclips
-    useGameStore.setState({
-      oreHarvesters: oreHarvesters + amount,
-      aerogradePaperclips: (aerogradePaperclips || 0) - totalCost
-    });
+    // Use the game store function directly multiple times to ensure proper initialization
+    // This is safer than updating state directly, which might bypass initialization logic
+    for (let i = 0; i < amount; i++) {
+      launchOreHarvester(); // Call the proper function from the game store for each harvester
+    }
     
     // Save the game state
     setTimeout(triggerGameSave, 200);
@@ -102,11 +102,11 @@ export default function SpaceLaunchPanel() {
       return;
     }
     
-    // Update state directly with the new count and reduced paperclips
-    useGameStore.setState({
-      factories: factories + amount,
-      aerogradePaperclips: (aerogradePaperclips || 0) - totalCost
-    });
+    // Use the game store function directly multiple times to ensure proper initialization
+    // This is safer than updating state directly, which might bypass initialization logic
+    for (let i = 0; i < amount; i++) {
+      buildFactory(); // Call the proper function from the game store for each factory
+    }
     
     // Save the game state
     setTimeout(triggerGameSave, 200);
@@ -126,22 +126,22 @@ export default function SpaceLaunchPanel() {
     return formattedValue;
   };
   
-  // Calculate current costs with 5% scaling per purchase
+  // Calculate current costs with 0.125% scaling per purchase (90% cheaper than original 1.25%)
   const getWireHarvesterCost = () => {
     const baseCost = 10; // 10 aerograde
-    const scaleFactor = Math.pow(1.0125, wireHarvesters);
+    const scaleFactor = Math.pow(1.00125, wireHarvesters);
     return Math.floor(baseCost * scaleFactor);
   };
   
   const getOreHarvesterCost = () => {
     const baseCost = 10; // 10 aerograde
-    const scaleFactor = Math.pow(1.0125, oreHarvesters);
+    const scaleFactor = Math.pow(1.00125, oreHarvesters);
     return Math.floor(baseCost * scaleFactor);
   };
   
   const getFactoryCost = () => {
     const baseCost = 100; // 100 aerograde
-    const scaleFactor = Math.pow(1.0125, factories);
+    const scaleFactor = Math.pow(1.00125, factories);
     return Math.floor(baseCost * scaleFactor);
   };
   

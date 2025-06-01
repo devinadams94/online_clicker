@@ -116,13 +116,18 @@ export default function PrestigePanel() {
       <div className="bg-gray-700 p-3 rounded">
         <h3 className="font-medium mb-2">Reset Progress</h3>
         <p className="text-sm text-gray-400 mb-3">
-          Reset your progress to gain <span className="text-yellow-400 font-bold">{potentialPoints}</span> prestige points.
+          Reset your progress to gain <span className="text-yellow-400 font-bold">{potentialPoints}</span> prestige points and <span className="text-indigo-400 font-bold">1 trust point</span>.
           {potentialPoints <= 0 && (
             <span className="block mt-1 text-red-400">
               You need at least 1 billion paperclips to gain prestige points.
             </span>
           )}
         </p>
+        <div className="bg-indigo-900/30 p-3 rounded-lg border border-indigo-400/30 shadow-[0_0_10px_rgba(99,102,241,0.3)] mb-3">
+          <span className="text-sm text-indigo-300">
+            <span className="font-bold">Trust Point Bonus:</span> You will receive 1 trust point per prestige level. Current prestige level: {prestigeLevel}
+          </span>
+        </div>
         
         {showConfirm ? (
           <div className="space-y-2">
@@ -154,7 +159,7 @@ export default function PrestigePanel() {
             onClick={handlePrestige}
             disabled={potentialPoints <= 0}
           >
-            Prestige Reset (+{potentialPoints} Points)
+            Prestige Reset (+{potentialPoints} Points, +1 Trust)
           </button>
         )}
         
@@ -166,6 +171,7 @@ export default function PrestigePanel() {
             <li>+{formatPercentage({1: 0.05, 2: 0.1, 3: 0.15}[potentialPoints] || (0.05 * potentialPoints))} Wire Efficiency</li>
             <li>+{formatPercentage({1: 0.1, 2: 0.15, 3: 0.2}[potentialPoints] || (0.1 * potentialPoints))} Click Power</li>
             <li>${potentialPoints * 50} Starting Money</li>
+            <li className="text-indigo-400">+1 Trust Point (for purchasing Trust Upgrades)</li>
           </ul>
         </div>
       </div>

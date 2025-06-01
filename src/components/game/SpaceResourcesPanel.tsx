@@ -38,8 +38,12 @@ export default function SpaceResourcesPanel() {
     return num.toFixed(2);
   };
 
+  // Handle case where spaceMatter or totalSpaceMatter aren't initialized
+  const effectiveSpaceMatter = spaceMatter || 6e30; // Default to 6 nonillion
+  const effectiveTotalSpaceMatter = totalSpaceMatter || 6e30; // Default to 6 nonillion
+  
   // Calculate progress percentage for the matter used
-  const matterUsedPercentage = totalSpaceMatter ? ((totalSpaceMatter - (spaceMatter || 0)) / totalSpaceMatter) * 100 : 0;
+  const matterUsedPercentage = ((effectiveTotalSpaceMatter - effectiveSpaceMatter) / effectiveTotalSpaceMatter) * 100;
 
   // Get current planet
   const currentPlanet = discoveredPlanets?.[currentPlanetIndex] || {
@@ -139,11 +143,11 @@ export default function SpaceResourcesPanel() {
       <div className="mb-4">
         <div className="flex justify-between mb-1">
           <span className="text-sm font-medium">Available Matter {currentPlanet.icon}:</span>
-          <span className="text-sm font-bold text-green-400">{formatLargeNumber(spaceMatter)}</span>
+          <span className="text-sm font-bold text-green-400">{formatLargeNumber(effectiveSpaceMatter)}</span>
         </div>
         <div className="flex justify-between mb-1 text-xs text-gray-400">
           <span>Total Matter:</span>
-          <span>{formatLargeNumber(totalSpaceMatter)}</span>
+          <span>{formatLargeNumber(effectiveTotalSpaceMatter)}</span>
         </div>
         <div className="w-full bg-gray-700 rounded-full h-1.5">
           <div 
@@ -191,7 +195,7 @@ export default function SpaceResourcesPanel() {
             </div>
             <div className="flex justify-between text-xs text-gray-400 mt-1">
               <span>Conversion Ratio:</span>
-              <span>10 Space Wire per 1 Ore</span>
+              <span>1 Space Wire per 1 Ore</span>
             </div>
           </div>
           
@@ -210,7 +214,7 @@ export default function SpaceResourcesPanel() {
             </div>
             <div className="flex justify-between text-xs text-gray-400 mt-1">
               <span>Conversion Ratio:</span>
-              <span>1 Space Wire = 10 Aerograde Paperclips</span>
+              <span>1 Space Wire = 1 Aerograde Paperclip</span>
             </div>
           </div>
         </div>

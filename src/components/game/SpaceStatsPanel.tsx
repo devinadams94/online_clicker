@@ -79,7 +79,8 @@ export default function SpaceStatsPanel() {
           ...state.spaceStats,
           combat: 1
         },
-        honor: 0 // Initialize honor resource
+        honor: 0, // Initialize honor resource
+        yomi: state.yomi || 0 // Ensure yomi is initialized
       });
       
       // Force component to re-render

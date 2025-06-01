@@ -149,13 +149,47 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
   spaceTick: () => {
     const state = get();
     
+    console.log('[SPACE TICK] Starting spaceTick function');
+    
     // Skip if space age not unlocked
     if (!state.spaceAgeUnlocked) {
+      console.log('[SPACE TICK] Space age not unlocked, skipping');
       return;
     }
     
-    // Skip most processing if no probes
-    if (state.probes <= 0) {
+    // Always ensure space matter is initialized correctly, even if we skip processing
+    if (state.spaceMatter === undefined || state.spaceMatter === 0 || state.spaceMatter === null) {
+      set({
+        spaceMatter: 6e30, // 6 nonillion
+        totalSpaceMatter: 6e30
+      });
+      return; // Return after fixing initialization to avoid processing with wrong values
+    }
+    
+    // Check if we have any production units (drones/factories)
+    const oreHarvesters = state.oreHarvesters || 0;
+    const wireHarvesters = state.wireHarvesters || 0;
+    const factories = state.factories || 0;
+    const hasProductionUnits = oreHarvesters > 0 || wireHarvesters > 0 || factories > 0;
+    
+    console.log(`[SPACE TICK] Probes: ${state.probes}, Ore Harvesters: ${oreHarvesters}, Wire Harvesters: ${wireHarvesters}, Factories: ${factories}`);
+    
+    // Skip most processing if no probes AND no production units, but still allow energy generation
+    if (state.probes <= 0 && !hasProductionUnits) {
+      console.log('[SPACE TICK] No probes and no production units, only generating energy');
+      // Still allow energy generation from solar arrays even without probes
+      const solarArrays = state.solarArrays || 0;
+      if (solarArrays > 0) {
+        const energyGenerated = solarArrays * 10;
+        const currentEnergy = state.energy || 0;
+        const maxEnergy = state.maxEnergy || (state.batteries && state.batteries > 0 ? state.batteries * 1000 : 1000);
+        const newEnergyAmount = Math.min(currentEnergy + energyGenerated, maxEnergy);
+        
+        set({
+          energy: newEnergyAmount,
+          energyPerSecond: energyGenerated * 10
+        });
+      }
       return;
     }
     
@@ -174,6 +208,29 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
         description: 'Our home planet. Rich in resources but limited compared to what lies beyond.',
         discoveredAt: 0
       });
+      
+      // Directly update state to ensure planets are set properly
+      set({
+        discoveredPlanets,
+        spaceMatter: 6e30,
+        totalSpaceMatter: 6e30
+      });
+    }
+    
+    // If Earth has 0 matter, reset it to 6e30
+    if (discoveredPlanets.length > 0 && 
+        (discoveredPlanets[0].matter === 0 || 
+         discoveredPlanets[0].matter === undefined || 
+         discoveredPlanets[0].matter === null)) {
+      discoveredPlanets[0].matter = 6e30;
+      discoveredPlanets[0].totalMatter = 6e30;
+      
+      // Update planets and matter in state
+      set({
+        discoveredPlanets,
+        spaceMatter: 6e30,
+        totalSpaceMatter: 6e30
+      });
     }
     
     // Get current planet's matter
@@ -182,6 +239,7 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
     
     // Initialize space stats if not already done
     if (!state.spaceStats.miningProduction) {
+      console.log('[SPACE STATS] Initializing space stats');
       set({
         spaceStats: {
           ...state.spaceStats,
@@ -195,63 +253,92 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
       });
     }
     
+    console.log(`[SPACE STATS] miningProduction: ${state.spaceStats.miningProduction}, wireProduction: ${state.spaceStats.wireProduction}, factoryProduction: ${state.spaceStats.factoryProduction}`);
+    
     // Apply efficiency multipliers from upgrades
     const miningEfficiency = state.miningEfficiency || 1;
     const droneEfficiency = state.droneEfficiency || 1;
     const factoryEfficiency = state.factoryEfficiency || 1;
     const explorationSpeed = state.explorationSpeed || 1;
     
+    console.log(`[EFFICIENCY] Mining: ${miningEfficiency}, Drone: ${droneEfficiency}, Factory: ${factoryEfficiency}`);
+    
     // Initialize variables for resources
-    let wireHarvestersNew = state.wireHarvesters;
-    let oreHarvestersNew = state.oreHarvesters;
-    let _factoriesNew = state.factories;
+    let wireHarvestersNew = state.wireHarvesters || 0;
+    let oreHarvestersNew = state.oreHarvesters || 0;
+    let factoriesNew = state.factories || 0;
     
     // Energy management - generate energy from solar arrays
-    const energyGenerated = (state.solarArrays || 0) * 10; // 10 energy per solar array per tick
+    // 10 energy per solar array per tick
+    const solarArrays = state.solarArrays || 0;
+    const energyGenerated = solarArrays * 10;
     const currentEnergy = state.energy || 0;
-    const maxEnergy = state.maxEnergy || 0;
+    const maxEnergy = state.maxEnergy || (state.batteries && state.batteries > 0 ? state.batteries * 1000 : 1000); // Default to 1000 if not set
     const newEnergyAmount = Math.min(currentEnergy + energyGenerated, maxEnergy);
+    
+    console.log(`ENERGY START: ${currentEnergy} + ${energyGenerated} = ${newEnergyAmount} (max: ${maxEnergy})`);
     
     // Calculate energy consumption requirements
     const energyPerDrone = 2; // Each drone (ore/wire harvester) costs 2 energy per tick
     const energyPerFactory = 5; // Each factory costs 5 energy per tick
     
-    const totalDrones = state.oreHarvesters + state.wireHarvesters;
-    const totalFactories = state.factories;
+    // Use already-defined variables from earlier in the function
+    
+    const totalDrones = oreHarvesters + wireHarvesters;
+    const totalFactories = factories;
     const totalEnergyRequired = (totalDrones * energyPerDrone) + (totalFactories * energyPerFactory);
     
     // Determine if we have enough energy for operations
     const hasEnoughEnergy = newEnergyAmount >= totalEnergyRequired;
-    const energyEfficiency = hasEnoughEnergy ? 1.0 : Math.max(0, newEnergyAmount / totalEnergyRequired);
+    // If not enough energy, scale production by available energy ratio
+    const energyEfficiency = hasEnoughEnergy ? 1.0 : Math.max(0, newEnergyAmount / Math.max(1, totalEnergyRequired));
+    
+    // CRITICAL: Actually consume the energy
+    // If we have enough energy, consume exactly what's needed
+    // If not, consume all available energy
+    const energyConsumed = hasEnoughEnergy ? totalEnergyRequired : newEnergyAmount;
+    const remainingEnergy = Math.max(0, newEnergyAmount - energyConsumed);
+    
+    console.log(`[ENERGY] Required ${totalEnergyRequired}, consumed ${energyConsumed}, remaining ${remainingEnergy}`);
+    console.log(`[ENERGY] Efficiency ${(energyEfficiency * 100).toFixed(1)}%, hasEnoughEnergy: ${hasEnoughEnergy}`);
     
     // Calculate how much ore can be mined (limited by available matter and energy)
-    // Base value is 1 ore per drone per second, multiplied by mining production stat and efficiency
-    // Ore harvesters were not producing enough ore - increased base production significantly
-    const potentialOreMined = state.oreHarvesters * state.spaceStats.miningProduction * 1.0 * miningEfficiency * droneEfficiency * energyEfficiency;
+    // Base value is 5 ore per drone per tick, multiplied by mining production stat and efficiency
+    const potentialOreMined = oreHarvesters * state.spaceStats.miningProduction * 5.0 * miningEfficiency * droneEfficiency * energyEfficiency;
     const actualOreMined = Math.min(potentialOreMined, currentSpaceMatter);
     
-    // Convert ore to wire (1 wire per 1 ore)
-    // Base value is 1 wire per drone per second, multiplied by wire production stat and efficiency
-    // Wire harvesters were not producing enough wire - increased base production
-    const potentialWireProduced = state.wireHarvesters * state.spaceStats.wireProduction * 1.0 * droneEfficiency * energyEfficiency;
+    console.log(`[ORE MINING] ${oreHarvesters} harvesters producing ${actualOreMined.toFixed(2)} ore/tick (${(actualOreMined * 10).toFixed(2)}/sec), from potential ${potentialOreMined.toFixed(2)}`);
+    
+    // Convert ore to wire (wire harvesters process ore into wire)
+    // Base value is 1 wire per drone per tick, multiplied by wire production stat and efficiency
+    const potentialWireProduced = wireHarvesters * state.spaceStats.wireProduction * 1.0 * droneEfficiency * energyEfficiency;
+    
     // Initialize spaceOre if it doesn't exist
     const currentOre = typeof state.spaceOre === 'number' ? state.spaceOre : 0;
     const availableOre = currentOre + actualOreMined;
+    
+    // Wire production is limited by available ore
     const actualWireProduced = Math.min(potentialWireProduced, availableOre);
     const oreConsumed = actualWireProduced;
     
-    // Produce Aerograde paperclips from wire (1 paperclip per wire)
+    console.log(`[WIRE PRODUCTION] ${wireHarvesters} harvesters producing ${actualWireProduced.toFixed(2)} wire/tick (${(actualWireProduced * 10).toFixed(2)}/sec), from potential ${potentialWireProduced.toFixed(2)}, available ore: ${availableOre.toFixed(2)}`);
+    
+    // Produce Aerograde paperclips from wire (factories convert wire to paperclips)
     // Initialize spaceWire if it doesn't exist
     const currentWire = typeof state.spaceWire === 'number' ? state.spaceWire : 0;
     const availableWire = currentWire + actualWireProduced;
     
-    // Base value is 1 paperclip per factory per second, modified by factory production stat and efficiency
-    const potentialPaperclipsProduced = state.factories * state.spaceStats.factoryProduction * 1.0 * factoryEfficiency * energyEfficiency;
-    // Each wire makes 1 paperclip
+    // Base value is 1 paperclip per factory per tick, modified by factory production stat and efficiency
+    const potentialPaperclipsProduced = factories * state.spaceStats.factoryProduction * 1.0 * factoryEfficiency * energyEfficiency;
+    
+    // Paperclip production is limited by available wire
     const maxPaperclipsFromWire = availableWire;
     const actualPaperclipsProduced = Math.min(potentialPaperclipsProduced, maxPaperclipsFromWire);
+    
     // Wire consumed equals paperclips produced (1:1 ratio)
     const wireConsumed = actualPaperclipsProduced;
+    
+    console.log(`[PAPERCLIP PRODUCTION] ${factories} factories producing ${actualPaperclipsProduced.toFixed(2)} clips/tick (${(actualPaperclipsProduced * 10).toFixed(2)}/sec), from potential ${potentialPaperclipsProduced.toFixed(2)}, available wire: ${availableWire.toFixed(2)}`);
     
     // Probe self-replication - create new probes based on self-replication stat
     // Use statistical approach instead of looping through each probe for better performance
@@ -540,81 +627,72 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
       }
     }
     
-    // Only update state if something actually changed
-    const updates: Partial<GameState> = {};
+    // Calculate new resource values
+    const newSpaceMatter = currentSpaceMatter - actualOreMined;
     
-    // Update energy
-    const energyConsumed = hasEnoughEnergy ? totalEnergyRequired : newEnergyAmount;
-    const finalEnergyAmount = newEnergyAmount - energyConsumed;
-    updates.energy = Math.max(0, finalEnergyAmount);
-    updates.energyPerSecond = energyGenerated;
+    // Ore should accumulate first, then be consumed by wire production
+    // Final ore = starting ore + mined ore - consumed ore
+    const newSpaceOre = Math.max(0, currentOre + actualOreMined - oreConsumed);
     
-    // Update probes considering new births, defections, and destructions
-    const totalProbeChange = newProbes - probesDefected - probesDestroyed;
-    if (totalProbeChange !== 0) {
-      updates.probes = Math.max(0, state.probes + totalProbeChange);
-    }
+    // Wire should accumulate from production, then be consumed by paperclip production  
+    // Final wire = starting wire + produced wire - consumed wire
+    const newSpaceWire = Math.max(0, currentWire + actualWireProduced - wireConsumed);
+    const newAerograde = (state.aerogradePaperclips || 0) + actualPaperclipsProduced - 
+      (resourcesHarvested && state.droneReplicationEnabled ? 
+        ((newWireHarvesters - wireHarvestersNew) + (newOreHarvesters - oreHarvestersNew)) * 
+        (state.droneReplicationCostPerDrone || 1000) : 0);
     
-    // Update defection system fields
-    if (newEnemyShips !== state.enemyShips) {
-      updates.enemyShips = newEnemyShips;
-    }
+    // Debug log resource changes
+    console.log(`[RESOURCE UPDATE] Ore: ${currentOre.toFixed(2)} + ${actualOreMined.toFixed(2)} - ${oreConsumed.toFixed(2)} = ${newSpaceOre.toFixed(2)}`);
+    console.log(`[RESOURCE UPDATE] Wire: ${currentWire.toFixed(2)} + ${actualWireProduced.toFixed(2)} - ${wireConsumed.toFixed(2)} = ${newSpaceWire.toFixed(2)}`);
+    console.log(`[RESOURCE UPDATE] Aerograde: ${(state.aerogradePaperclips || 0).toFixed(2)} + ${actualPaperclipsProduced.toFixed(2)} = ${newAerograde.toFixed(2)}`);
     
-    if (probesDefected > 0 || probesDestroyed > 0) {
-      updates.totalProbesLost = (state.totalProbesLost || 0) + probesDefected + probesDestroyed;
-      updates.lastDefectionTime = new Date();
+    // Perform a direct state update with all values
+    // This ensures consistent updates regardless of batching
+    set({
+      // Energy updates
+      energy: remainingEnergy,
+      energyPerSecond: energyGenerated * 10, // Convert to per second (10 ticks per second)
+      energyConsumedPerSecond: totalEnergyRequired * 10,
       
-      // Add defection event to history (keep last 50 events)
-      if (defectionEvent) {
-        const currentEvents = state.defectionEvents || [];
-        const updatedEvents = [defectionEvent, ...currentEvents].slice(0, 50);
-        updates.defectionEvents = updatedEvents;
-      }
-    }
-    
-    // Update harvesters if changed
-    if (newWireHarvesters !== wireHarvestersNew) {
-      updates.wireHarvesters = newWireHarvesters;
-    }
-    if (newOreHarvesters !== oreHarvestersNew) {
-      updates.oreHarvesters = newOreHarvesters;
-    }
-    
-    // Update resources if changed
-    if (actualOreMined > 0) {
-      updates.spaceMatter = currentSpaceMatter - actualOreMined;
-      updates.spaceOre = Math.max(0, availableOre - oreConsumed);
-      updates.spaceOrePerSecond = actualOreMined;
-    }
-    if (actualWireProduced > 0) {
-      updates.spaceWire = Math.max(0, availableWire - wireConsumed);
-      updates.spaceWirePerSecond = actualWireProduced;
-    }
-    if (actualPaperclipsProduced > 0) {
-      updates.spacePaperclipsPerSecond = actualPaperclipsProduced;
-      updates.paperclips = state.paperclips + actualPaperclipsProduced;
-      updates.aerogradePaperclips = (state.aerogradePaperclips || 0) + actualPaperclipsProduced - 
-        (resourcesHarvested && state.droneReplicationEnabled ? 
-          ((newWireHarvesters - wireHarvestersNew) + (newOreHarvesters - oreHarvestersNew)) * (state.droneReplicationCostPerDrone || 1000) : 0);
-    }
-    
-    // Update planets/bodies only if changed
-    if (updatedPlanets.length !== discoveredPlanets.length || currentPlanet?.matter !== currentSpaceMatter) {
-      updates.discoveredPlanets = updatedPlanets;
-    }
-    if (updatedCelestialBodies.length !== (state.discoveredCelestialBodies || []).length) {
-      updates.discoveredCelestialBodies = updatedCelestialBodies;
-    }
-    
-    // Update exploration if changed
-    if (newUniverseExplored !== state.universeExplored) {
-      updates.universeExplored = newUniverseExplored;
-    }
-    
-    // Only call set if there are actual updates
-    if (Object.keys(updates).length > 0) {
-      set(updates);
-    }
+      // Resource updates
+      spaceMatter: newSpaceMatter,
+      spaceOre: newSpaceOre,
+      spaceWire: newSpaceWire,
+      paperclips: state.paperclips + actualPaperclipsProduced,
+      aerogradePaperclips: newAerograde,
+      
+      // Production rates
+      spaceOrePerSecond: actualOreMined * 10,
+      spaceWirePerSecond: actualWireProduced * 10,
+      spacePaperclipsPerSecond: actualPaperclipsProduced * 10,
+      
+      // Production units
+      wireHarvesters: newWireHarvesters,
+      oreHarvesters: newOreHarvesters,
+      
+      // Probe and combat updates
+      probes: Math.max(0, state.probes + newProbes - probesDefected - probesDestroyed),
+      enemyShips: newEnemyShips,
+      
+      // Exploration updates
+      universeExplored: newUniverseExplored,
+      
+      // Planet and celestial body updates
+      discoveredPlanets: updatedPlanets,
+      discoveredCelestialBodies: updatedCelestialBodies,
+      
+      // Other updates
+      totalProbesLost: probesDefected > 0 || probesDestroyed > 0 ? 
+        (state.totalProbesLost || 0) + probesDefected + probesDestroyed : 
+        state.totalProbesLost,
+      lastDefectionTime: probesDefected > 0 || probesDestroyed > 0 ? 
+        new Date() : 
+        state.lastDefectionTime,
+      defectionEvents: defectionEvent ? 
+        [defectionEvent, ...(state.defectionEvents || [])].slice(0, 50) : 
+        state.defectionEvents
+    });
   },
   
   // Update space age upgrade stat function to use yomi instead of trust
@@ -651,10 +729,12 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
   },
   
   // Add honor resource from combat victories and track battles won
+  // Also add Yomi equal to honor gained from combat
   addHonor: (amount: number) => {
     const state = get();
     set({
       honor: (state.honor || 0) + amount,
+      yomi: (state.yomi || 0) + amount, // Add the same amount to Yomi
       battlesWon: (state.battlesWon || 0) + 1, // Increment battles won counter
       // Update battle difficulty multiplier
       battleDifficulty: 1 + (Math.log10(Math.max(1, state.battlesWon || 0) + 1) * 0.3)
@@ -834,9 +914,9 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
       return;
     }
     
-    // Calculate cost (starting at 10 aerograde + 1.25% per existing harvester)
+    // Calculate cost (starting at 10 aerograde + 0.125% per existing harvester - 90% reduction from original 1.25%)
     const baseCost = 10;
-    const scaleFactor = Math.pow(1.0125, state.wireHarvesters); // 1.25% exponential growth (reduced from 5%)
+    const scaleFactor = Math.pow(1.00125, state.wireHarvesters); // 0.125% exponential growth (reduced by 90% from 1.25%)
     const currentCost = Math.floor(baseCost * scaleFactor);
     
     if ((state.aerogradePaperclips || 0) < currentCost) {
@@ -845,8 +925,12 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
     
     // Create new harvester and deduct aerograde paperclips
     set({
-      wireHarvesters: state.wireHarvesters + 1,
-      aerogradePaperclips: (state.aerogradePaperclips || 0) - currentCost
+      wireHarvesters: (state.wireHarvesters || 0) + 1,
+      aerogradePaperclips: (state.aerogradePaperclips || 0) - currentCost,
+      // Initialize space resources if they don't exist
+      spaceOre: typeof state.spaceOre === 'number' ? state.spaceOre : 0,
+      spaceWire: typeof state.spaceWire === 'number' ? state.spaceWire : 0,
+      spaceWirePerSecond: typeof state.spaceWirePerSecond === 'number' ? state.spaceWirePerSecond : 0
     });
   },
   
@@ -859,9 +943,14 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
       return;
     }
     
-    // Calculate cost (starting at 10 aerograde + 1.25% per existing harvester)
+    // Initialize space resources if needed
+    const needsInitialization = state.spaceOre === undefined || 
+                               state.spaceWire === undefined || 
+                               state.spaceMatter === undefined;
+    
+    // Calculate cost (starting at 10 aerograde + 0.125% per existing harvester - 90% reduction from original 1.25%)
     const baseCost = 10;
-    const scaleFactor = Math.pow(1.0125, state.oreHarvesters); // 1.25% exponential growth (reduced from 5%)
+    const scaleFactor = Math.pow(1.00125, state.oreHarvesters || 0); // 0.125% exponential growth (reduced by 90% from 1.25%)
     const currentCost = Math.floor(baseCost * scaleFactor);
     
     if ((state.aerogradePaperclips || 0) < currentCost) {
@@ -869,10 +958,51 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
     }
     
     // Create new harvester and deduct aerograde paperclips
-    set({
-      oreHarvesters: state.oreHarvesters + 1,
+    const updates: Partial<GameState> = {
+      oreHarvesters: (state.oreHarvesters || 0) + 1,
       aerogradePaperclips: (state.aerogradePaperclips || 0) - currentCost
-    });
+    };
+    
+    // Initialize space resources if they don't exist yet
+    if (needsInitialization) {
+      updates.spaceOre = state.spaceOre || 0;
+      updates.spaceWire = state.spaceWire || 0;
+      
+      // Get current planet to initialize matter
+      const discoveredPlanets = state.discoveredPlanets || [];
+      
+      // Initialize Earth as the first planet if no planets exist
+      if (discoveredPlanets.length === 0) {
+        updates.discoveredPlanets = [
+          {
+            id: 'earth',
+            name: 'Earth',
+            icon: '🌎',
+            matter: 6e30, // 6 nonillion
+            totalMatter: 6e30,
+            description: 'Our home planet. Rich in resources but limited compared to what lies beyond.',
+            discoveredAt: 0
+          }
+        ];
+      }
+      
+      // Get the current planet after ensuring Earth exists
+      const updatedPlanets = updates.discoveredPlanets || discoveredPlanets;
+      const currentPlanetIndex = state.currentPlanetIndex || 0;
+      const currentPlanet = updatedPlanets[currentPlanetIndex];
+      const currentSpaceMatter = currentPlanet?.matter || 6e30;
+      
+      // Set matter values
+      updates.spaceMatter = state.spaceMatter || currentSpaceMatter;
+      updates.totalSpaceMatter = state.totalSpaceMatter || 6e30;
+      
+      // Initialize rates
+      updates.spaceOrePerSecond = 0;
+      updates.spaceWirePerSecond = 0;
+      updates.spacePaperclipsPerSecond = 0;
+    }
+    
+    set(updates);
   },
   
   // Build a new space factory - costs 100 aerograde paperclips, scaling by 1.25% per purchase
@@ -884,9 +1014,9 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
       return;
     }
     
-    // Calculate cost (starting at 100 aerograde + 1.25% per existing factory)
+    // Calculate cost (starting at 100 aerograde + 0.125% per existing factory - 90% reduction from original 1.25%)
     const baseCost = 100;
-    const scaleFactor = Math.pow(1.0125, state.factories); // 1.25% exponential growth (reduced from 5%)
+    const scaleFactor = Math.pow(1.00125, state.factories); // 0.125% exponential growth (reduced by 90% from 1.25%)
     const currentCost = Math.floor(baseCost * scaleFactor);
     
     if ((state.aerogradePaperclips || 0) < currentCost) {
@@ -895,7 +1025,7 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
     
     // Create new factory and deduct aerograde paperclips
     set({
-      factories: state.factories + 1,
+      factories: (state.factories || 0) + 1,
       aerogradePaperclips: (state.aerogradePaperclips || 0) - currentCost
     });
   },
@@ -984,7 +1114,8 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
         ...state.spaceStats,
         combat: 1
       },
-      honor: 0 // Initialize honor resource
+      honor: 0, // Initialize honor resource
+      yomi: state.yomi || 0 // Ensure yomi is initialized
     });
   },
 
@@ -1143,10 +1274,12 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
       return;
     }
     
+    const newSolarArrayCount = (state.solarArrays || 0) + 1;
+    
     set({
       aerogradePaperclips: (state.aerogradePaperclips || 0) - 1000,
-      solarArrays: (state.solarArrays || 0) + 1,
-      energyPerSecond: ((state.solarArrays || 0) + 1) * 10
+      solarArrays: newSolarArrayCount,
+      energyPerSecond: newSolarArrayCount * 10
     });
   },
 
@@ -1178,10 +1311,12 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
       return;
     }
     
+    const newSolarArrayCount = (state.solarArrays || 0) + amount;
+    
     set({
       aerogradePaperclips: (state.aerogradePaperclips || 0) - totalCost,
-      solarArrays: (state.solarArrays || 0) + amount,
-      energyPerSecond: ((state.solarArrays || 0) + amount) * 10
+      solarArrays: newSolarArrayCount,
+      energyPerSecond: newSolarArrayCount * 10
     });
   },
 

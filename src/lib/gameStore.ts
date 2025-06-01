@@ -3469,14 +3469,8 @@ const useGameStore = create<GameStore>(
         get().trustTick();
         get().opsTick();
         
-        // Generate yomi if CPU is at least 30
-        const state = get();
-        if (state.cpuLevel >= 30) {
-          const yomiRate = (state.memory + state.cpuLevel) * 0.005 / 10; // Divide by 10 because this runs 10 times per second
-          set((state: GameState) => ({
-            yomi: state.yomi + yomiRate
-          }));
-        }
+        // Yomi generation is now handled in opsTick when OPs are full
+        // This section is kept for backwards compatibility but yomi generation moved to opsTick
       },
       
       // Trust tick - generates trust based on total paperclips made
@@ -3528,11 +3522,17 @@ const useGameStore = create<GameStore>(
             // Recalculate clicks per second based on the new production multiplier
             const clicksPerSecond = state.autoclippers * 10;
             
-            // Generate creativity if OPs are maxed out and creativity is unlocked
+            // Generate creativity and yomi if OPs are maxed out
             let newCreativity = state.creativity;
+            let newYomi = state.yomi;
             if (newOps >= state.opsMax && state.ops >= state.opsMax) {
               // Generate 0.1 creativity per second when OPs are maxed
               newCreativity += 0.01; // 0.1/10 because this runs 10 times per second
+              
+              // Generate yomi when OPs are full - rate based on memory and CPU level
+              const yomiRate = (state.memory + state.cpuLevel) * 0.005 / 10; // Divide by 10 because this runs 10 times per second
+              console.log(`[YOMI opsTick] OPs full (${newOps}/${state.opsMax}), generating ${yomiRate.toFixed(4)} yomi/tick`);
+              newYomi += yomiRate;
               
               // Unlock creativity if we have enough OPs capacity (changed from 20000 to 5000)
               const creativityUnlocked = state.creativityUnlocked || state.opsMax >= 5000;
@@ -3551,6 +3551,7 @@ const useGameStore = create<GameStore>(
                 clicks_per_second: clicksPerSecond,
                 opsProductionMultiplier: opsMultiplier,
                 creativity: newCreativity,
+                yomi: newYomi,
                 creativityUnlocked
               };
             }
@@ -3561,7 +3562,9 @@ const useGameStore = create<GameStore>(
               ops: newOps,
               productionMultiplier: newProductionMultiplier,
               clicks_per_second: clicksPerSecond,
-              opsProductionMultiplier: opsMultiplier
+              opsProductionMultiplier: opsMultiplier,
+              creativity: newCreativity,
+              yomi: newYomi
             };
           }
           
@@ -3634,6 +3637,26 @@ const useGameStore = create<GameStore>(
           if (state.researchPointsPerSecond > 0) {
             batchedUpdates.researchPoints = state.researchPoints + (state.researchPointsPerSecond / 10);
           }
+        } else {
+          // SPACE AGE TICKS - energy generation and resource production
+          // We call spaceTick directly which handles all energy and resource updates
+          
+          try {
+            // Log pre-space tick state
+            const preState = get();
+            console.log(`PRE-SPACE TICK: Energy ${preState.energy}, Harvesters ${preState.oreHarvesters}, Factories ${preState.factories}`);
+            
+            // Call spaceTick function which handles all space operations
+            if (typeof get().spaceTick === 'function') {
+              get().spaceTick();
+              
+              // Log post-space tick state
+              const postState = get();
+              console.log(`POST-SPACE TICK: Energy ${postState.energy}, Ore ${postState.spaceOre}, Wire ${postState.spaceWire}`);
+            }
+          } catch (error) {
+            console.error('Error in space tick:', error);
+          }
         }
         
         // STATS TICK (always runs)
@@ -3659,6 +3682,23 @@ const useGameStore = create<GameStore>(
             const opsMultiplier = Math.min(0.5, state.ops / 1000);
             if (opsMultiplier !== state.opsProductionMultiplier) {
               batchedUpdates.opsProductionMultiplier = opsMultiplier;
+            }
+          }
+        }
+        
+        // Generate yomi and creativity when OPs are full
+        const currentOps = batchedUpdates.ops !== undefined ? batchedUpdates.ops : state.ops;
+        if (currentOps >= state.opsMax) {
+          // Generate yomi when OPs are full - rate based on memory and CPU level
+          const yomiRate = (state.memory + state.cpuLevel) * 0.005 / 10; // Divide by 10 because this runs 10 times per second
+          console.log(`[YOMI] OPs full (${currentOps}/${state.opsMax}), generating ${yomiRate.toFixed(4)} yomi/tick (${(yomiRate * 10).toFixed(3)}/sec)`);
+          batchedUpdates.yomi = (state.yomi || 0) + yomiRate;
+          
+          // Generate creativity if creativity is unlocked
+          if (state.creativityUnlocked || state.opsMax >= 5000) {
+            batchedUpdates.creativity = (state.creativity || 0) + 0.01; // 0.1/10 because this runs 10 times per second
+            if (!state.creativityUnlocked && state.opsMax >= 5000) {
+              batchedUpdates.creativityUnlocked = true;
             }
           }
         }

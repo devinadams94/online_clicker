@@ -18,6 +18,7 @@ export default function SpaceCombatPanel() {
     spaceAgeUnlocked,
     probes,
     honor,
+    yomi,
     addHonor,
     spaceStats,
     battlesWon,
@@ -336,7 +337,7 @@ export default function SpaceCombatPanel() {
       
       const honorGained = Math.floor(enemiesDestroyed * 10 * (1 + (spaceStats?.combat || 0) * 0.2));
       
-      // Award honor
+      // Award honor (which also gives equivalent Yomi - see spaceExtension.ts addHonor function)
       if (honorGained > 0) {
         addHonor(honorGained);
       }
@@ -475,7 +476,8 @@ export default function SpaceCombatPanel() {
       <div className="flex justify-between items-center mb-3">
         <div>
           <span className="text-sm mr-3">Probes: <span className="font-bold text-blue-400">{formatNumber(probes)}</span></span>
-          <span className="text-sm">Honor: <span className="font-bold text-yellow-400">{formatNumber(honor || 0)}</span></span>
+          <span className="text-sm mr-3">Honor: <span className="font-bold text-yellow-400">{formatNumber(honor || 0)}</span></span>
+          <span className="text-sm">Yomi: <span className="font-bold text-purple-400">{formatNumber(yomi || 0)}</span></span>
           {battlesWon > 0 && (
             <span className="text-sm ml-3">Battles Won: <span className="font-bold text-green-400">{formatNumber(battlesWon)}</span></span>
           )}
@@ -545,6 +547,7 @@ export default function SpaceCombatPanel() {
                 <div>Enemies Destroyed: <span className="font-bold text-red-400">{battleResults.enemiesDestroyed}</span></div>
                 <div>Probes Lost: <span className="font-bold text-blue-400">{battleResults.probesLost}</span></div>
                 <div>Honor Gained: <span className="font-bold text-yellow-400">{battleResults.honor}</span></div>
+                <div>Yomi Gained: <span className="font-bold text-purple-400">{battleResults.honor}</span></div>
               </div>
               <button
                 className="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm"
@@ -565,7 +568,7 @@ export default function SpaceCombatPanel() {
             <div className="text-center p-4">
               <div className="text-4xl mb-3">⚔️</div>
               <p className="mb-4 text-gray-300">
-                Deploy your probes against enemy ships to gain Honor.
+                Deploy your probes against enemy ships to gain Honor and Yomi.
               </p>
               <button
                 className={`px-4 py-2 rounded ${
@@ -586,8 +589,9 @@ export default function SpaceCombatPanel() {
       <div className="text-xs text-gray-400">
         <p>Your probes (blue) move randomly with some guidance from the Combat stat, while enemy ships (red) move randomly.</p>
         <p>When ships collide, both are destroyed. Probes may also randomly crash based on your Hazard Evasion stat.</p>
-        <p>Probes lost in battle are permanently lost from your total probes. Win battles to earn Honor for upgrades.</p>
+        <p>Probes lost in battle are permanently lost from your total probes. Win battles to earn Honor and Yomi for upgrades.</p>
         <p className="mt-2">Higher Combat stat helps ships find enemies. Higher Hazard Evasion reduces crashes and battle losses.</p>
+        <p>Yomi gained equals Honor gained and can be spent on Space Stats upgrades in the Space Age Stats panel.</p>
         {autoBattleUnlocked && (
           <div className="mt-2 p-2 border border-gray-700 rounded">
             <div className="flex justify-between items-center">
