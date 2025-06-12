@@ -1090,6 +1090,15 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
       spaceWire: typeof state.spaceWire === 'number' ? state.spaceWire : 0,
       spaceWirePerSecond: typeof state.spaceWirePerSecond === 'number' ? state.spaceWirePerSecond : 0
     });
+    
+    // Save the game state after launching a wire harvester
+    try {
+      if (typeof window !== 'undefined' && window.saveGameNow) {
+        window.saveGameNow();
+      }
+    } catch (err) {
+      // Silent fail
+    }
   },
   
   // Launch a new ore harvester drone - costs 10 aerograde paperclips, scaling by 1.25% per purchase
@@ -1161,6 +1170,15 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
     }
     
     set(updates);
+    
+    // Save the game state after launching an ore harvester
+    try {
+      if (typeof window !== 'undefined' && window.saveGameNow) {
+        window.saveGameNow();
+      }
+    } catch (err) {
+      // Silent fail
+    }
   },
   
   // Build a new space factory - costs 100 aerograde paperclips, scaling by 1.25% per purchase
@@ -1186,6 +1204,15 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
       factories: (state.factories || 0) + 1,
       aerogradePaperclips: (state.aerogradePaperclips || 0) - currentCost
     });
+    
+    // Save the game state after building a factory
+    try {
+      if (typeof window !== 'undefined' && window.saveGameNow) {
+        window.saveGameNow();
+      }
+    } catch (err) {
+      // Silent fail
+    }
   },
   
   // Toggle drone self-replication on/off

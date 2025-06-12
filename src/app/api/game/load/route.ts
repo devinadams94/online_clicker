@@ -336,6 +336,15 @@ export async function GET() {
       rawCpuLevel: gameState?.cpuLevel,
       rawMemory: gameState?.memory
     });
+    console.log('[LOAD API] Space drone values:', {
+      wireHarvesters: safeGameState.wireHarvesters,
+      oreHarvesters: safeGameState.oreHarvesters,
+      factories: safeGameState.factories,
+      rawWireHarvesters: gameState?.wireHarvesters,
+      rawOreHarvesters: gameState?.oreHarvesters,
+      rawFactories: gameState?.factories,
+      spaceAgeUnlocked: safeGameState.spaceAgeUnlocked
+    });
     
     return NextResponse.json(safeGameState);
   } catch (error) {

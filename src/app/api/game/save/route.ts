@@ -193,6 +193,19 @@ export async function POST(req: Request) {
       const activePlayTime = parseFloat(body.activePlayTime || 0) || 0;
       const lastDiamondRewardTime = parseFloat(body.lastDiamondRewardTime || 0) || 0;
       
+      // Space drone fields
+      const wireHarvesters = parseFloat(body.wireHarvesters || 0) || 0;
+      const oreHarvesters = parseFloat(body.oreHarvesters || 0) || 0;
+      const factories = parseFloat(body.factories || 0) || 0;
+      
+      // Debug log space drone values
+      console.log('[SAVE API] Space drone values:', {
+        wireHarvesters,
+        oreHarvesters,
+        factories,
+        spaceAgeUnlocked: body.spaceAgeUnlocked
+      });
+      
       // Safeguard: if trying to save 0 diamonds but user has purchased diamonds, something is wrong
       if (diamonds === 0 && totalDiamondsPurchased > 0) {
         console.warn('[SAVE] Warning: Attempting to save 0 diamonds when totalDiamondsPurchased is', totalDiamondsPurchased);
@@ -280,6 +293,9 @@ export async function POST(req: Request) {
             "spaceSmartPricingUnlocked" = ${spaceSmartPricingUnlocked ? 1 : 0},
             "activePlayTime" = ${activePlayTime},
             "lastDiamondRewardTime" = ${lastDiamondRewardTime},
+            "wireHarvesters" = ${wireHarvesters},
+            "oreHarvesters" = ${oreHarvesters},
+            "factories" = ${factories},
             "lastSaved" = CURRENT_TIMESTAMP
         WHERE "userId" = ${session.user.id}
       `;
@@ -325,9 +341,7 @@ export async function POST(req: Request) {
           spaceAgeUnlocked: Boolean(body.spaceAgeUnlocked),
           probes: parseFloat(body.probes || 0),
           universeExplored: parseFloat(body.universeExplored || 0),
-          wireHarvesters: parseFloat(body.wireHarvesters || 0),
-          oreHarvesters: parseFloat(body.oreHarvesters || 0),
-          factories: parseFloat(body.factories || 0),
+          // Note: wireHarvesters, oreHarvesters, and factories are already saved in the raw SQL update above
           spaceWirePerSecond: parseFloat(body.spaceWirePerSecond || 0),
           spaceOrePerSecond: parseFloat(body.spaceOrePerSecond || 0),
           spacePaperclipsPerSecond: parseFloat(body.spacePaperclipsPerSecond || 0),

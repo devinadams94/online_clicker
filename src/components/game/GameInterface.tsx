@@ -305,12 +305,25 @@ export default function GameInterface() {
   // Use the preserve state hook to ensure CPU/memory values persist
   usePreserveState();
   
+  // Track page load time for save timeout
+  useEffect(() => {
+    (window as any).__pageLoadTime = Date.now();
+  }, []);
+  
   const { data: session } = useSession();
   const [phaserFailed, setPhaserFailed] = useState(false);
   const [_justUnlockedSpaceAge, setJustUnlockedSpaceAge] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Set page load time immediately on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !(window as any).__pageLoadTime) {
+      (window as any).__pageLoadTime = Date.now();
+      console.log('[GameInterface] Page load time set:', new Date((window as any).__pageLoadTime).toISOString());
+    }
+  }, []);
   const { 
     tick,
     marketTick,
@@ -434,9 +447,26 @@ export default function GameInterface() {
     }
     
     // Don't save if we're still loading data or haven't completed initial load
-    if (isLoading || !initialLoadComplete) {
-      console.log('[GameInterface] Skipping save - still loading or initial load not complete');
+    // TEMPORARILY DISABLED - Allow saves after 10 seconds regardless of load state
+    const now = Date.now();
+    const pageLoadTime = (window as any).__pageLoadTime || now;
+    const timeSinceLoad = now - pageLoadTime;
+    
+    if ((isLoading || !initialLoadComplete) && timeSinceLoad < 10000) {
+      console.log('[GameInterface] Skipping save - still loading or initial load not complete', {
+        isLoading,
+        initialLoadComplete,
+        isAuthenticated,
+        hasSession: !!session?.user?.id,
+        timeSinceLoad: Math.floor(timeSinceLoad / 1000) + 's'
+      });
       return;
+    } else if (isLoading || !initialLoadComplete) {
+      console.warn('[GameInterface] Force enabling save after 10s timeout', {
+        isLoading,
+        initialLoadComplete,
+        timeSinceLoad: Math.floor(timeSinceLoad / 1000) + 's'
+      });
     }
     
     // Check for any pending upgrade flags in the global window object
@@ -497,6 +527,9 @@ export default function GameInterface() {
     console.log('[GameInterface] Saving game state...');
     
     try {
+      // Get a single snapshot of the entire state to avoid timing issues
+      const fullState = useGameStore.getState();
+      
       const {
         paperclips, 
         money,
@@ -561,7 +594,7 @@ export default function GameInterface() {
         autoBattleUnlocked, // Added auto-battle unlocked state
         battleDifficulty, // Added battle difficulty multiplier
         // aerogradePaperclips // Added aerograde paperclips for space resources
-      } = useGameStore.getState();
+      } = fullState;
       
       // Debug money value
       
@@ -591,7 +624,7 @@ export default function GameInterface() {
         spacePaperclipsPerSecond,
         spaceAgeUnlocked,
         spaceStats
-      } = useGameStore.getState();
+      } = fullState;
       
       // Debug mega clippers values explicitly
       
@@ -616,6 +649,12 @@ export default function GameInterface() {
       // Debug bot intelligence data
       
       // Debug space age data
+      console.log('[GameInterface] Saving space drone values:', {
+        wireHarvesters,
+        oreHarvesters,
+        factories,
+        spaceAgeUnlocked
+      });
       
       // Get additional stock market and trading data
       const { 
@@ -626,16 +665,15 @@ export default function GameInterface() {
         spoolSizeUpgradeCost,
         lastWirePurchaseTime,
         wirePurchaseCount
-      } = useGameStore.getState();
+      } = fullState;
       
       // Get bot trade time separately to avoid lexical declaration issues
-      const botTradeData = useGameStore.getState();
-      const botLastTradeTime = botTradeData.botLastTradeTime;
+      const botLastTradeTime = fullState.botLastTradeTime;
       
       // Debug bot trade time after it's been properly declared
       
       // Get trust-specific fields for debugging
-      const { purchasedTrustLevels, unlockedTrustAbilities } = useGameStore.getState();
+      const { purchasedTrustLevels, unlockedTrustAbilities } = fullState;
       
       // Debug trust upgrade information
       
@@ -796,19 +834,19 @@ export default function GameInterface() {
         battlesWon: String(typeof battlesWon === 'string' ? parseInt(battlesWon) || 0 : (battlesWon || 0)), // Handle both string and number types
         autoBattleEnabled: Boolean(autoBattleEnabled), // Ensure boolean
         autoBattleUnlocked: Boolean(autoBattleUnlocked), // Ensure boolean
-        autoProbeLauncherEnabled: Boolean(useGameStore.getState().autoProbeLauncherEnabled || false), // Auto probe launcher state
+        autoProbeLauncherEnabled: Boolean(fullState.autoProbeLauncherEnabled || false), // Auto probe launcher state
         battleDifficulty: String(typeof battleDifficulty === 'string' ? parseFloat(battleDifficulty) || 1 : (battleDifficulty || 1)), // Handle both string and number types
-        aerogradePaperclips: String(typeof useGameStore.getState().aerogradePaperclips === 'string' ? 
-            parseFloat(String(useGameStore.getState().aerogradePaperclips)) || 0 : 
-            (useGameStore.getState().aerogradePaperclips || 0)), // Handle both string and number types
-        unlockedSpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedSpaceUpgrades || []), // Add space upgrades
-        unlockedMoneySpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedMoneySpaceUpgrades || []),
-        unlockedOpsSpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedOpsSpaceUpgrades || []),
-        unlockedCreativitySpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedCreativitySpaceUpgrades || []),
-        unlockedYomiSpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedYomiSpaceUpgrades || []),
-        unlockedTrustSpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedTrustSpaceUpgrades || []),
-        unlockedEnergySpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedEnergySpaceUpgrades || []),
-        unlockedHonorUpgrades: JSON.stringify(useGameStore.getState().unlockedHonorUpgrades || [])
+        aerogradePaperclips: String(typeof fullState.aerogradePaperclips === 'string' ? 
+            parseFloat(String(fullState.aerogradePaperclips)) || 0 : 
+            (fullState.aerogradePaperclips || 0)), // Handle both string and number types
+        unlockedSpaceUpgrades: JSON.stringify(fullState.unlockedSpaceUpgrades || []), // Add space upgrades
+        unlockedMoneySpaceUpgrades: JSON.stringify(fullState.unlockedMoneySpaceUpgrades || []),
+        unlockedOpsSpaceUpgrades: JSON.stringify(fullState.unlockedOpsSpaceUpgrades || []),
+        unlockedCreativitySpaceUpgrades: JSON.stringify(fullState.unlockedCreativitySpaceUpgrades || []),
+        unlockedYomiSpaceUpgrades: JSON.stringify(fullState.unlockedYomiSpaceUpgrades || []),
+        unlockedTrustSpaceUpgrades: JSON.stringify(fullState.unlockedTrustSpaceUpgrades || []),
+        unlockedEnergySpaceUpgrades: JSON.stringify(fullState.unlockedEnergySpaceUpgrades || []),
+        unlockedHonorUpgrades: JSON.stringify(fullState.unlockedHonorUpgrades || [])
       };
       
       // Validate numeric values to avoid NaN issues
@@ -1140,6 +1178,12 @@ export default function GameInterface() {
         totalPaperclipsMade: gameState.totalPaperclipsMade,
         megaClippers: gameState.megaClippers,
         productionMultiplier: gameState.productionMultiplier,
+        // Include space drone values
+        wireHarvesters: gameState.wireHarvesters,
+        oreHarvesters: gameState.oreHarvesters,
+        factories: gameState.factories,
+        spaceAgeUnlocked: gameState.spaceAgeUnlocked,
+        aerogradePaperclips: gameState.aerogradePaperclips,
       };
       
       // Use sendBeacon for reliable save on unload
@@ -1241,7 +1285,11 @@ export default function GameInterface() {
             cpuCost: data.cpuCost,
             memory: data.memory,
             memoryMax: data.memoryMax,
-            memoryCost: data.memoryCost
+            memoryCost: data.memoryCost,
+            spaceAgeUnlocked: data.spaceAgeUnlocked,
+            wireHarvesters: data.wireHarvesters,
+            oreHarvesters: data.oreHarvesters,
+            factories: data.factories
           });
           // Make sure money and paperclip price are properly parsed
           const loadedMoney = typeof data.money === 'number' ? data.money : 0;
@@ -1804,7 +1852,11 @@ export default function GameInterface() {
             memory: gameData.memory,
             memoryMax: gameData.memoryMax,
             memoryCost: gameData.memoryCost,
-            memoryRegenRate: gameData.memoryRegenRate
+            memoryRegenRate: gameData.memoryRegenRate,
+            spaceAgeUnlocked: gameData.spaceAgeUnlocked,
+            wireHarvesters: gameData.wireHarvesters,
+            oreHarvesters: gameData.oreHarvesters,
+            factories: gameData.factories
           });
           
           // Extra validation before setting state
@@ -1871,12 +1923,27 @@ export default function GameInterface() {
           console.log('[GameInterface] Initial load complete - diamonds:', data.diamonds);
         }
       } catch (error) {
+        console.error('[GameInterface] Error loading game state:', error);
+        // Even on error, mark initial load as complete so saves can proceed
+        setInitialLoadComplete(true);
       } finally {
         setLoading(false);
+        // Ensure initial load is marked complete in all cases
+        setInitialLoadComplete(true);
       }
     };
 
     loadGameState();
+    
+    // Failsafe: Set initialLoadComplete after 5 seconds if it hasn't been set
+    const failsafeTimeout = setTimeout(() => {
+      if (!initialLoadComplete) {
+        console.warn('[GameInterface] Failsafe: Setting initialLoadComplete after timeout');
+        setInitialLoadComplete(true);
+      }
+    }, 5000);
+    
+    return () => clearTimeout(failsafeTimeout);
   }, [session, setAuthenticated, setUserId, setLoading, setGameState]);
 
   // Offline progress notification

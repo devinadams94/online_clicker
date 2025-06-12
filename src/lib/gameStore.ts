@@ -290,6 +290,7 @@ const useGameStore = create<GameStore>(
       autoBattleUnlocked: false,   // Whether auto-battle has been unlocked
       battlesWon: 0,               // Track number of battles won
       battleDifficulty: 1,         // Difficulty multiplier for battles
+      autoProbeLauncherEnabled: false, // Whether auto probe launcher is enabled
       
       // Space upgrade tracking arrays
       unlockedSpaceUpgrades: [],
@@ -4471,6 +4472,7 @@ const useGameStore = create<GameStore>(
         autoBattleEnabled: state.autoBattleEnabled,
         autoBattleUnlocked: state.autoBattleUnlocked,
         battleDifficulty: state.battleDifficulty,
+        autoProbeLauncherEnabled: state.autoProbeLauncherEnabled,
         
         // Energy System
         solarArrays: state.solarArrays,
