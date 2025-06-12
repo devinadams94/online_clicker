@@ -32,15 +32,15 @@ export default function SpaceStatsPanel() {
       return;
     }
     
-    // Check if stat exists
-    if (state.spaceStats[statId] === undefined) {
+    // Check if spaceStats exists
+    if (!state.spaceStats) {
       return;
     }
     
     try {
       // Create updated space stats object
       const updatedSpaceStats = {...state.spaceStats};
-      updatedSpaceStats[statId] = (updatedSpaceStats[statId] || 0) + 1;
+      updatedSpaceStats[statId] = (updatedSpaceStats[statId] ?? 1) + 1;
       
       // Update the store directly
       useGameStore.setState({
@@ -271,7 +271,7 @@ export default function SpaceStatsPanel() {
       
       <div className="space-y-3">
         {statDefinitions.map(stat => {
-          const statValue = spaceStats?.[stat.id] || 0;
+          const statValue = spaceStats?.[stat.id] ?? (stat.id === 'hazardEvasion' ? 1 : 0);
           const isLocked = stat.locked && !spaceStats?.[stat.id];
           const baseCost = 10 * Math.pow(stat.costMultiplier, statValue);
           const upgradeCost = Math.floor(baseCost);

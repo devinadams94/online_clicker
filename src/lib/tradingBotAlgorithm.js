@@ -21,8 +21,8 @@
  * @returns {Number} - Opportunity score (higher = better time to trade)
  */
 export function calculateMarketOpportunityScore(state, stocks, botIntelligence) {
-  // Start with a higher base score for better performance
-  let marketOpportunityScore = 1.2;
+  // Start with a MUCH higher base score for better performance
+  let marketOpportunityScore = 2.0;
   
   if (stocks.length > 0) {
     let goodOpportunityCount = 0;
@@ -71,18 +71,18 @@ export function calculateMarketOpportunityScore(state, stocks, botIntelligence) 
     // Enhance opportunity score based on detected opportunities
     if (goodOpportunityCount > 0) {
       const opportunityRatio = goodOpportunityCount / stocks.length;
-      // Increased multiplier from 2.0 to 2.5
-      marketOpportunityScore += opportunityRatio * 2.5;
+      // Greatly increased multiplier from 2.5 to 4.0
+      marketOpportunityScore += opportunityRatio * 4.0;
       
-      // Add bonus for strong opportunities
+      // Add much larger bonus for strong opportunities
       if (strongOpportunityCount > 0) {
         const strongRatio = strongOpportunityCount / stocks.length;
-        marketOpportunityScore += strongRatio * 3.0;
+        marketOpportunityScore += strongRatio * 5.0;
       }
       
-      // Intelligence scaling starts at level 2 instead of 5
-      // Increased multiplier from 0.05 to 0.08
-      marketOpportunityScore *= (1 + (botIntelligence * 0.08));
+      // Intelligence scaling starts at level 1
+      // Greatly increased multiplier from 0.08 to 0.15
+      marketOpportunityScore *= (1 + (botIntelligence * 0.15));
     }
   }
   
@@ -380,10 +380,10 @@ export function calculateSellPercentage(stock, stockPrice, avgPurchasePrice, inP
  * @returns {Number} - Probability of trading (0-1)
  */
 export function calculateTradingProbability(botIntelligence, marketVolatility, marketOpportunityScore) {
-  // Base chance is 20% per tick (doubled for better performance)
+  // Base chance is 30% per tick (tripled for better performance)
   // Lower intelligence bots trade more frequently but less effectively
   // Higher intelligence bots are more selective but make better trades
-  const baseTradeProbability = 0.20 * (1 / Math.pow(botIntelligence, 0.3)); // Reduced penalty for high intelligence
+  const baseTradeProbability = 0.30 * (1 / Math.pow(botIntelligence, 0.2)); // Further reduced penalty for high intelligence
   
   // Adjust probability based on market conditions and opportunity score
   // More volatile markets and better opportunities increase trading frequency
@@ -393,8 +393,8 @@ export function calculateTradingProbability(botIntelligence, marketVolatility, m
                                (1 + (marketVolatility * (1 + intelligenceBonus))) * 
                                (marketOpportunityScore * (1 + intelligenceBonus));
   
-  // Higher minimum probability (8%) ensures more consistent trading
-  return Math.max(0.08, calculatedProbability);
+  // Much higher minimum probability (15%) ensures very consistent trading
+  return Math.max(0.15, calculatedProbability);
 }
 
 /**
@@ -405,13 +405,13 @@ export function calculateTradingProbability(botIntelligence, marketVolatility, m
 export function getRiskThreshold(riskLevel) {
   switch(riskLevel.toLowerCase()) {
     case 'low':
-      return 0.08; // 8% for low risk - faster profit taking for more consistent gains
+      return 0.05; // 5% for low risk - much faster profit taking
     case 'medium':
-      return 0.15; // 15% for medium risk - balanced approach
+      return 0.10; // 10% for medium risk - aggressive profit taking
     case 'high':
-      return 0.25; // 25% for high risk - still aggressive but more reasonable
+      return 0.20; // 20% for high risk - still take profits reasonably fast
     default:
-      return 0.12; // Default - slightly lower threshold for better profit locking
+      return 0.08; // Default - aggressive profit taking
   }
 }
 

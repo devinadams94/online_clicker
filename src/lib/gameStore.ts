@@ -1591,8 +1591,8 @@ const useGameStore = create<GameStore>(
             return state;
           }
           
-          // Reduce minimum budget requirement to $10 for more frequent trades
-          if (state.botTradingBudget < 10) {
+          // Reduce minimum budget requirement to $5 for more frequent trades
+          if (state.botTradingBudget < 5) {
             return state;
           }
           
@@ -1635,14 +1635,14 @@ const useGameStore = create<GameStore>(
             
             // Calculate how much budget to use per trade (scale with bot intelligence)
             // More intelligence = more efficient use of budget and larger trade sizes
-            // Increased trade size to ensure bots can buy stocks
-            const maxPercentPerTrade = 0.2 + (updatedState.botIntelligence * 0.05); // 20% base + 5% per intelligence level (up to 70%)
+            // Greatly increased trade size to ensure bots can buy stocks and make more profit
+            const maxPercentPerTrade = 0.3 + (updatedState.botIntelligence * 0.08); // 30% base + 8% per intelligence level (up to 110%)
             const intelligenceScaling = Math.max(1, Math.pow(updatedState.botIntelligence, 1.5)); // Ensure minimum scaling of 1
             
-            // Use a higher percentage of the budget for trades to ensure bots can buy at least one share
+            // Use a much higher percentage of the budget for trades to ensure bots can buy multiple shares
             const baseTradeAmount = Math.min(
-              updatedState.botTradingBudget * maxPercentPerTrade, // Up to 70% of budget per trade with high intelligence
-              Math.max(100, 1000 * intelligenceScaling) // Minimum $100, scaling with intelligence - at least 1000 at level 1
+              updatedState.botTradingBudget * maxPercentPerTrade, // Up to 110% of budget per trade with high intelligence
+              Math.max(200, 2000 * intelligenceScaling) // Minimum $200, scaling with intelligence - at least 2000 at level 1
             );
             
             // Reduce randomness to ensure more consistent trading
@@ -2418,11 +2418,11 @@ const useGameStore = create<GameStore>(
             return state;
           }
           
-          // Calculate returns: Base 2.5% + 0.5% per bot, with random variation
-          // Significantly increased from original 0.5% + 0.1% per bot
-          const baseReturn = 0.025; // 2.5% (5x original)
-          const botBonus = 0.005 * state.tradingBots; // 0.5% per bot (5x original)
-          const variation = (Math.random() - 0.5) * 0.03; // ±1.5% (3x original)
+          // Calculate returns: Base 5% + 1% per bot, with random variation
+          // Massively increased for better profitability
+          const baseReturn = 0.05; // 5% (10x original)
+          const botBonus = 0.01 * state.tradingBots; // 1% per bot (10x original)
+          const variation = (Math.random() - 0.3) * 0.04; // +0.8% to +2.8% (heavily biased positive)
           const returnRate = baseReturn + botBonus + variation;
           
           // Apply return to investment with quadratic scaling for large investments
@@ -2455,13 +2455,13 @@ const useGameStore = create<GameStore>(
             symbol: 'PAPR',
             price: 10.00,
             previousPrice: 9.85,
-            volatility: 0.11, // Reduced volatility from 0.15
-            trend: 0.02, // Increased upward trend from 0.01
+            volatility: 0.08, // Further reduced volatility
+            trend: 0.04, // Doubled upward trend
             volume: 10000,
             lastUpdate: new Date(),
             // Add trend data
-            trendDirection: 1, // Changed from 0 (neutral) to 1 (bullish)
-            trendStrength: 0, // 0-1, how strong the trend is
+            trendDirection: 1, // Bullish
+            trendStrength: 0.8, // Strong trend
             trendStartTime: new Date(), // When the trend started
             trendDuration: 0 // How long the trend has been active in ms
           },
@@ -2471,13 +2471,13 @@ const useGameStore = create<GameStore>(
             symbol: 'WIRE',
             price: 25.50,
             previousPrice: 25.75,
-            volatility: 0.14, // Reduced volatility from 0.2
-            trend: 0.01, // Changed from -0.005 to positive trend
+            volatility: 0.10, // Further reduced volatility
+            trend: 0.03, // Tripled positive trend
             volume: 8500,
             lastUpdate: new Date(),
             // Add trend data
-            trendDirection: 1, // Changed from 0 (neutral) to 1 (bullish)
-            trendStrength: 0.5, // Added initial trend strength
+            trendDirection: 1, // Bullish
+            trendStrength: 0.7, // Stronger trend
             trendStartTime: new Date(),
             trendDuration: 0
           },
@@ -2487,13 +2487,13 @@ const useGameStore = create<GameStore>(
             symbol: 'CLIP',
             price: 15.25,
             previousPrice: 14.90,
-            volatility: 0.18, // Reduced volatility from 0.25
-            trend: 0.025, // Increased upward trend from 0.02
+            volatility: 0.12, // Further reduced volatility
+            trend: 0.045, // Nearly doubled upward trend
             volume: 12000,
             lastUpdate: new Date(),
             // Add trend data
-            trendDirection: 1, // Changed from 0 (neutral) to 1 (bullish)
-            trendStrength: 0.5, // Added initial trend strength
+            trendDirection: 1, // Bullish
+            trendStrength: 0.9, // Very strong trend
             trendStartTime: new Date(),
             trendDuration: 0
           },
@@ -2503,13 +2503,13 @@ const useGameStore = create<GameStore>(
             symbol: 'MACH',
             price: 45.75,
             previousPrice: 46.00,
-            volatility: 0.22, // Reduced volatility from 0.3
-            trend: 0.005, // Changed from -0.01 to positive trend
+            volatility: 0.15, // Further reduced volatility
+            trend: 0.025, // 5x increase in positive trend
             volume: 5000,
             lastUpdate: new Date(),
             // Add trend data
-            trendDirection: 1, // Changed from 0 (neutral) to 1 (bullish)
-            trendStrength: 0.5, // Added initial trend strength
+            trendDirection: 1, // Bullish
+            trendStrength: 0.6, // Moderate-strong trend
             trendStartTime: new Date(),
             trendDuration: 0
           },
@@ -2519,13 +2519,13 @@ const useGameStore = create<GameStore>(
             symbol: 'TECH',
             price: 75.25,
             previousPrice: 73.50,
-            volatility: 0.28, // Reduced volatility from 0.4
-            trend: 0.03, // Doubled from 0.015 for stronger upward trend
+            volatility: 0.18, // Further reduced volatility
+            trend: 0.05, // Much stronger upward trend
             volume: 7500,
             lastUpdate: new Date(),
             // Add trend data
-            trendDirection: 1, // Changed from 0 (neutral) to 1 (bullish)
-            trendStrength: 0.5, // Added initial trend strength
+            trendDirection: 1, // Bullish
+            trendStrength: 0.85, // Very strong trend
             trendStartTime: new Date(),
             trendDuration: 0
           }
@@ -2815,8 +2815,8 @@ const useGameStore = create<GameStore>(
               
               if (trendRoll < 0.85) { // 85% chance of a significant trend (increased from 75%)
                 // Determine direction: bullish (1) or bearish (-1)
-                // Stronger bias toward upward trends (75% chance of upward, 25% chance of downward)
-                updatedStock.trendDirection = Math.random() < 0.75 ? 1 : -1;
+                // MUCH stronger bias toward upward trends (90% chance of upward, 10% chance of downward)
+                updatedStock.trendDirection = Math.random() < 0.90 ? 1 : -1;
                 // Determine strength (0.3 to 1.0 - stronger trends are rarer)
                 // Stronger trends for all directions
                 updatedStock.trendStrength = 0.4 + (Math.random() * 0.6);
@@ -2843,23 +2843,23 @@ const useGameStore = create<GameStore>(
             // Calculate price change based on trend
             let trendImpact = 0;
             if (updatedStock.trendDirection !== 0) {
-              // Enhanced trend impact for more predictable price movements
-              // Stronger for upward trends, milder for downward trends
-              const directionMultiplier = updatedStock.trendDirection === 1 ? 1.5 : 0.8;
-              trendImpact = updatedStock.trendDirection * updatedStock.trendStrength * 0.012 * directionMultiplier; // Up to 1.8% for uptrends, 0.96% for downtrends
+              // GREATLY enhanced trend impact for more predictable price movements
+              // Much stronger for upward trends, much milder for downward trends
+              const directionMultiplier = updatedStock.trendDirection === 1 ? 2.5 : 0.5;
+              trendImpact = updatedStock.trendDirection * updatedStock.trendStrength * 0.02 * directionMultiplier; // Up to 5% for uptrends, 1% for downtrends
             }
             
             // Enhanced base trend factor with stronger bot influence
             const baseTrendFactor = updatedStock.trend * (1 + (state.tradingBots * 0.015));
             
-            // Random price movement with reduced volatility
+            // Random price movement with GREATLY reduced volatility
             const randomFactor = (Math.random() - 0.5) * 2; // -1 to 1
-            // Significantly reduced volatility based on trading bots
-            const volatilityFactor = updatedStock.volatility * (1 - (state.tradingBots * 0.02)) * 0.75; // Trading bots reduce volatility by up to 2% per bot, plus 25% flat reduction
+            // Dramatically reduced volatility based on trading bots
+            const volatilityFactor = updatedStock.volatility * (1 - (state.tradingBots * 0.04)) * 0.5; // Trading bots reduce volatility by up to 4% per bot, plus 50% flat reduction
             
-            // Calculate price change percentage with stronger trend influence
-            const trendWeight = 1.2; // Increase trend weight by 20%
-            const randomWeight = 0.8; // Decrease random weight by 20%
+            // Calculate price change percentage with MUCH stronger trend influence
+            const trendWeight = 2.0; // Double trend weight
+            const randomWeight = 0.5; // Halve random weight for more predictable movements
             const changePercent = (baseTrendFactor + trendImpact) * trendWeight + (randomFactor * volatilityFactor) * randomWeight;
             
             // Calculate new price with tighter limits to prevent excessive changes per tick
@@ -2954,11 +2954,11 @@ const useGameStore = create<GameStore>(
         const tickCount = (state.tickCount || 0) + 1;
         set({ tickCount });
         
-        // Calculate ticks needed for a trade interval (base: 600 ticks = 60 seconds)
+        // Calculate ticks needed for a trade interval (base: 200 ticks = 20 seconds)
         // Reduce by 20% for each level of high frequency trading
         const hftLevel = state.highFrequencyTradingLevel || 0;
-        // Base of 600, reduced by 20% per HFT level (with a minimum of 100 ticks = 10 seconds)
-        const ticksPerTrade = Math.max(100, Math.floor(600 * Math.pow(0.8, hftLevel))); 
+        // Base of 200 (reduced from 600), reduced by 20% per HFT level (with a minimum of 50 ticks = 5 seconds)
+        const ticksPerTrade = Math.max(50, Math.floor(200 * Math.pow(0.8, hftLevel))); 
         
         // Debug logging with updated interval info
         console.log(`[Stock Market Tick ${tickCount}] Bots: ${tradingBots}, Budget: $${botBudget.toFixed(2)}, HFT Level: ${hftLevel}, Trade Interval: ${ticksPerTrade} ticks, Next trade in ${ticksPerTrade - (tickCount % ticksPerTrade)} ticks`);

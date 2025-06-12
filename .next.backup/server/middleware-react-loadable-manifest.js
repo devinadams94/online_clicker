@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST="{\"src/components/game/GameInterface.tsx -> ./PhaserGame\":{\"id\":\"src/components/game/GameInterface.tsx -> ./PhaserGame\",\"files\":[\"static/chunks/_app-pages-browser_src_components_game_PhaserGame_tsx.js\"]}}"

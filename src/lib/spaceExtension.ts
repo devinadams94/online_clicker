@@ -830,14 +830,14 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
       return;
     }
     
-    // Check if stat exists
-    if (state.spaceStats[stat] === undefined) {
+    // Check if spaceStats exists
+    if (!state.spaceStats) {
       return;
     }
     
     // Make a new copy of spaceStats to ensure the update triggers correctly
     const updatedSpaceStats = {...state.spaceStats};
-    updatedSpaceStats[stat] = (updatedSpaceStats[stat] || 0) + 1;
+    updatedSpaceStats[stat] = (updatedSpaceStats[stat] ?? 1) + 1;
     
     // Upgrade the stat and deduct yomi
     set({

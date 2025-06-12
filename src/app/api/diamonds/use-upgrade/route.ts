@@ -103,6 +103,11 @@ export async function POST(request: Request) {
         if (upgradeId === 'space_jumpstart') {
           updateData.spaceAgeUnlocked = true;
           updateData.probes = 100;
+          // Convert all paperclips to aerograde + 1 million bonus
+          const totalPaperclips = user.gameState.paperclips;
+          updateData.paperclips = 0;
+          updateData.aerogradePaperclips = user.gameState.aerogradePaperclips + totalPaperclips + 1000000;
+          console.log(`[USE-UPGRADE API] Space jumpstart: Converting ${totalPaperclips} paperclips to aerograde + 1M bonus`);
         }
         break;
     }

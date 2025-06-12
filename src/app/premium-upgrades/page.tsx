@@ -124,8 +124,8 @@ const premiumUpgrades: PremiumUpgrade[] = [
   {
     id: 'space_jumpstart',
     name: 'Space Age Jumpstart',
-    description: 'Instantly unlock Space Age with starter resources',
-    effect: 'Unlock Space Age + 100 probes',
+    description: 'Instantly unlock Space Age, convert all paperclips to aerograde with 1M bonus',
+    effect: 'Unlock Space Age + 100 probes + convert paperclips + 1M aerograde',
     cost: 1000,
     icon: '🚀',
     category: 'special',

@@ -1,0 +1,10 @@
+{
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/game/load/route": "app/api/game/load/route.js",
+  "/api/stripe/create-checkout-session/route": "app/api/stripe/create-checkout-session/route.js",
+  "/page": "app/page.js",
+  "/game/page": "app/game/page.js",
+  "/buy-diamonds/page": "app/buy-diamonds/page.js",
+  "/premium-upgrades/page": "app/premium-upgrades/page.js",
+  "/_not-found/page": "app/_not-found/page.js"
+}

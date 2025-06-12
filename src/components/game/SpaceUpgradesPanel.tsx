@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useGameStore from "@/lib/gameStore";
+import { formatCurrency } from "@/utils/numberFormat";
 
 export default function SpaceUpgradesPanel() {
   const {
@@ -38,7 +39,9 @@ export default function SpaceUpgradesPanel() {
     unlockedTrustSpaceUpgrades,
     unlockedEnergySpaceUpgrades,
     unlockedHonorUpgrades,
-    buyHonorUpgrade
+    buyHonorUpgrade,
+    stockMarketUnlocked,
+    unlockStockMarket
   } = useGameStore();
   
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -215,6 +218,17 @@ export default function SpaceUpgradesPanel() {
 
   // Money-based space upgrade definitions
   const moneyUpgradeDefinitions = [
+    {
+      id: 'stockMarket',
+      name: 'Stock Market Access',
+      description: 'Unlock the stock market to invest your money and earn passive income through trading',
+      cost: 50000,
+      effect: 'stockMarket',
+      effectValue: true,
+      icon: '📈',
+      repeatable: false,
+      special: true // Mark as special to handle differently
+    },
     {
       id: 'spaceInfrastructure',
       name: 'Space Infrastructure',
@@ -1457,9 +1471,12 @@ export default function SpaceUpgradesPanel() {
         
         <div className="space-y-2">
           {moneyUpgradeDefinitions.map(upgrade => {
+            // Special handling for stock market
+            const isStockMarket = upgrade.id === 'stockMarket';
+            
             // Count how many times this upgrade has been purchased (for repeatable upgrades)
             const purchaseCount = unlockedMoneySpaceUpgrades?.filter((id: string) => id === upgrade.id).length || 0;
-            const isUnlocked = purchaseCount > 0;
+            const isUnlocked = isStockMarket ? stockMarketUnlocked : purchaseCount > 0;
             const isRepeatable = upgrade.repeatable === true;
             
             // Calculate current cost with multiplier for repeatable upgrades
@@ -1504,7 +1521,11 @@ export default function SpaceUpgradesPanel() {
                     onClick={(e) => {
                       e.stopPropagation();
                       if ((!isUnlocked || isRepeatable) && canAfford) {
-                        buyMoneySpaceUpgrade(upgrade.id, currentCost);
+                        if (isStockMarket) {
+                          unlockStockMarket();
+                        } else {
+                          buyMoneySpaceUpgrade(upgrade.id, currentCost);
+                        }
                       }
                     }}
                     disabled={(isUnlocked && !isRepeatable) || !canAfford}
