@@ -7,6 +7,7 @@ export default function PrestigePanel() {
   const {
     paperclips,
     lifetimePaperclips,
+    aerogradePaperclips,
     prestigeLevel,
     prestigePoints,
     prestigeRewards,
@@ -22,6 +23,9 @@ export default function PrestigePanel() {
   const progressToNextPoint = potentialPoints > 0 
     ? 100 
     : Math.min(100, Math.floor((totalPaperclips / 1000000000) * 100));
+  
+  // Check if player has enough aerograde paperclips for prestige
+  const hasEnoughAerograde = (aerogradePaperclips || 0) >= 100000000; // 100 million
   
   // Format large numbers
   const formatLargeNumber = (num: number) => {
@@ -39,8 +43,13 @@ export default function PrestigePanel() {
   
   // Handle prestige reset
   const handlePrestige = () => {
+    if (!hasEnoughAerograde) {
+      alert(`You need 100 million aerograde paperclips to prestige! You have: ${formatLargeNumber(aerogradePaperclips || 0)}`);
+      return;
+    }
+    
     if (potentialPoints <= 0) {
-      alert("You need at least 1 billion paperclips to prestige!");
+      alert("You need at least 1 billion total paperclips value to prestige!");
       return;
     }
     
@@ -76,10 +85,16 @@ export default function PrestigePanel() {
             <span>Lifetime Paperclips</span>
             <span>{formatLargeNumber(totalPaperclips)}</span>
           </div>
+          <div className="flex justify-between text-sm mt-2">
+            <span>Aerograde Paperclips</span>
+            <span className={hasEnoughAerograde ? 'text-green-400' : 'text-red-400'}>
+              {formatLargeNumber(aerogradePaperclips || 0)} / 100M
+            </span>
+          </div>
           <div className="w-full bg-gray-800 rounded-full h-1.5 mt-1 mb-2">
             <div 
               className="bg-yellow-500 h-1.5 rounded-full" 
-              style={{ width: `${progressToNextPoint}%` }}
+              style={{ width: `${Math.min(100, ((aerogradePaperclips || 0) / 100000000) * 100)}%` }}
             ></div>
           </div>
         </div>
@@ -116,16 +131,22 @@ export default function PrestigePanel() {
       <div className="bg-gray-700 p-3 rounded">
         <h3 className="font-medium mb-2">Reset Progress</h3>
         <p className="text-sm text-gray-400 mb-3">
-          Reset your progress to gain <span className="text-yellow-400 font-bold">{potentialPoints}</span> prestige points and <span className="text-indigo-400 font-bold">1 trust point</span>.
-          {potentialPoints <= 0 && (
+          Reset your progress to gain <span className="text-indigo-400 font-bold">1 trust point</span> and increase your prestige level. 
+          Prestige points will reset to 0, but prestige bonuses and trust level will be preserved.
+          {!hasEnoughAerograde && (
             <span className="block mt-1 text-red-400">
-              You need at least 1 billion paperclips to gain prestige points.
+              You need 100 million aerograde paperclips to prestige. Current: {formatLargeNumber(aerogradePaperclips || 0)}
+            </span>
+          )}
+          {potentialPoints <= 0 && hasEnoughAerograde && (
+            <span className="block mt-1 text-red-400">
+              You need at least 1 billion total paperclips value to gain prestige points.
             </span>
           )}
         </p>
         <div className="bg-indigo-900/30 p-3 rounded-lg border border-indigo-400/30 shadow-[0_0_10px_rgba(99,102,241,0.3)] mb-3">
           <span className="text-sm text-indigo-300">
-            <span className="font-bold">Trust Point Bonus:</span> You will receive 1 trust point per prestige level. Current prestige level: {prestigeLevel}
+            <span className="font-bold">Trust Point Bonus:</span> You will receive 1 trust point when you prestige with 100M aerograde paperclips. Current prestige level: {prestigeLevel}
           </span>
         </div>
         
@@ -152,26 +173,36 @@ export default function PrestigePanel() {
         ) : (
           <button 
             className={`w-full py-2 px-3 rounded ${
-              potentialPoints > 0 
+              potentialPoints > 0 && hasEnoughAerograde
                 ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
             }`}
             onClick={handlePrestige}
-            disabled={potentialPoints <= 0}
+            disabled={potentialPoints <= 0 || !hasEnoughAerograde}
           >
-            Prestige Reset (+{potentialPoints} Points, +1 Trust)
+            Prestige Reset (Requires 100M Aerograde, +1 Trust)
           </button>
         )}
         
         <div className="mt-3 text-xs text-gray-400">
-          <span className="block font-medium">Prestige Rewards:</span>
+          <span className="block font-medium">Prestige Reset Effects:</span>
           <ul className="list-disc list-inside mt-1">
-            <li>+{formatPercentage({1: 0.2, 2: 0.3, 3: 0.4}[potentialPoints] || (0.2 * potentialPoints))} Production Rate</li>
-            <li>+{formatPercentage({1: 0.1, 2: 0.15, 3: 0.2}[potentialPoints] || (0.1 * potentialPoints))} Research Rate</li>
-            <li>+{formatPercentage({1: 0.05, 2: 0.1, 3: 0.15}[potentialPoints] || (0.05 * potentialPoints))} Wire Efficiency</li>
-            <li>+{formatPercentage({1: 0.1, 2: 0.15, 3: 0.2}[potentialPoints] || (0.1 * potentialPoints))} Click Power</li>
-            <li>${potentialPoints * 50} Starting Money</li>
-            <li className="text-indigo-400">+1 Trust Point (for purchasing Trust Upgrades)</li>
+            <li className="text-yellow-400">Prestige points reset to 0</li>
+            <li className="text-green-400">Prestige bonuses preserved (based on level)</li>
+            <li className="text-green-400">Trust level and abilities preserved</li>
+            <li className="text-red-400">All game progress reset to beginning</li>
+            {hasEnoughAerograde ? (
+              <>
+                <li className="text-indigo-400">+1 Trust Point gained</li>
+                <li className="text-green-400">Prestige level increases by 1</li>
+                <li className="text-purple-400">Consumes 100M aerograde paperclips</li>
+              </>
+            ) : (
+              <>
+                <li className="text-red-400">Cannot prestige (need 100M aerograde paperclips)</li>
+                <li className="text-gray-500">Current: {formatLargeNumber(aerogradePaperclips || 0)} aerograde paperclips</li>
+              </>
+            )}
           </ul>
         </div>
       </div>

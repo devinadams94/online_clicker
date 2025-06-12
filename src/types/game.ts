@@ -31,6 +31,12 @@ export interface GameState {
   money: number;
   wire: number;
   yomi: number;
+  diamonds: number;
+  totalDiamondsSpent: number;
+  totalDiamondsPurchased: number;
+  premiumUpgrades: string[];
+  activePlayTime: number; // Total active play time in seconds
+  lastDiamondRewardTime: number; // Time when last diamond reward was given (in seconds)
   
   // Space Age Resources
   probes: number;
@@ -72,6 +78,7 @@ export interface GameState {
   droneReplicationCostPerDrone: number; // Cost in Aerograde paperclips to replicate a drone
   autoBattleEnabled: boolean; // Whether auto-battles are enabled
   autoBattleUnlocked: boolean; // Whether auto-battle has been unlocked
+  autoProbeLauncherEnabled: boolean; // Whether auto probe launcher is enabled
   battlesWon: number; // Total battles won for difficulty scaling
   battleDifficulty: number; // Current battle difficulty multiplier
   
@@ -161,6 +168,8 @@ export interface GameState {
   trust: number;
   trustLevel: number;
   nextTrustAt: number;
+  totalAerogradePaperclips: number;
+  nextAerogradeTrustAt: number;
   purchasedTrustLevels: number[];
   unlockedTrustAbilities: string[];
   ops: number;
@@ -187,6 +196,7 @@ export interface GameState {
   unlockedYomiSpaceUpgrades: string[];
   unlockedTrustSpaceUpgrades: string[];
   unlockedEnergySpaceUpgrades: string[];
+  unlockedHonorUpgrades: string[];
   
   // Space upgrade bonuses
   spaceInfrastructureBonus: number;
@@ -195,6 +205,17 @@ export interface GameState {
   creativityBonus: number;
   costReductionBonus: number;
   diplomacyBonus: number;
+  wireProductionBonus: number;
+  factoryProductionBonus: number;
+  oreProductionBonus: number;
+  
+  // Honor upgrade effects
+  transcendentProcessorActive: boolean;
+  cosmicHarvesterActive: boolean;
+  universalConverterActive: boolean;
+  omniscientAIActive: boolean;
+  realityShaperActive: boolean;
+  globalProductionMultiplier: number;
   
   // Space upgrade efficiency multipliers
   miningEfficiency: number;
@@ -203,6 +224,27 @@ export interface GameState {
   explorationSpeed: number;
   nanobotRepairEnabled: boolean;
   honor: number;
+  
+  // Space Market
+  spaceMarketDemand: number;
+  spaceMarketMaxDemand: number;
+  spaceMarketMinDemand: number;
+  spacePaperclipPrice: number;
+  spaceAerogradePrice: number;
+  spaceOrePrice: number;
+  spaceWirePrice: number;
+  spacePaperclipsSold: number;
+  spaceAerogradeSold: number;
+  spaceOreSold: number;
+  spaceWireSold: number;
+  spaceTotalSales: number;
+  spaceMarketTrend: number;
+  spaceMarketVolatility: number;
+  energyConsumedPerSecond: number;
+  spaceAutoSellEnabled: boolean;
+  spaceAutoSellUnlocked: boolean;
+  spaceSmartPricingEnabled: boolean;
+  spaceSmartPricingUnlocked: boolean;
   
   // Meta
   lastSaved?: Date;

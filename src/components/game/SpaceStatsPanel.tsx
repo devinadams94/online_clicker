@@ -188,7 +188,7 @@ export default function SpaceStatsPanel() {
   // Check if space age is unlocked
   if (!spaceAgeUnlocked) {
     return (
-      <div className="card bg-gray-800 text-white p-4">
+      <div className="backdrop-blur-md bg-gradient-to-br from-gray-900/90 via-green-900/90 to-emerald-900/90 rounded-lg shadow-[0_0_20px_rgba(74,222,128,0.3)] p-4 mb-6 border border-green-400/20">
         <h2 className="text-lg font-bold mb-4 flex items-center">
           <span className="text-xl mr-2">🌌</span> Space Age Stats
         </h2>
@@ -203,7 +203,7 @@ export default function SpaceStatsPanel() {
   }
 
   return (
-    <div className="card bg-gray-800 text-white p-4">
+    <div className="backdrop-blur-md bg-gradient-to-br from-gray-900/90 via-green-900/90 to-emerald-900/90 rounded-lg shadow-[0_0_20px_rgba(74,222,128,0.3)] p-4 mb-6 border border-green-400/20">
       <h2 className="text-lg font-bold mb-4 flex items-center">
         <span className="text-xl mr-2">🌌</span> Space Age Stats
       </h2>

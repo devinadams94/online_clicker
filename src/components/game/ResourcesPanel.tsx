@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import useGameStore from "@/lib/gameStore";
 import { formatNumber, formatCurrency } from "@/utils/numberFormat";
 
@@ -9,6 +10,7 @@ export default function ResourcesPanel() {
     money,
     wire,
     yomi,
+    diamonds,
     clicks_per_second, 
     // clickMultiplier, 
     autoclippers,
@@ -29,8 +31,21 @@ export default function ResourcesPanel() {
     cpuLevel,
     memoryRegenRate,
     opsProductionMultiplier,
-    spaceAgeUnlocked
+    spaceAgeUnlocked,
+    premiumUpgrades,
+    activePlayTime,
+    lastDiamondRewardTime
   } = useGameStore();
+  
+  // Count premium upgrades
+  const diamondClippersCount = (premiumUpgrades || []).filter((id: string) => id === 'diamond_clippers').length;
+  const quantumFactoryCount = (premiumUpgrades || []).filter((id: string) => id === 'quantum_factory').length;
+  
+  // Calculate time until next diamond reward
+  const timeSinceLastReward = activePlayTime - lastDiamondRewardTime;
+  const timeUntilNextReward = Math.max(0, 600 - timeSinceLastReward); // 600 seconds = 10 minutes
+  const minutes = Math.floor(timeUntilNextReward / 60);
+  const seconds = Math.floor(timeUntilNextReward % 60);
   
   // Using our new currency formatter instead of the old function
   // This function is no longer used but kept for backward compatibility
@@ -41,6 +56,30 @@ export default function ResourcesPanel() {
   return (
     <div className="backdrop-blur-md bg-gradient-to-br from-gray-900/90 via-green-900/90 to-emerald-900/90 rounded-lg shadow-[0_0_20px_rgba(74,222,128,0.3)] p-4 mb-6 border border-green-400/20">
       <h2 className="text-xl font-bold mb-4 text-green-400">Resources</h2>
+      
+      {/* Diamonds Display */}
+      <div className="backdrop-blur-sm bg-gradient-to-r from-blue-900/30 to-cyan-900/30 rounded-lg p-3 mb-4 border border-blue-400/30 hover:border-blue-400/50 transition-all duration-300">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <span className="text-2xl mr-2">💎</span>
+            <div>
+              <div className="text-sm text-blue-300/70">Diamonds</div>
+              <div className="text-2xl font-bold text-blue-400">{formatNumber(diamonds || 0, 1, 0)}</div>
+              <div className="text-xs text-blue-300/50 mt-1">
+                Next +10 💎 in {minutes}:{seconds.toString().padStart(2, '0')}
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/buy-diamonds" className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 rounded text-xs text-blue-300 transition-all duration-200">
+              Buy More
+            </Link>
+            <Link href="/premium-upgrades" className="px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/30 rounded text-xs text-purple-300 transition-all duration-200">
+              Shop
+            </Link>
+          </div>
+        </div>
+      </div>
       
       <div className="grid grid-cols-2 gap-4 mb-3">
         <div className="backdrop-blur-sm bg-gray-800/50 rounded-lg p-3 border border-green-400/20 hover:border-green-400/40 transition-all duration-300">
@@ -125,7 +164,7 @@ export default function ResourcesPanel() {
           <div className="text-xs mt-1">
             {cpuLevel >= 30 || spaceAgeUnlocked ? (
               <span className="text-amber-300/70">
-                +{formatNumber((memory + cpuLevel) * 0.005, 3)} per second
+                +{formatNumber(cpuLevel * 0.1, 3)} per second (when OPs full)
               </span>
             ) : (
               <span className="text-gray-500">
@@ -179,9 +218,21 @@ export default function ResourcesPanel() {
         </div>
       </div>
       
-      <div className="mt-2 text-xs text-green-300/60 flex justify-between">
-        <div>Autoclippers: {formatNumber(autoclippers, 0)}</div>
-        <div>Clips Sold: {formatNumber(paperclipsSold, 0)}</div>
+      <div className="mt-2 text-xs text-green-300/60">
+        <div className="flex justify-between">
+          <div>Autoclippers: {formatNumber(autoclippers, 0)}</div>
+          <div>Clips Sold: {formatNumber(paperclipsSold, 0)}</div>
+        </div>
+        {diamondClippersCount > 0 && (
+          <div className="mt-1 text-purple-400/80">
+            💎 Diamond Clippers: {diamondClippersCount} ({formatNumber(Math.pow(1000, diamondClippersCount), 1)}x production)
+          </div>
+        )}
+        {quantumFactoryCount > 0 && (
+          <div className="mt-1 text-blue-400/80">
+            ⚛️ Quantum Factories: {quantumFactoryCount} ({formatNumber(Math.pow(2, quantumFactoryCount), 1)}x production)
+          </div>
+        )}
       </div>
     </div>
   );

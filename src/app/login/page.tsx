@@ -18,30 +18,60 @@ export default function LoginPage() {
     setError("");
 
     try {
-      
-      try {
-        const result = await signIn("credentials", {
-          redirect: false,
-          email,
-          password,
-        });
-
-
-        if (result?.error) {
-          setError(`Invalid email or password`);
-          setLoading(false);
-          return;
-        }
-      } catch (err) {
-        setError("Login request failed. Please try again.");
+      // Ensure email and password are provided
+      if (!email || !password) {
+        setError("Please enter both email and password");
         setLoading(false);
         return;
       }
 
-      // Redirect to the game page after successful login
-      router.push("/game");
+      console.log("Attempting login with:", email);
+
+      // Call signIn with proper error handling
+      try {
+        const result = await signIn("credentials", {
+          email: email.trim(),
+          password: password,
+          redirect: false,
+          callbackUrl: "/game"
+        });
+
+        console.log("SignIn result:", result);
+
+        if (result?.error) {
+          console.error("SignIn error:", result.error);
+          if (result.error === "CredentialsSignin") {
+            setError("Invalid email or password");
+          } else {
+            setError(result.error);
+          }
+          setLoading(false);
+        } else if (result?.ok && result?.url) {
+          // Success - use router to navigate
+          console.log("Login successful, redirecting...");
+          router.push(result.url);
+          router.refresh();
+        } else {
+          console.error("Unexpected result:", result);
+          setError("Login failed. Please try again.");
+          setLoading(false);
+        }
+      } catch (signInError) {
+        console.error("SignIn catch error:", signInError);
+        throw signInError; // Re-throw to be caught by outer try-catch
+      }
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      console.error("Login error:", err);
+      
+      // Provide more specific error messages
+      if (err instanceof TypeError && err.message.includes("Load failed")) {
+        setError("Unable to connect to server. Please check your connection and try again.");
+      } else if (err instanceof TypeError && err.message.includes("Failed to fetch")) {
+        setError("Network error. Please check your internet connection.");
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
+      
       setLoading(false);
     }
   };
@@ -57,7 +87,7 @@ export default function LoginPage() {
           </div>
         )}
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <div className="mb-4">
             <label htmlFor="email" className="block mb-2 text-sm font-medium text-green-300">
               Email
@@ -68,7 +98,9 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 bg-gray-800/50 border border-green-400/30 rounded-lg text-green-100 placeholder-green-300/50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              placeholder="test@example.com"
               required
+              autoComplete="email"
             />
           </div>
           
@@ -82,7 +114,9 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 bg-gray-800/50 border border-green-400/30 rounded-lg text-green-100 placeholder-green-300/50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              placeholder="password123"
               required
+              autoComplete="current-password"
             />
           </div>
           
@@ -102,15 +136,13 @@ export default function LoginPage() {
               Sign up
             </Link>
           </p>
-          <p className="text-sm mt-2 text-green-300">
-            <Link href="/direct-auth" className="text-green-400 hover:text-green-300 hover:underline">
-              Direct Auth Check
-            </Link>
-            <span className="text-green-300/50">{" | "}</span>
-            <Link href="/fix-password" className="text-green-400 hover:text-green-300 hover:underline">
-              Fix Password
-            </Link>
-          </p>
+          
+          {/* Test credentials hint */}
+          <div className="mt-4 p-3 bg-green-900/20 border border-green-400/20 rounded-lg">
+            <p className="text-xs text-green-300/70">Test Account:</p>
+            <p className="text-xs text-green-400">Email: test@example.com</p>
+            <p className="text-xs text-green-400">Password: password123</p>
+          </div>
         </div>
       </div>
     </div>

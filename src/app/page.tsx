@@ -14,20 +14,20 @@ export default function Home() {
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-8 md:p-24">
         <div className="w-full max-w-6xl items-center justify-center flex flex-col gap-8">
           {/* Neon title with glow effect */}
-          <h1 className="text-6xl md:text-8xl font-black text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-lime-400 animate-gradient-x drop-shadow-[0_0_30px_rgba(74,222,128,0.8)]">
+          <h1 className="text-6xl md:text-8xl font-black text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 animate-gradient-x drop-shadow-[0_0_30px_rgba(59,130,246,0.8)]">
             PAPERCLIP CLICKER
           </h1>
           
           {/* Animated paperclip with neon glow */}
           <div className="relative mb-8">
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-amber-400 rounded-full blur-xl opacity-75 animate-pulse"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full blur-xl opacity-75 animate-pulse"></div>
             <Image 
               src="/assets/paperclip.svg" 
               alt="Paperclip" 
               width={100} 
               height={100} 
-              className="relative z-10 animate-float drop-shadow-[0_0_30px_rgba(250,204,21,0.8)] brightness-[1.2] sepia saturate-[10] hue-rotate-[15deg]"
-              style={{ filter: 'brightness(1.2) sepia(1) saturate(10) hue-rotate(15deg)' }}
+              className="relative z-10 animate-float drop-shadow-[0_0_30px_rgba(59,130,246,0.8)] brightness-[1.5] invert sepia saturate-[10] hue-rotate-[180deg]"
+              style={{ filter: 'brightness(1.5) invert(1) sepia(1) saturate(10) hue-rotate(180deg)' }}
             />
           </div>
           

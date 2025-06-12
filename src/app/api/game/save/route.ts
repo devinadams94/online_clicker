@@ -15,7 +15,33 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json();
+    // Handle both regular JSON and sendBeacon blob data
+    let body;
+    const contentType = req.headers.get('content-type');
+    
+    if (contentType?.includes('application/json')) {
+      body = await req.json();
+    } else {
+      // Handle blob data from sendBeacon
+      const text = await req.text();
+      try {
+        body = JSON.parse(text);
+      } catch (e) {
+        console.error('[SAVE API] Failed to parse request body:', e);
+        return NextResponse.json(
+          { message: "Invalid request body" },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // Log diamond values being saved
+    console.log('[SAVE API] Saving game state for user:', session.user.id);
+    console.log('[SAVE API] Diamond values:', {
+      diamonds: body.diamonds,
+      totalDiamondsSpent: body.totalDiamondsSpent,
+      totalDiamondsPurchased: body.totalDiamondsPurchased
+    });
     
     // Check if user has a game state, create one if not
     let existingGameState = await prisma.gameState.findUnique({
@@ -90,6 +116,7 @@ export async function POST(req: Request) {
       // Ensure we have valid values with fallbacks
       const cpuLevel = parseInt(body.cpuLevel || 1) || 1;
       const cpuCost = parseFloat(body.cpuCost || 25) || 25;
+      const memory = parseFloat(body.memory || 1) || 1;
       const memoryMax = parseFloat(body.memoryMax || 1) || 1;
       const memoryCost = parseFloat(body.memoryCost || 10) || 10;
       const memoryRegenRate = parseFloat(body.memoryRegenRate || 1) || 1;
@@ -136,10 +163,53 @@ export async function POST(req: Request) {
       const defectionRate = parseFloat(body.defectionRate || 0.001) || 0.001;
       const totalProbesLost = parseFloat(body.totalProbesLost || 0) || 0;
       
+      // Diamond system fields - with safeguard
+      const diamonds = parseFloat(body.diamonds || 0) || 0;
+      const totalDiamondsSpent = parseFloat(body.totalDiamondsSpent || 0) || 0;
+      const totalDiamondsPurchased = parseFloat(body.totalDiamondsPurchased || 0) || 0;
       
+      // Space Market fields
+      const spaceMarketDemand = parseFloat(body.spaceMarketDemand || 100) || 100;
+      const spaceMarketMaxDemand = parseFloat(body.spaceMarketMaxDemand || 500) || 500;
+      const spaceMarketMinDemand = parseFloat(body.spaceMarketMinDemand || 10) || 10;
+      const spacePaperclipPrice = parseFloat(body.spacePaperclipPrice || 0.50) || 0.50;
+      const spaceAerogradePrice = parseFloat(body.spaceAerogradePrice || 50.00) || 50.00;
+      const spaceOrePrice = parseFloat(body.spaceOrePrice || 5.00) || 5.00;
+      const spaceWirePrice = parseFloat(body.spaceWirePrice || 10.00) || 10.00;
+      const spacePaperclipsSold = parseFloat(body.spacePaperclipsSold || 0) || 0;
+      const spaceAerogradeSold = parseFloat(body.spaceAerogradeSold || 0) || 0;
+      const spaceOreSold = parseFloat(body.spaceOreSold || 0) || 0;
+      const spaceWireSold = parseFloat(body.spaceWireSold || 0) || 0;
+      const spaceTotalSales = parseFloat(body.spaceTotalSales || 0) || 0;
+      const spaceMarketTrend = parseFloat(body.spaceMarketTrend || 0) || 0;
+      const spaceMarketVolatility = parseFloat(body.spaceMarketVolatility || 0.20) || 0.20;
+      const energyConsumedPerSecond = parseFloat(body.energyConsumedPerSecond || 0) || 0;
+      const spaceAutoSellEnabled = Boolean(body.spaceAutoSellEnabled);
+      const spaceAutoSellUnlocked = Boolean(body.spaceAutoSellUnlocked);
+      const spaceSmartPricingEnabled = Boolean(body.spaceSmartPricingEnabled);
+      const spaceSmartPricingUnlocked = Boolean(body.spaceSmartPricingUnlocked);
       
+      // Play time tracking
+      const activePlayTime = parseFloat(body.activePlayTime || 0) || 0;
+      const lastDiamondRewardTime = parseFloat(body.lastDiamondRewardTime || 0) || 0;
       
-      
+      // Safeguard: if trying to save 0 diamonds but user has purchased diamonds, something is wrong
+      if (diamonds === 0 && totalDiamondsPurchased > 0) {
+        console.warn('[SAVE] Warning: Attempting to save 0 diamonds when totalDiamondsPurchased is', totalDiamondsPurchased);
+        // Get current state from database to prevent overwriting
+        const currentState = await prisma.gameState.findUnique({
+          where: { userId: session.user.id },
+          select: { diamonds: true }
+        });
+        if (currentState && currentState.diamonds > 0) {
+          console.warn('[SAVE] Preventing diamond reset - keeping current value:', currentState.diamonds);
+          // Skip this save to prevent data loss
+          return NextResponse.json({
+            message: "Save skipped - diamond protection activated",
+            protected: true
+          });
+        }
+      }
       
       // Update using direct SQL for critical values with SQLite syntax
       // Adding computational values to the critical direct SQL update
@@ -150,6 +220,7 @@ export async function POST(req: Request) {
             "botIntelligence" = ${botIntelligenceValue},
             "cpuLevel" = ${cpuLevel},
             "cpuCost" = ${cpuCost},
+            "memory" = ${memory},
             "memoryMax" = ${memoryMax},
             "memoryCost" = ${memoryCost},
             "memoryRegenRate" = ${memoryRegenRate},
@@ -185,6 +256,30 @@ export async function POST(req: Request) {
             "enemyShips" = ${enemyShips},
             "defectionRate" = ${defectionRate},
             "totalProbesLost" = ${totalProbesLost},
+            "diamonds" = ${diamonds},
+            "totalDiamondsSpent" = ${totalDiamondsSpent},
+            "totalDiamondsPurchased" = ${totalDiamondsPurchased},
+            "spaceMarketDemand" = ${spaceMarketDemand},
+            "spaceMarketMaxDemand" = ${spaceMarketMaxDemand},
+            "spaceMarketMinDemand" = ${spaceMarketMinDemand},
+            "spacePaperclipPrice" = ${spacePaperclipPrice},
+            "spaceAerogradePrice" = ${spaceAerogradePrice},
+            "spaceOrePrice" = ${spaceOrePrice},
+            "spaceWirePrice" = ${spaceWirePrice},
+            "spacePaperclipsSold" = ${spacePaperclipsSold},
+            "spaceAerogradeSold" = ${spaceAerogradeSold},
+            "spaceOreSold" = ${spaceOreSold},
+            "spaceWireSold" = ${spaceWireSold},
+            "spaceTotalSales" = ${spaceTotalSales},
+            "spaceMarketTrend" = ${spaceMarketTrend},
+            "spaceMarketVolatility" = ${spaceMarketVolatility},
+            "energyConsumedPerSecond" = ${energyConsumedPerSecond},
+            "spaceAutoSellEnabled" = ${spaceAutoSellEnabled ? 1 : 0},
+            "spaceAutoSellUnlocked" = ${spaceAutoSellUnlocked ? 1 : 0},
+            "spaceSmartPricingEnabled" = ${spaceSmartPricingEnabled ? 1 : 0},
+            "spaceSmartPricingUnlocked" = ${spaceSmartPricingUnlocked ? 1 : 0},
+            "activePlayTime" = ${activePlayTime},
+            "lastDiamondRewardTime" = ${lastDiamondRewardTime},
             "lastSaved" = CURRENT_TIMESTAMP
         WHERE "userId" = ${session.user.id}
       `;
@@ -609,6 +704,21 @@ export async function POST(req: Request) {
             
             const jsonString = JSON.stringify(costsToSave);
             return jsonString;
+          })(),
+          
+          // Premium upgrades array
+          premiumUpgrades: (() => {
+            try {
+              if (Array.isArray(body.premiumUpgrades)) {
+                return JSON.stringify([...new Set(body.premiumUpgrades)]);
+              } else if (typeof body.premiumUpgrades === 'string') {
+                const parsed = JSON.parse(body.premiumUpgrades);
+                return Array.isArray(parsed) ? JSON.stringify([...new Set(parsed)]) : "[]";
+              }
+              return "[]";
+            } catch (err) {
+              return "[]";
+            }
           })(),
           
           metricsUnlocked: Boolean(body.metricsUnlocked),

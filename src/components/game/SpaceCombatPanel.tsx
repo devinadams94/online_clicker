@@ -20,6 +20,7 @@ export default function SpaceCombatPanel() {
     honor,
     yomi,
     addHonor,
+    incrementBattlesWon,
     spaceStats,
     battlesWon,
     autoBattleEnabled,
@@ -335,15 +336,16 @@ export default function SpaceCombatPanel() {
       const deployedProbes = Math.min(probes, 50); // Same number we deployed in startBattle
       const probesLost = deployedProbes - remainingProbes;
       
-      const honorGained = Math.floor(enemiesDestroyed * 10 * (1 + (spaceStats?.combat || 0) * 0.2));
-      
-      // Award honor (which also gives equivalent Yomi - see spaceExtension.ts addHonor function)
-      if (honorGained > 0) {
-        addHonor(honorGained);
-      }
-      
       // Show battle results
       const battleWon = remainingEnemies === 0;
+      
+      // Only award honor and increment battles won if the player actually won
+      const honorGained = battleWon ? Math.floor(enemiesDestroyed * 10 * (1 + (spaceStats?.combat || 0) * 0.2)) : 0;
+      
+      if (battleWon && honorGained > 0) {
+        addHonor(honorGained);
+        incrementBattlesWon();
+      }
       
       // Save game state after battle to ensure probe loss is saved
       setTimeout(() => {

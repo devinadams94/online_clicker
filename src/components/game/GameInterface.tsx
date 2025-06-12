@@ -4,6 +4,9 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import useGameStore from "@/lib/gameStore";
 import { GameState } from "@/types/game";
+import { criticalStateManager } from '@/lib/criticalStateManager';
+import { debugCpuMemory } from '@/utils/debugCpuMemory';
+import { usePreserveState } from '@/hooks/usePreserveState';
 
 // Note: Space functions are now imported directly from spaceExtension.ts in the gameStore
 // This function is now just a placeholder for backward compatibility
@@ -25,6 +28,7 @@ import CreativityUpgradesPanel from "./CreativityUpgradesPanel";
 import TrustUpgradesPanel from "./TrustUpgradesPanel";
 import SpaceStatsPanel from "./SpaceStatsPanel";
 import SpaceLaunchPanel from "./SpaceLaunchPanel";
+import SpaceMarketPanel from "./SpaceMarketPanel";
 import SpaceResourcesPanel from "./SpaceResourcesPanel";
 import SpaceUpgradesPanel from "./SpaceUpgradesPanel";
 import SpaceResearchPanel from "./SpaceResearchPanel";
@@ -298,10 +302,14 @@ const ResearchPanel = () => {
 // Using the imported StockMarketPanel component
 
 export default function GameInterface() {
+  // Use the preserve state hook to ensure CPU/memory values persist
+  usePreserveState();
+  
   const { data: session } = useSession();
   const [phaserFailed, setPhaserFailed] = useState(false);
   const [_justUnlockedSpaceAge, setJustUnlockedSpaceAge] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { 
     tick,
@@ -425,6 +433,12 @@ export default function GameInterface() {
       return;
     }
     
+    // Don't save if we're still loading data or haven't completed initial load
+    if (isLoading || !initialLoadComplete) {
+      console.log('[GameInterface] Skipping save - still loading or initial load not complete');
+      return;
+    }
+    
     // Check for any pending upgrade flags in the global window object
     if (typeof window !== 'undefined') {
       // Check for pending CPU upgrade
@@ -479,6 +493,9 @@ export default function GameInterface() {
       }
     }
 
+    // Log save attempt
+    console.log('[GameInterface] Saving game state...');
+    
     try {
       const {
         paperclips, 
@@ -779,11 +796,19 @@ export default function GameInterface() {
         battlesWon: String(typeof battlesWon === 'string' ? parseInt(battlesWon) || 0 : (battlesWon || 0)), // Handle both string and number types
         autoBattleEnabled: Boolean(autoBattleEnabled), // Ensure boolean
         autoBattleUnlocked: Boolean(autoBattleUnlocked), // Ensure boolean
+        autoProbeLauncherEnabled: Boolean(useGameStore.getState().autoProbeLauncherEnabled || false), // Auto probe launcher state
         battleDifficulty: String(typeof battleDifficulty === 'string' ? parseFloat(battleDifficulty) || 1 : (battleDifficulty || 1)), // Handle both string and number types
         aerogradePaperclips: String(typeof useGameStore.getState().aerogradePaperclips === 'string' ? 
             parseFloat(String(useGameStore.getState().aerogradePaperclips)) || 0 : 
             (useGameStore.getState().aerogradePaperclips || 0)), // Handle both string and number types
-        unlockedSpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedSpaceUpgrades || []) // Add space upgrades
+        unlockedSpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedSpaceUpgrades || []), // Add space upgrades
+        unlockedMoneySpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedMoneySpaceUpgrades || []),
+        unlockedOpsSpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedOpsSpaceUpgrades || []),
+        unlockedCreativitySpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedCreativitySpaceUpgrades || []),
+        unlockedYomiSpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedYomiSpaceUpgrades || []),
+        unlockedTrustSpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedTrustSpaceUpgrades || []),
+        unlockedEnergySpaceUpgrades: JSON.stringify(useGameStore.getState().unlockedEnergySpaceUpgrades || []),
+        unlockedHonorUpgrades: JSON.stringify(useGameStore.getState().unlockedHonorUpgrades || [])
       };
       
       // Validate numeric values to avoid NaN issues
@@ -794,8 +819,7 @@ export default function GameInterface() {
       });
       
       // Log the full data we're about to send
-      // Log specific wire spool data for debugging
-      
+      console.log('[GameInterface] Saving data with autoclippers:', gameData.autoclippers);
       
       try {
         const response = await fetch('/api/game/save', {
@@ -955,6 +979,48 @@ export default function GameInterface() {
         localStorage.removeItem('pendingSpaceUpgradeId');
       }
       
+      // Check for pending Money Space Upgrade save
+      if (localStorage.getItem('pendingMoneySpaceUpgradeSave') === 'true') {
+        saveGameState();
+        localStorage.removeItem('pendingMoneySpaceUpgradeSave');
+        localStorage.removeItem('pendingMoneySpaceUpgradeId');
+      }
+      
+      // Check for pending OPs Space Upgrade save
+      if (localStorage.getItem('pendingOpsSpaceUpgradeSave') === 'true') {
+        saveGameState();
+        localStorage.removeItem('pendingOpsSpaceUpgradeSave');
+        localStorage.removeItem('pendingOpsSpaceUpgradeId');
+      }
+      
+      // Check for pending Yomi Space Upgrade save
+      if (localStorage.getItem('pendingYomiSpaceUpgradeSave') === 'true') {
+        saveGameState();
+        localStorage.removeItem('pendingYomiSpaceUpgradeSave');
+        localStorage.removeItem('pendingYomiSpaceUpgradeId');
+      }
+      
+      // Check for pending Trust Space Upgrade save
+      if (localStorage.getItem('pendingTrustSpaceUpgradeSave') === 'true') {
+        saveGameState();
+        localStorage.removeItem('pendingTrustSpaceUpgradeSave');
+        localStorage.removeItem('pendingTrustSpaceUpgradeId');
+      }
+      
+      // Check for pending Energy Space Upgrade save
+      if (localStorage.getItem('pendingEnergySpaceUpgradeSave') === 'true') {
+        saveGameState();
+        localStorage.removeItem('pendingEnergySpaceUpgradeSave');
+        localStorage.removeItem('pendingEnergySpaceUpgradeId');
+      }
+      
+      // Check for pending Honor Upgrade save
+      if (localStorage.getItem('pendingHonorUpgradeSave') === 'true') {
+        saveGameState();
+        localStorage.removeItem('pendingHonorUpgradeSave');
+        localStorage.removeItem('pendingHonorUpgradeId');
+      }
+      
       // Check for OPs usage update
       if (localStorage.getItem('pendingOpsUpdate') === 'true') {
         const pendingOpsCurrent = localStorage.getItem('pendingOpsCurrent');
@@ -1004,7 +1070,8 @@ export default function GameInterface() {
     };
     
     // Initial save on component mount and check for any pending saves from previous sessions
-    saveGameState();
+    // Don't save immediately on mount - wait for data to load first
+    // saveGameState();
     checkPendingSaves(); // Check immediately to catch any pending saves from previous sessions
     
     // Regular save interval
@@ -1023,15 +1090,74 @@ export default function GameInterface() {
     };
   }, [isAuthenticated, saveGameState]);
   
+  // Monitor critical values for immediate save
+  const diamonds = useGameStore(state => state.diamonds);
+  const autoclippers = useGameStore(state => state.autoclippers);
+  const prevDiamondsRef = useRef(diamonds);
+  const prevAutoclippersRef = useRef(autoclippers);
+  
+  // Save immediately when critical values change
+  useEffect(() => {
+    // Check if diamonds changed significantly
+    if (Math.abs(diamonds - prevDiamondsRef.current) > 0.1 && isAuthenticated) {
+      console.log('[GameInterface] Diamonds changed from', prevDiamondsRef.current, 'to', diamonds, '- saving immediately');
+      prevDiamondsRef.current = diamonds;
+      saveGameState();
+    }
+  }, [diamonds, isAuthenticated, saveGameState]);
+  
+  // Save immediately when autoclippers change
+  useEffect(() => {
+    if (autoclippers !== prevAutoclippersRef.current && isAuthenticated) {
+      console.log('[GameInterface] Autoclippers changed from', prevAutoclippersRef.current, 'to', autoclippers, '- saving immediately');
+      prevAutoclippersRef.current = autoclippers;
+      saveGameState();
+    }
+  }, [autoclippers, isAuthenticated, saveGameState]);
+  
   // Save game state before unload/refresh to prevent data loss
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      saveGameState();
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Try to save synchronously by using sendBeacon if available
+      if (!isAuthenticated || !session?.user?.id) {
+        return;
+      }
+      
+      // Get current game state
+      const gameState = useGameStore.getState();
+      const gameData = {
+        paperclips: gameState.paperclips,
+        money: gameState.money,
+        wire: gameState.wire,
+        autoclippers: gameState.autoclippers,
+        diamonds: gameState.diamonds,
+        totalDiamondsSpent: gameState.totalDiamondsSpent,
+        totalDiamondsPurchased: gameState.totalDiamondsPurchased,
+        premiumUpgrades: gameState.premiumUpgrades,
+        // Include other critical fields
+        autoclipper_cost: gameState.autoclipper_cost,
+        clicks_per_second: gameState.clicks_per_second,
+        totalPaperclipsMade: gameState.totalPaperclipsMade,
+        megaClippers: gameState.megaClippers,
+        productionMultiplier: gameState.productionMultiplier,
+      };
+      
+      // Use sendBeacon for reliable save on unload
+      if (navigator.sendBeacon) {
+        const blob = new Blob([JSON.stringify(gameData)], { type: 'application/json' });
+        navigator.sendBeacon('/api/game/save', blob);
+      } else {
+        // Fallback to regular save
+        saveGameState();
+      }
+      
+      // Don't show the dialog - it's annoying for users
+      // The sendBeacon should work without it
     };
     
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [saveGameState]);
+  }, [saveGameState, isAuthenticated, session]);
 
   // Save game state on window blur (tab changing/closing)
   useEffect(() => {
@@ -1043,24 +1169,49 @@ export default function GameInterface() {
     return () => window.removeEventListener('blur', handleBlur);
   }, [saveGameState]);
 
+  // Track if we've already loaded to prevent duplicate loads
+  const [hasLoaded, setHasLoaded] = useState(false);
+  
+  // Initialize critical state and debug on mount
+  useEffect(() => {
+    const critical = criticalStateManager.get();
+    console.log('[GameInterface] Critical state on mount:', critical);
+    
+    // Run debug after a short delay
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        debugCpuMemory();
+      }, 1000);
+    }
+  }, []);
+  
   // Load game state on session change
   useEffect(() => {
     const loadGameState = async () => {
+      // Prevent multiple loads
+      if (hasLoaded) {
+        console.log('[GameInterface] Skipping duplicate load');
+        return;
+      }
       if (!session || !session.user) {
         // User is not authenticated, clear state
         setAuthenticated(false);
         setUserId(null);
         setLoading(false);
         
-        // Reset the game state when not authenticated
-        useGameStore.getState().resetGame();
+        // Don't reset game state immediately - wait to see if this is just a loading state
+        // The user might be authenticated but the session is still loading
+        console.log('[GameInterface] No session detected, but not resetting game yet');
         return;
       }
       
       // Handle user change
       const currentUserId = useGameStore.getState().userId;
-      if (currentUserId !== session.user.id) {
+      console.log('[GameInterface] User check - Current:', currentUserId, 'Session:', session.user.id);
+      
+      if (currentUserId && currentUserId !== session.user.id) {
         // User has changed, reset the state first to avoid state mixing
+        console.log('[GameInterface] User changed - resetting game state');
         useGameStore.getState().resetGame();
       }
 
@@ -1068,9 +1219,30 @@ export default function GameInterface() {
       setUserId(session.user.id);
 
       try {
+        // Check current state before loading
+        const stateBeforeLoad = useGameStore.getState();
+        console.log('[GameInterface] State BEFORE API load:', {
+          cpuLevel: stateBeforeLoad.cpuLevel,
+          memory: stateBeforeLoad.memory,
+          cpuCost: stateBeforeLoad.cpuCost,
+          memoryCost: stateBeforeLoad.memoryCost
+        });
+        
         const response = await fetch('/api/game/load');
         if (response.ok) {
           const data = await response.json();
+          console.log('[GameInterface] Loaded game data from API:', { 
+            autoclippers: data.autoclippers,
+            paperclips: data.paperclips,
+            money: data.money,
+            wire: data.wire,
+            diamonds: data.diamonds,
+            cpuLevel: data.cpuLevel,
+            cpuCost: data.cpuCost,
+            memory: data.memory,
+            memoryMax: data.memoryMax,
+            memoryCost: data.memoryCost
+          });
           // Make sure money and paperclip price are properly parsed
           const loadedMoney = typeof data.money === 'number' ? data.money : 0;
           const loadedPaperclipPrice = typeof data.paperclipPrice === 'number' ? data.paperclipPrice : 0.25;
@@ -1189,9 +1361,9 @@ export default function GameInterface() {
             wire: (data.wire || 1000) - offlineProgress.wireUsed,
             
             // Production
-            autoclippers: data.autoclippers,
-            autoclipper_cost: data.autoclipper_cost,
-            clicks_per_second: data.clicks_per_second,
+            autoclippers: data.autoclippers || 0,
+            autoclipper_cost: data.autoclipper_cost || 10,
+            clicks_per_second: data.clicks_per_second || 0,
             clickMultiplier: data.clickMultiplier || 1,
             totalClicks: data.totalClicks || 0,
             totalPaperclipsMade: (data.totalPaperclipsMade || 0) + offlineProgress.paperclipsProduced,
@@ -1251,9 +1423,17 @@ export default function GameInterface() {
             portfolioValue: data.portfolioValue || 0,
             
             // Player Stats
-            cpuLevel: data.cpuLevel || 1,
+            cpuLevel: (() => {
+              const value = data.cpuLevel;
+              console.log('[GameInterface] Raw cpuLevel from API:', value);
+              return value || 1;
+            })(),
             cpuCost: data.cpuCost || 25, // Ensure this matches the default in save/route.ts
-            memory: data.memory || 1,
+            memory: (() => {
+              const value = data.memory;
+              console.log('[GameInterface] Raw memory from API:', value);
+              return value || 1;
+            })(),
             memoryMax: data.memoryMax || 1,
             memoryCost: data.memoryCost || 10, // Ensure this matches the default in save/route.ts
             memoryRegenRate: data.memoryRegenRate || 1,
@@ -1425,6 +1605,10 @@ export default function GameInterface() {
               const unlocked = Boolean(data.autoBattleUnlocked);
               return unlocked;
             })(),
+            autoProbeLauncherEnabled: (() => {
+              const enabled = Boolean(data.autoProbeLauncherEnabled);
+              return enabled;
+            })(),
             battleDifficulty: (() => {
               const difficulty = parseFloat(data.battleDifficulty || 1) || 1;
               return difficulty;
@@ -1449,6 +1633,104 @@ export default function GameInterface() {
               } catch (err) {
               }
               // Default to empty array if parsing fails
+              return [];
+            })(),
+            unlockedMoneySpaceUpgrades: (() => {
+              if (Array.isArray(data.unlockedMoneySpaceUpgrades)) {
+                return data.unlockedMoneySpaceUpgrades;
+              }
+              try {
+                if (typeof data.unlockedMoneySpaceUpgrades === 'string') {
+                  const parsed = JSON.parse(data.unlockedMoneySpaceUpgrades);
+                  if (Array.isArray(parsed)) {
+                    return parsed;
+                  }
+                }
+              } catch (err) {}
+              return [];
+            })(),
+            unlockedOpsSpaceUpgrades: (() => {
+              if (Array.isArray(data.unlockedOpsSpaceUpgrades)) {
+                return data.unlockedOpsSpaceUpgrades;
+              }
+              try {
+                if (typeof data.unlockedOpsSpaceUpgrades === 'string') {
+                  const parsed = JSON.parse(data.unlockedOpsSpaceUpgrades);
+                  if (Array.isArray(parsed)) {
+                    return parsed;
+                  }
+                }
+              } catch (err) {}
+              return [];
+            })(),
+            unlockedCreativitySpaceUpgrades: (() => {
+              if (Array.isArray(data.unlockedCreativitySpaceUpgrades)) {
+                return data.unlockedCreativitySpaceUpgrades;
+              }
+              try {
+                if (typeof data.unlockedCreativitySpaceUpgrades === 'string') {
+                  const parsed = JSON.parse(data.unlockedCreativitySpaceUpgrades);
+                  if (Array.isArray(parsed)) {
+                    return parsed;
+                  }
+                }
+              } catch (err) {}
+              return [];
+            })(),
+            unlockedYomiSpaceUpgrades: (() => {
+              if (Array.isArray(data.unlockedYomiSpaceUpgrades)) {
+                return data.unlockedYomiSpaceUpgrades;
+              }
+              try {
+                if (typeof data.unlockedYomiSpaceUpgrades === 'string') {
+                  const parsed = JSON.parse(data.unlockedYomiSpaceUpgrades);
+                  if (Array.isArray(parsed)) {
+                    return parsed;
+                  }
+                }
+              } catch (err) {}
+              return [];
+            })(),
+            unlockedTrustSpaceUpgrades: (() => {
+              if (Array.isArray(data.unlockedTrustSpaceUpgrades)) {
+                return data.unlockedTrustSpaceUpgrades;
+              }
+              try {
+                if (typeof data.unlockedTrustSpaceUpgrades === 'string') {
+                  const parsed = JSON.parse(data.unlockedTrustSpaceUpgrades);
+                  if (Array.isArray(parsed)) {
+                    return parsed;
+                  }
+                }
+              } catch (err) {}
+              return [];
+            })(),
+            unlockedEnergySpaceUpgrades: (() => {
+              if (Array.isArray(data.unlockedEnergySpaceUpgrades)) {
+                return data.unlockedEnergySpaceUpgrades;
+              }
+              try {
+                if (typeof data.unlockedEnergySpaceUpgrades === 'string') {
+                  const parsed = JSON.parse(data.unlockedEnergySpaceUpgrades);
+                  if (Array.isArray(parsed)) {
+                    return parsed;
+                  }
+                }
+              } catch (err) {}
+              return [];
+            })(),
+            unlockedHonorUpgrades: (() => {
+              if (Array.isArray(data.unlockedHonorUpgrades)) {
+                return data.unlockedHonorUpgrades;
+              }
+              try {
+                if (typeof data.unlockedHonorUpgrades === 'string') {
+                  const parsed = JSON.parse(data.unlockedHonorUpgrades);
+                  if (Array.isArray(parsed)) {
+                    return parsed;
+                  }
+                }
+              } catch (err) {}
               return [];
             })(),
             spaceStats: data.spaceStats ? (
@@ -1505,23 +1787,88 @@ export default function GameInterface() {
           gameData.stockMarketLastUpdate = new Date();
           gameData.stockTrendData = {};
           
+          // Add diamond system fields
+          gameData.diamonds = data.diamonds || 0;
+          gameData.totalDiamondsSpent = data.totalDiamondsSpent || 0;
+          gameData.totalDiamondsPurchased = data.totalDiamondsPurchased || 0;
+          gameData.premiumUpgrades = data.premiumUpgrades || [];
+          
           // Apply the game state using type assertion - we're adding defaults for missing fields
+          console.log('[GameInterface] Setting game state with data:', {
+            autoclippers: gameData.autoclippers,
+            paperclips: gameData.paperclips,
+            money: gameData.money,
+            wire: gameData.wire,
+            cpuLevel: gameData.cpuLevel,
+            cpuCost: gameData.cpuCost,
+            memory: gameData.memory,
+            memoryMax: gameData.memoryMax,
+            memoryCost: gameData.memoryCost,
+            memoryRegenRate: gameData.memoryRegenRate
+          });
+          
+          // Extra validation before setting state
+          const currentState = useGameStore.getState();
+          const criticalState = criticalStateManager.get();
+          
+          console.log('[GameInterface] Critical state before setting:', criticalState);
+          
+          // Always restore from critical state manager if it has valid values
+          if (criticalState.cpuLevel > 1 || criticalState.memory > 1) {
+            console.log('[GameInterface] Restoring from critical state manager');
+            gameData.cpuLevel = criticalState.cpuLevel;
+            gameData.cpuCost = criticalState.cpuCost;
+            gameData.memory = criticalState.memory;
+            gameData.memoryMax = criticalState.memoryMax;
+            gameData.memoryCost = criticalState.memoryCost;
+            gameData.memoryRegenRate = criticalState.memoryRegenRate;
+          }
+          // Otherwise preserve existing CPU/Memory values if API returns 0
+          else if ((!gameData.cpuLevel || gameData.cpuLevel === 0) && currentState.cpuLevel > 0) {
+            console.warn('[GameInterface] Preserving existing cpuLevel:', currentState.cpuLevel, 'instead of API value:', gameData.cpuLevel);
+            gameData.cpuLevel = currentState.cpuLevel;
+            gameData.cpuCost = currentState.cpuCost;
+          }
+          else if ((!gameData.memory || gameData.memory === 0) && currentState.memory > 0) {
+            console.warn('[GameInterface] Preserving existing memory:', currentState.memory, 'instead of API value:', gameData.memory);
+            gameData.memory = currentState.memory;
+            gameData.memoryMax = currentState.memoryMax;
+            gameData.memoryCost = currentState.memoryCost;
+            gameData.memoryRegenRate = currentState.memoryRegenRate;
+          }
+          
+          // Final validation
+          if (!gameData.cpuLevel || gameData.cpuLevel === 0) {
+            console.error('[GameInterface] ERROR: cpuLevel is still 0 after all attempts');
+            gameData.cpuLevel = 1;
+          }
+          if (!gameData.memory || gameData.memory === 0) {
+            console.error('[GameInterface] ERROR: memory is still 0 after all attempts');
+            gameData.memory = 1;
+          }
+          
           setGameState(gameData as GameState);
           
           // If space age is unlocked, ensure autoclippers are 0
-          if (gameData.spaceAgeUnlocked) {
-            useGameStore.setState({
-              autoclippers: 0,
-              megaClippers: 0,
-              clicks_per_second: 0,
-              productionMultiplier: 0
-            });
-          }
+          // NOTE: This might be causing issues - commenting out for now
+          // if (gameData.spaceAgeUnlocked) {
+          //   useGameStore.setState({
+          //     autoclippers: 0,
+          //     megaClippers: 0,
+          //     clicks_per_second: 0,
+          //     productionMultiplier: 0
+          //   });
+          // }
           
           // Display offline progress notification if applicable
           if (offlineProgressApplied) {
             // This could be implemented with a toast notification or modal
           }
+          
+          // Mark initial load as complete
+          setInitialLoadComplete(true);
+          setHasLoaded(true);
+          console.log('[GameInterface] Initial load complete - diamonds:', data.diamonds);
         }
       } catch (error) {
       } finally {
@@ -1631,6 +1978,7 @@ export default function GameInterface() {
                 <SpaceLaunchPanel />
                 <SpaceResourcesPanel />
                 <SpaceControlPanel />
+                <SpaceMarketPanel />
                 <SpaceCombatPanel />
               </div>
               
@@ -1895,8 +2243,8 @@ export default function GameInterface() {
                   // Hide items when space age is unlocked if specified
                   if (item.hideWhenSpaceUnlocked && spaceAgeUnlocked) return null;
                   
-                  // Hide Stock Market tab if it's not unlocked
-                  if (item.requireStockUnlock && !stockMarketUnlocked) return null;
+                  // Hide Stock Market tab if it's not unlocked (unless space age is unlocked)
+                  if (item.requireStockUnlock && !stockMarketUnlocked && !spaceAgeUnlocked) return null;
                   
                   // Hide Metrics tab if it's not unlocked
                   if (item.requireMetricsUnlock && !metricsUnlocked) return null;
@@ -1948,8 +2296,8 @@ export default function GameInterface() {
                       // Hide items when space age is unlocked if specified
                       if (item.hideWhenSpaceUnlocked && spaceAgeUnlocked) return null;
                       
-                      // Hide Stock Market tab if it's not unlocked
-                      if (item.requireStockUnlock && !stockMarketUnlocked) return null;
+                      // Hide Stock Market tab if it's not unlocked (unless space age is unlocked)
+                      if (item.requireStockUnlock && !stockMarketUnlocked && !spaceAgeUnlocked) return null;
                       
                       // Hide Metrics tab if it's not unlocked
                       if (item.requireMetricsUnlock && !metricsUnlocked) return null;

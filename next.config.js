@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Ensure environment variables are available
+  env: {
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+  },
   // Webpack configuration for Phaser
   webpack: (config) => {
     // Enable importing of shader files

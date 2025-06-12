@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
+import { formatNumber } from "@/utils/numberFormat";
 
 export default function Header() {
   const { data: session, status } = useSession();
   const isLoading = status === "loading";
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [diamonds, setDiamonds] = useState<number>(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close the menu when clicking outside
@@ -23,6 +25,20 @@ export default function Header() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Fetch diamond count when user is logged in
+  useEffect(() => {
+    if (session) {
+      fetch('/api/game/load')
+        .then(res => res.json())
+        .then(data => {
+          if (data.diamonds !== undefined) {
+            setDiamonds(data.diamonds);
+          }
+        })
+        .catch(err => console.error('Failed to load diamonds:', err));
+    }
+  }, [session]);
 
   return (
     <header className="backdrop-blur-md bg-gradient-to-r from-gray-900/95 via-green-900/95 to-emerald-900/95 border-b border-green-400/20 shadow-[0_0_20px_rgba(74,222,128,0.3)] relative" style={{zIndex: 10000000}}>
@@ -72,6 +88,25 @@ export default function Header() {
                       <span className="font-medium text-green-400">{session.user?.email}</span>
                     </div>
                     
+                    {/* Diamond Balance */}
+                    <div className="px-4 py-3 border-b border-green-400/20">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <span className="text-xl mr-2">💎</span>
+                          <div>
+                            <div className="text-xs text-blue-300/70">Diamonds</div>
+                            <div className="text-lg font-bold text-blue-400">{formatNumber(diamonds, 1, 0)}</div>
+                          </div>
+                        </div>
+                        <Link
+                          href="/buy-diamonds"
+                          className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 rounded text-xs text-blue-300 transition-all duration-200"
+                        >
+                          Buy More
+                        </Link>
+                      </div>
+                    </div>
+                    
                     {/* User Pages */}
                     <div className="py-1">
                       <Link href="/profile" className="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-green-400 hover:bg-green-500/10 transition-all duration-200">
@@ -99,12 +134,28 @@ export default function Header() {
                         </svg>
                         Play Game
                       </Link>
+                      <Link href="/buy-diamonds" className="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200">
+                        <span className="mr-2">💎</span>
+                        Buy Diamonds
+                      </Link>
+                      <Link href="/premium-upgrades" className="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-purple-400 hover:bg-purple-500/10 transition-all duration-200">
+                        <span className="mr-2">✨</span>
+                        Premium Upgrades
+                      </Link>
                     </div>
                     
                     {/* Account Actions */}
                     <div className="border-t border-green-400/20">
                       <button
-                        onClick={() => signOut({ callbackUrl: "https://paper-clips.com/" })}
+                        onClick={async () => {
+                          // Save the game before logging out
+                          if (window.saveGameNow) {
+                            await window.saveGameNow();
+                            // Wait a bit to ensure save completes
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                          }
+                          signOut({ callbackUrl: "https://paper-clips.com/" });
+                        }}
                         className="flex w-full items-center text-left px-4 py-2 text-sm text-gray-300 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

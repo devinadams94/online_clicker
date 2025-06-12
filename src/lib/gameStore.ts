@@ -5,6 +5,8 @@ import { persist } from "zustand/middleware";
 import { GameState, MarketData, Stock, StockHolding } from "@/types/game";
 // Import type fixes
 import "@/types/typeFixJuly2025";
+import { criticalStateManager } from './criticalStateManager';
+import { StateValidator } from './stateValidator';
 import { 
   calculateDemand, 
   updateMarketTrend, 
@@ -141,6 +143,7 @@ interface GameStore extends GameState {
   addYomi: (amount: number) => void;
   toggleAutoBattle: () => void;
   unlockAutoBattle: () => void;
+  incrementBattlesWon: () => void;
   
   // Energy infrastructure
   buildSolarArray: () => void;
@@ -148,6 +151,17 @@ interface GameStore extends GameState {
   buildSolarArrayBulk: (amount: number) => void;
   buildBatteryBulk: (amount: number) => void;
   
+  // Space Market
+  sellSpacePaperclips: (amount: number) => void;
+  sellSpaceAerograde: (amount: number) => void;
+  sellSpaceOre: (amount: number) => void;
+  sellSpaceWire: (amount: number) => void;
+  updateSpaceMarket: () => void;
+  unlockSpaceAutoSell: () => void;
+  toggleSpaceAutoSell: () => void;
+  unlockSpaceSmartPricing: () => void;
+  toggleSpaceSmartPricing: () => void;
+  spaceAutoSellTick: () => void;
   
   // Space upgrade purchase functions
   buySpaceUpgrade: (id: string, cost: number) => void;
@@ -183,6 +197,9 @@ interface GameStore extends GameState {
   setParticleIntensity: (intensity: number) => void;
   toggleClickAnimations: () => void;
   toggleFloatingText: () => void;
+  
+  // Play time tracking
+  updatePlayTime: () => void;
 }
 
 // Use type assertion to work around zustand persist typing issue
@@ -209,11 +226,19 @@ const useGameStore = create<GameStore>(
       money: 0, // Start with $0 (changed from $50)
       wire: 1000, // Start with 1000 wire
       yomi: 0, // Yomi resource
+      diamonds: 0, // Premium currency
+      totalDiamondsSpent: 0,
+      totalDiamondsPurchased: 0,
+      premiumUpgrades: [] as string[], // Purchased premium upgrades
+      activePlayTime: 0,
+      lastDiamondRewardTime: 0,
       
       // Advanced Resources
       trust: 0,
       trustLevel: 0,
       nextTrustAt: 100000,
+      totalAerogradePaperclips: 0,
+      nextAerogradeTrustAt: 10000000000, // 10 billion
       purchasedTrustLevels: [], // Track which trust levels have been purchased
       unlockedTrustAbilities: [], // Track unlocked trust abilities
       ops: 50, // Increased from 10 to 50 (50 OPs per memory)
@@ -229,7 +254,8 @@ const useGameStore = create<GameStore>(
         selfReplication: 1,
         wireProduction: 1,
         miningProduction: 1,
-        factoryProduction: 1
+        factoryProduction: 1,
+        hazardEvasion: 1
       },
       // Space Age Resources
       probes: 0,
@@ -281,6 +307,9 @@ const useGameStore = create<GameStore>(
       creativityBonus: 1,
       costReductionBonus: 1,
       diplomacyBonus: 1,
+      wireProductionBonus: 1,
+      factoryProductionBonus: 1,
+      oreProductionBonus: 1,
       miningEfficiency: 1,
       droneEfficiency: 1,
       factoryEfficiency: 1,
@@ -349,6 +378,26 @@ const useGameStore = create<GameStore>(
       minDemand: 1,
       marketDemandLevel: 1,
       marketDemandUpgradeCost: 200,
+      
+      // Space Market
+      spaceMarketDemand: 100,
+      spaceMarketMaxDemand: 500,
+      spaceMarketMinDemand: 10,
+      spacePaperclipPrice: 0.50,
+      spaceAerogradePrice: 50.00,
+      spaceOrePrice: 5.00,
+      spaceWirePrice: 10.00,
+      spaceMarketTrend: 0,
+      spaceMarketVolatility: 0.20,
+      spacePaperclipsSold: 0,
+      spaceAerogradeSold: 0,
+      spaceOreSold: 0,
+      spaceWireSold: 0,
+      spaceTotalSales: 0,
+      spaceAutoSellEnabled: false,
+      spaceAutoSellUnlocked: false,
+      spaceSmartPricingEnabled: false,
+      spaceSmartPricingUnlocked: false,
       
       // Research
       researchPoints: 0,
@@ -670,6 +719,13 @@ const useGameStore = create<GameStore>(
           // First handle auto wire buying if enabled and wire is low
           let updatedState = { ...state };
           
+          // Handle passive income from space upgrades and premium upgrades
+          if (state.passiveIncomeRate > 0 || (state.premiumUpgrades && state.premiumUpgrades.includes('time_warp'))) {
+            // Space passive income is per second, so divide by 10 for tick rate
+            const spacePassiveIncome = (state.passiveIncomeRate || 0) / 10;
+            updatedState.money = updatedState.money + spacePassiveIncome;
+          }
+          
           // Auto wire buyer: buy wire when below 10% capacity
           if (state.autoWireBuyer && state.wire < state.wirePerSpool * 0.1 && state.money >= state.spoolCost) {
             // Update purchase count and time for dynamic pricing - same logic as buyWireSpool
@@ -705,9 +761,26 @@ const useGameStore = create<GameStore>(
           }
 
           // Calculate how many paperclips could be produced in this tick
-          // Apply production multiplier (base + OPs bonus + prestige bonus) to the base rate
+          // Apply production multiplier (base + OPs bonus + prestige bonus + premium upgrades) to the base rate
           const prestigeProductionMultiplier = state.prestigeRewards?.productionMultiplier || 1;
-          const totalMultiplier = (state.productionMultiplier + (state.opsProductionMultiplier || 0)) * prestigeProductionMultiplier;
+          
+          // Check for diamond clipper premium upgrade
+          // Calculate premium multipliers with stacking support
+          let premiumMultiplier = 1;
+          
+          // Diamond clippers (1000x per purchase, stacking)
+          const diamondClippersCount = (state.premiumUpgrades || []).filter((id: string) => id === 'diamond_clippers').length;
+          if (diamondClippersCount > 0) {
+            premiumMultiplier *= Math.pow(1000, diamondClippersCount);
+          }
+          
+          // Quantum factory (2x per purchase, stacking)
+          const quantumFactoryCount = (state.premiumUpgrades || []).filter((id: string) => id === 'quantum_factory').length;
+          if (quantumFactoryCount > 0) {
+            premiumMultiplier *= Math.pow(2, quantumFactoryCount);
+          }
+          
+          const totalMultiplier = (state.productionMultiplier + (state.opsProductionMultiplier || 0)) * prestigeProductionMultiplier * premiumMultiplier;
           // tick runs 10 times per second, so divide by 10 to get production per tick
           const potentialProduction = (state.clicks_per_second * totalMultiplier) / 10;
           
@@ -1029,9 +1102,46 @@ const useGameStore = create<GameStore>(
 
       // Game state management functions
       setGameState: (gameState: GameState) => {
+        // First, validate and correct the incoming state
+        const validatedState = StateValidator.validateAndCorrect(gameState);
+        
+        // Then restore critical values if needed
+        const restoredState = criticalStateManager.restoreToState(validatedState);
+        gameState = restoredState as GameState;
+        // Log diamond changes
+        const currentState = get();
+        if (gameState.diamonds !== undefined && gameState.diamonds !== currentState.diamonds) {
+          console.log('[GameStore] DIAMOND CHANGE DETECTED:');
+          console.log('  Current diamonds:', currentState.diamonds);
+          console.log('  New diamonds:', gameState.diamonds);
+          console.log('  Stack trace:', new Error().stack);
+        }
+        
         // Ensure highFrequencyTradingLevel has a default value if not present
         if (gameState.highFrequencyTradingLevel === undefined) {
           gameState.highFrequencyTradingLevel = 0;
+        }
+        
+        // Ensure CPU and memory values are never 0 or undefined
+        if (!gameState.cpuLevel || gameState.cpuLevel === 0) {
+          console.log('[GameStore] WARNING: cpuLevel was', gameState.cpuLevel, '- setting to 1');
+          gameState.cpuLevel = 1;
+        }
+        if (!gameState.cpuCost || gameState.cpuCost === 0) {
+          gameState.cpuCost = 25;
+        }
+        if (!gameState.memory || gameState.memory === 0) {
+          console.log('[GameStore] WARNING: memory was', gameState.memory, '- setting to 1');
+          gameState.memory = 1;
+        }
+        if (!gameState.memoryMax || gameState.memoryMax === 0) {
+          gameState.memoryMax = 1;
+        }
+        if (!gameState.memoryCost || gameState.memoryCost === 0) {
+          gameState.memoryCost = 10;
+        }
+        if (!gameState.memoryRegenRate || gameState.memoryRegenRate === 0) {
+          gameState.memoryRegenRate = 1;
         }
         
         // Convert all date fields using our helper function
@@ -1058,9 +1168,27 @@ const useGameStore = create<GameStore>(
           });
         }
         
+        // Update critical state manager with new values
+        criticalStateManager.update({
+          cpuLevel: gameState.cpuLevel,
+          cpuCost: gameState.cpuCost,
+          memory: gameState.memory,
+          memoryMax: gameState.memoryMax,
+          memoryCost: gameState.memoryCost,
+          memoryRegenRate: gameState.memoryRegenRate
+        });
+        
         return set(() => ({ ...gameState }));
       },
-      setUserId: (userId: string | null) => set(() => ({ userId })),
+      setUserId: (userId: string | null) => {
+        console.log('[GameStore] Setting userId:', userId);
+        const currentState = get();
+        console.log('[GameStore] Current CPU/Memory before userId change:', {
+          cpuLevel: currentState.cpuLevel,
+          memory: currentState.memory
+        });
+        set(() => ({ userId }));
+      },
       setAuthenticated: (isAuthenticated: boolean) => set(() => ({ isAuthenticated })),
       setLoading: (isLoading: boolean) => set(() => ({ isLoading })),
 
@@ -1088,6 +1216,32 @@ const useGameStore = create<GameStore>(
             floatingText: !state.visualFX.floatingText 
           } 
         })),
+        
+      // Play time tracking and diamond rewards
+      updatePlayTime: () => {
+        const state = get();
+        const newPlayTime = state.activePlayTime + 0.1; // Add 0.1 seconds per tick (100ms)
+        
+        // Check if 10 minutes (600 seconds) have passed since last reward
+        const timeSinceLastReward = newPlayTime - state.lastDiamondRewardTime;
+        
+        if (timeSinceLastReward >= 600) {
+          // Give 10 diamonds
+          set({
+            activePlayTime: newPlayTime,
+            lastDiamondRewardTime: newPlayTime,
+            diamonds: state.diamonds + 10
+          });
+          
+          // Log the reward
+          console.log('[DIAMOND REWARD] Player received 10 diamonds for 10 minutes of play time');
+        } else {
+          // Just update play time
+          set({
+            activePlayTime: newPlayTime
+          });
+        }
+      },
         
       // Navigation
       setCurrentPage: (page: string) => 
@@ -2903,6 +3057,13 @@ const useGameStore = create<GameStore>(
           opsMax: newOpsMax
         });
         
+        // Update critical state manager
+        criticalStateManager.update({
+          cpuLevel: newLevel,
+          cpuCost: newCost,
+          memoryRegenRate: newRegenRate
+        });
+        
         // Verify state was updated correctly
         const updatedState = get();
         
@@ -2976,6 +3137,13 @@ const useGameStore = create<GameStore>(
           memory: Math.min(state.memory, newMemoryMax), // Cap current memory at new max
           memoryCost: newCost,
           opsMax: newOpsMax
+        });
+        
+        // Update critical state manager
+        criticalStateManager.update({
+          memory: Math.min(state.memory, newMemoryMax),
+          memoryMax: newMemoryMax,
+          memoryCost: newCost
         });
         
         // Verify state was updated correctly
@@ -3498,15 +3666,30 @@ const useGameStore = create<GameStore>(
       // OPs tick - generates OPs based on memory and CPU and scales production multiplier
       opsTick: () => 
         set((state: GameState) => {
+          let totalOpsToGenerate = 0;
+          
           // Generate OPs by consuming memory slowly
           if (state.memory >= 0.1 && state.ops < state.opsMax) {
             // Consume 0.1 memory per tick (1 memory per second)
             const memoryToConsume = Math.min(state.memory, 0.1);
-            const opsToGenerate = memoryToConsume * 50; // 50 OPs per memory
+            const opsFromMemory = memoryToConsume * 50; // 50 OPs per memory
+            totalOpsToGenerate += opsFromMemory;
+          }
+          
+          // Add passive OPs generation from space upgrades
+          if (state.opsGenerationRate > 0 && state.ops < state.opsMax) {
+            // opsGenerationRate is per second, so divide by 10 since this runs 10 times per second
+            const passiveOpsGeneration = state.opsGenerationRate / 10;
+            totalOpsToGenerate += passiveOpsGeneration;
+          }
+          
+          // Only update if we're generating OPs
+          if (totalOpsToGenerate > 0) {
+            const memoryToConsume = state.memory >= 0.1 ? Math.min(state.memory, 0.1) : 0;
             
             // Update memory and OPs
             const newMemory = state.memory - memoryToConsume;
-            const newOps = Math.min(state.ops + opsToGenerate, state.opsMax);
+            const newOps = Math.min(state.ops + totalOpsToGenerate, state.opsMax);
           
             // Calculate OPs contribution to production multiplier (scales linearly)
             // At 5,000 OPs, the OPs contribution adds 50 to the multiplier (much better scaling)
@@ -3529,10 +3712,12 @@ const useGameStore = create<GameStore>(
               // Generate 0.1 creativity per second when OPs are maxed
               newCreativity += 0.01; // 0.1/10 because this runs 10 times per second
               
-              // Generate yomi when OPs are full - rate based on memory and CPU level
-              const yomiRate = (state.memory + state.cpuLevel) * 0.005 / 10; // Divide by 10 because this runs 10 times per second
-              console.log(`[YOMI opsTick] OPs full (${newOps}/${state.opsMax}), generating ${yomiRate.toFixed(4)} yomi/tick`);
-              newYomi += yomiRate;
+              // Generate yomi when OPs are full and CPU level is high enough
+              if (state.cpuLevel >= 30 || state.spaceAgeUnlocked) {
+                const yomiRate = state.cpuLevel * 0.01; // 0.01 per tick = 0.1 per second
+                console.log(`[YOMI opsTick] OPs full (${newOps}/${state.opsMax}), generating ${yomiRate.toFixed(4)} yomi/tick (CPU:${state.cpuLevel})`);
+                newYomi += yomiRate;
+              }
               
               // Unlock creativity if we have enough OPs capacity (changed from 20000 to 5000)
               const creativityUnlocked = state.creativityUnlocked || state.opsMax >= 5000;
@@ -3606,7 +3791,23 @@ const useGameStore = create<GameStore>(
             const currentWire = batchedUpdates.wire || state.wire;
             if (currentWire > 0) {
               const prestigeProductionMultiplier = state.prestigeRewards?.productionMultiplier || 1;
-              const totalMultiplier = (state.productionMultiplier + (state.opsProductionMultiplier || 0)) * prestigeProductionMultiplier;
+              
+              // Calculate premium multipliers with stacking support
+              let premiumMultiplier = 1;
+              
+              // Diamond clippers (1000x per purchase, stacking)
+              const diamondClippersCount = (state.premiumUpgrades || []).filter((id: string) => id === 'diamond_clippers').length;
+              if (diamondClippersCount > 0) {
+                premiumMultiplier *= Math.pow(1000, diamondClippersCount);
+              }
+              
+              // Quantum factory (2x per purchase, stacking)
+              const quantumFactoryCount = (state.premiumUpgrades || []).filter((id: string) => id === 'quantum_factory').length;
+              if (quantumFactoryCount > 0) {
+                premiumMultiplier *= Math.pow(2, quantumFactoryCount);
+              }
+              
+              const totalMultiplier = (state.productionMultiplier + (state.opsProductionMultiplier || 0)) * prestigeProductionMultiplier * premiumMultiplier;
               const potentialProduction = (state.clicks_per_second * totalMultiplier) / 10;
               const wireEfficiency = state.prestigeRewards?.wireEfficiency || 1;
               const actualProduction = Math.min(potentialProduction, currentWire * wireEfficiency);
@@ -3654,6 +3855,16 @@ const useGameStore = create<GameStore>(
               const postState = get();
               console.log(`POST-SPACE TICK: Energy ${postState.energy}, Ore ${postState.spaceOre}, Wire ${postState.spaceWire}`);
             }
+            
+            // Update space market prices and demand
+            if (typeof get().updateSpaceMarket === 'function') {
+              get().updateSpaceMarket();
+            }
+            
+            // Run auto-sell if enabled
+            if (typeof get().spaceAutoSellTick === 'function') {
+              get().spaceAutoSellTick();
+            }
           } catch (error) {
             console.error('Error in space tick:', error);
           }
@@ -3688,10 +3899,10 @@ const useGameStore = create<GameStore>(
         
         // Generate yomi and creativity when OPs are full
         const currentOps = batchedUpdates.ops !== undefined ? batchedUpdates.ops : state.ops;
-        if (currentOps >= state.opsMax) {
-          // Generate yomi when OPs are full - rate based on memory and CPU level
-          const yomiRate = (state.memory + state.cpuLevel) * 0.005 / 10; // Divide by 10 because this runs 10 times per second
-          console.log(`[YOMI] OPs full (${currentOps}/${state.opsMax}), generating ${yomiRate.toFixed(4)} yomi/tick (${(yomiRate * 10).toFixed(3)}/sec)`);
+        if (currentOps >= state.opsMax && (state.cpuLevel >= 30 || state.spaceAgeUnlocked)) {
+          // Generate yomi when OPs are full - based on CPU level
+          const yomiRate = state.cpuLevel * 0.01; // 0.01 per tick = 0.1 per second (since tick runs 10x/sec)
+          console.log(`[YOMI] OPs full (${currentOps}/${state.opsMax}), generating ${yomiRate.toFixed(4)} yomi/tick (${(yomiRate * 10).toFixed(3)}/sec) CPU:${state.cpuLevel}`);
           batchedUpdates.yomi = (state.yomi || 0) + yomiRate;
           
           // Generate creativity if creativity is unlocked
@@ -3756,6 +3967,9 @@ const useGameStore = create<GameStore>(
           }
         }
         
+        // Update play time and check for diamond rewards
+        get().updatePlayTime();
+        
         // Apply all batched updates at once
         if (Object.keys(batchedUpdates).length > 0) {
           set(batchedUpdates);
@@ -3785,6 +3999,12 @@ const useGameStore = create<GameStore>(
           prestigePoints += spaceBonus;
         }
         
+        // Apply prestige boost multiplier from premium upgrades (2x per purchase, stacking)
+        const prestigeBoostCount = (state.premiumUpgrades || []).filter((id: string) => id === 'prestige_boost').length;
+        if (prestigeBoostCount > 0) {
+          prestigePoints *= Math.pow(2, prestigeBoostCount);
+        }
+        
         // Min 1 point if they have at least 1 million total value
         if (totalValue >= 1000000 && prestigePoints < 1) {
           prestigePoints = 1;
@@ -3795,6 +4015,14 @@ const useGameStore = create<GameStore>(
       
       prestigeReset: () => {
         const state = get();
+        
+        // Check if player has 100 million aerograde paperclips
+        const aerogradePaperclips = state.aerogradePaperclips || 0;
+        if (aerogradePaperclips < 100000000) { // 100 million
+          console.log(`[PRESTIGE] Not enough aerograde paperclips: ${aerogradePaperclips} / 100,000,000`);
+          return false;
+        }
+        
         const currentPoints = state.calculatePrestigePoints();
         
         if (currentPoints <= 0) {
@@ -3804,16 +4032,16 @@ const useGameStore = create<GameStore>(
         // Calculate total lifetime paperclips
         const lifetimePaperclips = (state.lifetimePaperclips || 0) + state.paperclips;
         
-        // Calculate total prestige points
-        const totalPrestigePoints = (state.prestigePoints || 0) + currentPoints;
+        // Reset prestige points to 0 (as this is a "reset everything" function)
+        const resetPrestigePoints = 0;
         
-        // Increment prestige level
+        // Always increment prestige level when resetting with 100M aerograde paperclips
         const newPrestigeLevel = (state.prestigeLevel || 0) + 1;
         
         // Save prestige data before reset
         set({
           prestigeLevel: newPrestigeLevel,
-          prestigePoints: totalPrestigePoints,
+          prestigePoints: resetPrestigePoints,
           lifetimePaperclips: lifetimePaperclips
         });
         
@@ -3841,16 +4069,16 @@ const useGameStore = create<GameStore>(
       
       applyPrestigeRewards: () => {
         const state = get();
-        const points = state.prestigePoints || 0;
+        const level = state.prestigeLevel || 0;
         
-        // Calculate rewards based on total prestige points
-        // These formulas can be adjusted for game balance
+        // Calculate rewards based on prestige level (not points)
+        // This ensures bonuses persist even when points reset to 0
         const newRewards = {
-          productionMultiplier: 1 + (points * 0.2),  // Each point gives +20% production
-          researchMultiplier: 1 + (points * 0.1),    // Each point gives +10% research
-          wireEfficiency: 1 + (points * 0.05),       // Each point gives +5% wire efficiency
-          startingMoney: points * 50,                // $50 starting money per point
-          clickMultiplier: 1 + (points * 0.1)        // Each point gives +10% click production
+          productionMultiplier: 1 + (level * 0.002),  // Each level gives +0.2% production (reduced by 100x)
+          researchMultiplier: 1 + (level * 0.001),    // Each level gives +0.1% research (reduced by 100x)
+          wireEfficiency: 1 + (level * 0.0005),       // Each level gives +0.05% wire efficiency (reduced by 100x)
+          startingMoney: level * 50,                  // $50 starting money per level (unchanged)
+          clickMultiplier: 1 + (level * 0.001)       // Each level gives +0.1% click production (reduced by 100x)
         };
         
         
@@ -3882,6 +4110,12 @@ const useGameStore = create<GameStore>(
           money: (state.prestigeRewards?.startingMoney || 0), // Apply starting money from prestige
           wire: 1000, // Start with 1000 wire
           yomi: 0, // Reset yomi
+          
+          // Preserve premium currency and purchases
+          diamonds: state.diamonds || 0,
+          totalDiamondsSpent: state.totalDiamondsSpent || 0,
+          totalDiamondsPurchased: state.totalDiamondsPurchased || 0,
+          premiumUpgrades: state.premiumUpgrades || [],
           
           // Unlockable Features
           metricsUnlocked: false,
@@ -3959,10 +4193,12 @@ const useGameStore = create<GameStore>(
           
           // Advanced Resources
           trust: state.prestigeLevel || 0, // Start with 1 trust per prestige level
-          trustLevel: 0,
+          trustLevel: state.trustLevel || 0, // Preserve trust level
           nextTrustAt: 100000,
-          unlockedTrustAbilities: [],
-          purchasedTrustLevels: [],
+          totalAerogradePaperclips: 0,
+          nextAerogradeTrustAt: 10000000000, // 10 billion
+          unlockedTrustAbilities: state.unlockedTrustAbilities || [], // Preserve trust abilities
+          purchasedTrustLevels: state.purchasedTrustLevels || [], // Preserve purchased trust levels
           ops: 50, // Increased from 10 to 50 (50 OPs per memory)
           opsMax: 50, // Increased from 10 to 50 (50 OPs per memory)
           creativity: 0,
@@ -4002,6 +4238,72 @@ const useGameStore = create<GameStore>(
     }),
     {
       name: (state: GameState) => `paperclip-game-storage-${state.userId || 'guest'}`,
+      merge: (persistedState: any, currentState: any) => {
+        console.log('[GameStore] Merge called - persisted CPU/Memory:', {
+          cpuLevel: persistedState?.cpuLevel,
+          memory: persistedState?.memory
+        });
+        
+        // Ensure critical values from persisted state are preserved
+        const merged = { ...currentState, ...persistedState };
+        
+        // Never allow CPU/memory to be 0 during merge
+        if (merged.cpuLevel === 0 || !merged.cpuLevel) {
+          merged.cpuLevel = persistedState?.cpuLevel || currentState.cpuLevel || 1;
+        }
+        if (merged.memory === 0 || !merged.memory) {
+          merged.memory = persistedState?.memory || currentState.memory || 1;
+        }
+        
+        return merged;
+      },
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('[GameStore] Hydration error:', error);
+        } else if (state) {
+          console.log('[GameStore] Hydrated state - CPU/Memory:', {
+            cpuLevel: state.cpuLevel,
+            cpuCost: state.cpuCost,
+            memory: state.memory,
+            memoryMax: state.memoryMax,
+            memoryCost: state.memoryCost
+          });
+          
+          // Check if we have preserved state to restore from critical state manager
+          const preserved = criticalStateManager.get();
+          if (preserved && (!state.cpuLevel || state.cpuLevel === 1) && preserved.cpuLevel > 1) {
+            console.log('[GameStore] Restoring preserved CPU/Memory state:', preserved);
+            state.cpuLevel = preserved.cpuLevel;
+            state.cpuCost = preserved.cpuCost;
+            state.memory = preserved.memory;
+            state.memoryMax = preserved.memoryMax;
+            state.memoryCost = preserved.memoryCost;
+            state.memoryRegenRate = preserved.memoryRegenRate;
+          }
+          
+          // Ensure CPU and memory are never 0 after hydration
+          if (!state.cpuLevel || state.cpuLevel === 0) {
+            console.warn('[GameStore] Fixing cpuLevel after hydration');
+            state.cpuLevel = 1;
+          }
+          if (!state.cpuCost || state.cpuCost === 0) {
+            state.cpuCost = 25;
+          }
+          if (!state.memory || state.memory === 0) {
+            console.warn('[GameStore] Fixing memory after hydration');
+            state.memory = 1;
+          }
+          if (!state.memoryMax || state.memoryMax === 0) {
+            state.memoryMax = 1;
+          }
+          if (!state.memoryCost || state.memoryCost === 0) {
+            state.memoryCost = 10;
+          }
+          if (!state.memoryRegenRate || state.memoryRegenRate === 0) {
+            state.memoryRegenRate = 1;
+          }
+        }
+      },
       partialize: (state: GameState) => ({
         // User identification (included so userId is part of persisted state)
         userId: state.userId,
@@ -4018,6 +4320,14 @@ const useGameStore = create<GameStore>(
         money: state.money,
         wire: state.wire,
         yomi: state.yomi,
+        
+        // Diamond system - MUST be persisted
+        diamonds: state.diamonds,
+        totalDiamondsSpent: state.totalDiamondsSpent,
+        totalDiamondsPurchased: state.totalDiamondsPurchased,
+        premiumUpgrades: state.premiumUpgrades,
+        activePlayTime: state.activePlayTime,
+        lastDiamondRewardTime: state.lastDiamondRewardTime,
         
         // Unlockable Features
         metricsUnlocked: state.metricsUnlocked,
@@ -4098,6 +4408,8 @@ const useGameStore = create<GameStore>(
         trust: state.trust,
         trustLevel: state.trustLevel,
         nextTrustAt: state.nextTrustAt,
+        totalAerogradePaperclips: state.totalAerogradePaperclips,
+        nextAerogradeTrustAt: state.nextAerogradeTrustAt,
         unlockedTrustAbilities: state.unlockedTrustAbilities,
         ops: state.ops,
         opsMax: state.opsMax,
@@ -4146,6 +4458,9 @@ const useGameStore = create<GameStore>(
         creativityBonus: state.creativityBonus,
         costReductionBonus: state.costReductionBonus,
         diplomacyBonus: state.diplomacyBonus,
+        wireProductionBonus: state.wireProductionBonus,
+        factoryProductionBonus: state.factoryProductionBonus,
+        oreProductionBonus: state.oreProductionBonus,
         miningEfficiency: state.miningEfficiency,
         droneEfficiency: state.droneEfficiency,
         factoryEfficiency: state.factoryEfficiency,
@@ -4163,6 +4478,27 @@ const useGameStore = create<GameStore>(
         energy: state.energy,
         maxEnergy: state.maxEnergy,
         energyPerSecond: state.energyPerSecond,
+        energyConsumedPerSecond: state.energyConsumedPerSecond,
+        
+        // Space Market
+        spaceMarketDemand: state.spaceMarketDemand,
+        spaceMarketMaxDemand: state.spaceMarketMaxDemand,
+        spaceMarketMinDemand: state.spaceMarketMinDemand,
+        spacePaperclipPrice: state.spacePaperclipPrice,
+        spaceAerogradePrice: state.spaceAerogradePrice,
+        spaceOrePrice: state.spaceOrePrice,
+        spaceWirePrice: state.spaceWirePrice,
+        spacePaperclipsSold: state.spacePaperclipsSold,
+        spaceAerogradeSold: state.spaceAerogradeSold,
+        spaceOreSold: state.spaceOreSold,
+        spaceWireSold: state.spaceWireSold,
+        spaceTotalSales: state.spaceTotalSales,
+        spaceMarketTrend: state.spaceMarketTrend,
+        spaceMarketVolatility: state.spaceMarketVolatility,
+        spaceAutoSellEnabled: state.spaceAutoSellEnabled,
+        spaceAutoSellUnlocked: state.spaceAutoSellUnlocked,
+        spaceSmartPricingEnabled: state.spaceSmartPricingEnabled,
+        spaceSmartPricingUnlocked: state.spaceSmartPricingUnlocked,
         
         opsProductionMultiplier: state.opsProductionMultiplier,
         

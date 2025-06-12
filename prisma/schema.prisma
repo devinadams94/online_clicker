@@ -118,10 +118,10 @@ model GameState {
   stockPriceHistory          String   @default("{}")
   portfolioValue             Float    @default(0)
   cpuLevel                   Int      @default(1)
-  cpuCost                    Float    @default(100)
+  cpuCost                    Float    @default(25)
   memory                     Float    @default(1)
   memoryMax                  Float    @default(1)
-  memoryCost                 Float    @default(100)
+  memoryCost                 Float    @default(10)
   memoryRegenRate            Float    @default(1)
   trust                      Float    @default(0)
   trustLevel                 Int      @default(0)
@@ -191,6 +191,12 @@ model GameState {
   energy                     Float    @default(0)
   maxEnergy                  Float    @default(0)
   energyPerSecond            Float    @default(0)
+  
+  // Diamond/Token System fields
+  diamonds                   Float    @default(0)
+  totalDiamondsSpent         Float    @default(0)
+  totalDiamondsPurchased     Float    @default(0)
+  premiumUpgrades            String   @default("[]")
   
   lastSaved                  DateTime @default(now())
   lastPriceUpdate            DateTime @default(now())

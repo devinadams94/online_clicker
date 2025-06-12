@@ -1,4 +1,5 @@
 import '@/styles/globals.css';
+import '@/lib/setup'; // Initialize global settings
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/components/auth/AuthProvider';

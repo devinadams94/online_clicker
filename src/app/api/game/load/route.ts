@@ -208,6 +208,20 @@ export async function GET() {
       parsedSpaceUpgrades = [];
     }
     
+    // Parse premium upgrades
+    let parsedPremiumUpgrades: string[] = [];
+    try {
+      if (gameState.premiumUpgrades) {
+        const parsed = JSON.parse(gameState.premiumUpgrades);
+        if (Array.isArray(parsed)) {
+          // Don't use Set - we want to keep duplicates for repurchasable upgrades
+          parsedPremiumUpgrades = parsed;
+        }
+      }
+    } catch (err) {
+      parsedPremiumUpgrades = [];
+    }
+    
     // Ensure critical values are never null or undefined
     const safeGameState = {
       ...gameState,
@@ -262,9 +276,66 @@ export async function GET() {
       // Space upgrades
       unlockedSpaceUpgrades: parsedSpaceUpgrades,
       
+      // Diamond system
+      diamonds: gameState.diamonds || 0,
+      totalDiamondsSpent: gameState.totalDiamondsSpent || 0,
+      totalDiamondsPurchased: gameState.totalDiamondsPurchased || 0,
+      premiumUpgrades: parsedPremiumUpgrades,
+      
+      // Player Stats (CPU and Memory)
+      cpuLevel: gameState.cpuLevel && gameState.cpuLevel > 0 ? gameState.cpuLevel : 1,
+      cpuCost: gameState.cpuCost && gameState.cpuCost > 0 ? gameState.cpuCost : 25,
+      memory: gameState.memory && gameState.memory > 0 ? gameState.memory : 1,
+      memoryMax: gameState.memoryMax && gameState.memoryMax > 0 ? gameState.memoryMax : 1,
+      memoryCost: gameState.memoryCost && gameState.memoryCost > 0 ? gameState.memoryCost : 10,
+      memoryRegenRate: gameState.memoryRegenRate && gameState.memoryRegenRate > 0 ? gameState.memoryRegenRate : 1,
+      
+      // Space Market
+      spaceMarketDemand: gameState.spaceMarketDemand || 100,
+      spaceMarketMaxDemand: gameState.spaceMarketMaxDemand || 500,
+      spaceMarketMinDemand: gameState.spaceMarketMinDemand || 10,
+      spacePaperclipPrice: gameState.spacePaperclipPrice || 0.50,
+      spaceAerogradePrice: gameState.spaceAerogradePrice || 50.00,
+      spaceOrePrice: gameState.spaceOrePrice || 5.00,
+      spaceWirePrice: gameState.spaceWirePrice || 10.00,
+      spacePaperclipsSold: gameState.spacePaperclipsSold || 0,
+      spaceAerogradeSold: gameState.spaceAerogradeSold || 0,
+      spaceOreSold: gameState.spaceOreSold || 0,
+      spaceWireSold: gameState.spaceWireSold || 0,
+      spaceTotalSales: gameState.spaceTotalSales || 0,
+      spaceMarketTrend: gameState.spaceMarketTrend || 0,
+      spaceMarketVolatility: gameState.spaceMarketVolatility || 0.20,
+      energyConsumedPerSecond: gameState.energyConsumedPerSecond || 0,
+      spaceAutoSellEnabled: gameState.spaceAutoSellEnabled || false,
+      spaceAutoSellUnlocked: gameState.spaceAutoSellUnlocked || false,
+      spaceSmartPricingEnabled: gameState.spaceSmartPricingEnabled || false,
+      spaceSmartPricingUnlocked: gameState.spaceSmartPricingUnlocked || false,
+      
+      // Play time tracking
+      activePlayTime: gameState.activePlayTime || 0,
+      lastDiamondRewardTime: gameState.lastDiamondRewardTime || 0,
+      
       // Highest run tracking
       highestRun: gameState.highestRun || 0
     };
+    
+    // Log diamond values being returned
+    console.log('[LOAD API] Loading game state for user:', session.user.id);
+    console.log('[LOAD API] Diamond values:', {
+      diamonds: safeGameState.diamonds,
+      totalDiamondsSpent: safeGameState.totalDiamondsSpent,
+      totalDiamondsPurchased: safeGameState.totalDiamondsPurchased,
+      rawDiamonds: gameState?.diamonds
+    });
+    console.log('[LOAD API] CPU/Memory values:', {
+      cpuLevel: safeGameState.cpuLevel,
+      cpuCost: safeGameState.cpuCost,
+      memory: safeGameState.memory,
+      memoryMax: safeGameState.memoryMax,
+      memoryCost: safeGameState.memoryCost,
+      rawCpuLevel: gameState?.cpuLevel,
+      rawMemory: gameState?.memory
+    });
     
     return NextResponse.json(safeGameState);
   } catch (error) {
