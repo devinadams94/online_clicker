@@ -290,30 +290,30 @@ export async function GET() {
       memoryCost: gameState.memoryCost && gameState.memoryCost > 0 ? gameState.memoryCost : 10,
       memoryRegenRate: gameState.memoryRegenRate && gameState.memoryRegenRate > 0 ? gameState.memoryRegenRate : 1,
       
-      // Space Market
-      spaceMarketDemand: gameState.spaceMarketDemand || 100,
-      spaceMarketMaxDemand: gameState.spaceMarketMaxDemand || 500,
-      spaceMarketMinDemand: gameState.spaceMarketMinDemand || 10,
-      spacePaperclipPrice: gameState.spacePaperclipPrice || 0.50,
-      spaceAerogradePrice: gameState.spaceAerogradePrice || 50.00,
-      spaceOrePrice: gameState.spaceOrePrice || 5.00,
-      spaceWirePrice: gameState.spaceWirePrice || 10.00,
-      spacePaperclipsSold: gameState.spacePaperclipsSold || 0,
-      spaceAerogradeSold: gameState.spaceAerogradeSold || 0,
-      spaceOreSold: gameState.spaceOreSold || 0,
-      spaceWireSold: gameState.spaceWireSold || 0,
-      spaceTotalSales: gameState.spaceTotalSales || 0,
-      spaceMarketTrend: gameState.spaceMarketTrend || 0,
-      spaceMarketVolatility: gameState.spaceMarketVolatility || 0.20,
-      energyConsumedPerSecond: gameState.energyConsumedPerSecond || 0,
-      spaceAutoSellEnabled: gameState.spaceAutoSellEnabled || false,
-      spaceAutoSellUnlocked: gameState.spaceAutoSellUnlocked || false,
-      spaceSmartPricingEnabled: gameState.spaceSmartPricingEnabled || false,
-      spaceSmartPricingUnlocked: gameState.spaceSmartPricingUnlocked || false,
+      // Space Market - TODO: Add these fields to Prisma schema
+      spaceMarketDemand: 100,
+      spaceMarketMaxDemand: 500,
+      spaceMarketMinDemand: 10,
+      spacePaperclipPrice: 0.50,
+      spaceAerogradePrice: 50.00,
+      spaceOrePrice: 5.00,
+      spaceWirePrice: 10.00,
+      spacePaperclipsSold: 0,
+      spaceAerogradeSold: 0,
+      spaceOreSold: 0,
+      spaceWireSold: 0,
+      spaceTotalSales: 0,
+      spaceMarketTrend: 0,
+      spaceMarketVolatility: 0.20,
+      energyConsumedPerSecond: 0,
+      spaceAutoSellEnabled: false,
+      spaceAutoSellUnlocked: false,
+      spaceSmartPricingEnabled: false,
+      spaceSmartPricingUnlocked: false,
       
-      // Play time tracking
-      activePlayTime: gameState.activePlayTime || 0,
-      lastDiamondRewardTime: gameState.lastDiamondRewardTime || 0,
+      // Play time tracking - TODO: Add these fields to Prisma schema
+      activePlayTime: 0,
+      lastDiamondRewardTime: 0,
       
       // Highest run tracking
       highestRun: gameState.highestRun || 0
@@ -336,6 +336,13 @@ export async function GET() {
       rawCpuLevel: gameState?.cpuLevel,
       rawMemory: gameState?.memory
     });
+    console.log('[LOAD API] Critical values:', {
+      paperclips: safeGameState.paperclips,
+      rawPaperclips: gameState?.paperclips,
+      money: safeGameState.money,
+      rawMoney: gameState?.money
+    });
+    
     console.log('[LOAD API] Space drone values:', {
       wireHarvesters: safeGameState.wireHarvesters,
       oreHarvesters: safeGameState.oreHarvesters,

@@ -2000,7 +2000,7 @@ export default function SpaceUpgradesPanel() {
               
               let currentCost = upgrade.cost;
               if (isRepeatable && purchaseCount > 0) {
-                currentCost = Math.floor(upgrade.cost * Math.pow(upgrade.costMultiplier || 2, purchaseCount));
+                currentCost = Math.floor(upgrade.cost * Math.pow((upgrade as any).costMultiplier || 2, purchaseCount));
               }
               
               const canAfford = (honor || 0) >= currentCost;
@@ -2025,7 +2025,7 @@ export default function SpaceUpgradesPanel() {
                             : 'bg-red-800 text-red-100'
                         } rounded-full`}>
                           {isRepeatable 
-                            ? (upgrade.repeatCountDisplay ? upgrade.repeatCountDisplay(purchaseCount) : `x${purchaseCount}`) 
+                            ? ((upgrade as any).repeatCountDisplay ? (upgrade as any).repeatCountDisplay(purchaseCount) : `x${purchaseCount}`) 
                             : 'Purchased'}
                         </span>
                       )}

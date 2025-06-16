@@ -729,7 +729,7 @@ export const addSpaceFunctions = (set: (_state: Partial<GameState>) => void, get
     // Wire should accumulate from production, then be consumed by paperclip production  
     // Final wire = starting wire + produced wire - consumed wire
     const newSpaceWire = Math.max(0, currentWire + actualWireProduced - wireConsumed);
-    const newAerograde = (state.aerogradePaperclips || 0) + actualPaperclipsProduced - 
+    let newAerograde = (state.aerogradePaperclips || 0) + actualPaperclipsProduced - 
       (resourcesHarvested && state.droneReplicationEnabled ? 
         ((newWireHarvesters - wireHarvestersNew) + (newOreHarvesters - oreHarvestersNew)) * 
         (state.droneReplicationCostPerDrone || 1000) : 0);

@@ -7,6 +7,7 @@ import { GameState, MarketData, Stock, StockHolding } from "@/types/game";
 import "@/types/typeFixJuly2025";
 import { criticalStateManager } from './criticalStateManager';
 import { StateValidator } from './stateValidator';
+import { gameStateProtection } from './gameStateProtection';
 import { 
   calculateDemand, 
   updateMarketTrend, 
@@ -1103,12 +1104,49 @@ const useGameStore = create<GameStore>(
 
       // Game state management functions
       setGameState: (gameState: GameState) => {
+        // Log space drone values on entry
+        console.log('[GameStore] setGameState called with critical values:', {
+          paperclips: gameState.paperclips,
+          money: gameState.money,
+          wire: gameState.wire,
+          wireHarvesters: gameState.wireHarvesters,
+          oreHarvesters: gameState.oreHarvesters,
+          factories: gameState.factories
+        });
+        
+        // Protect these values from being reset
+        gameStateProtection.protect({
+          paperclips: gameState.paperclips,
+          money: gameState.money,
+          wire: gameState.wire,
+          wirePerSpool: gameState.wirePerSpool,
+          spoolSizeLevel: gameState.spoolSizeLevel,
+          autoclippers: gameState.autoclippers,
+          totalPaperclipsMade: gameState.totalPaperclipsMade,
+          wireHarvesters: gameState.wireHarvesters,
+          oreHarvesters: gameState.oreHarvesters,
+          factories: gameState.factories
+        });
+        
         // First, validate and correct the incoming state
         const validatedState = StateValidator.validateAndCorrect(gameState);
         
         // Then restore critical values if needed
         const restoredState = criticalStateManager.restoreToState(validatedState);
         gameState = restoredState as GameState;
+        
+        // Log critical values after validation/restoration
+        console.log('[GameStore] After validation/restoration - critical values:', {
+          paperclips: gameState.paperclips,
+          money: gameState.money,
+          wire: gameState.wire,
+          wirePerSpool: gameState.wirePerSpool,
+          spoolSizeLevel: gameState.spoolSizeLevel,
+          wireHarvesters: gameState.wireHarvesters,
+          oreHarvesters: gameState.oreHarvesters,
+          factories: gameState.factories
+        });
+        
         // Log diamond changes
         const currentState = get();
         if (gameState.diamonds !== undefined && gameState.diamonds !== currentState.diamonds) {
@@ -4239,30 +4277,93 @@ const useGameStore = create<GameStore>(
     }),
     {
       name: (state: GameState) => `paperclip-game-storage-${state.userId || 'guest'}`,
+      skipHydration: true, // Skip auto hydration - we'll do it manually after auth
       merge: (persistedState: any, currentState: any) => {
-        console.log('[GameStore] Merge called - persisted CPU/Memory:', {
-          cpuLevel: persistedState?.cpuLevel,
-          memory: persistedState?.memory
+        console.log('[GameStore] === MERGE CALLED ===');
+        console.log('[GameStore] Call stack:', new Error().stack?.split('\n').slice(1, 5).join('\n'));
+        
+        // Log both states in detail
+        console.log('[GameStore] Current state:', {
+          paperclips: currentState?.paperclips,
+          money: currentState?.money,
+          wire: currentState?.wire,
+          userId: currentState?.userId,
+          isLoading: currentState?.isLoading,
+          isAuthenticated: currentState?.isAuthenticated
+        });
+        console.log('[GameStore] Persisted state:', {
+          paperclips: persistedState?.paperclips,
+          money: persistedState?.money,
+          wire: persistedState?.wire,
+          userId: persistedState?.userId
         });
         
-        // Ensure critical values from persisted state are preserved
+        // CRITICAL: If API data was just loaded, don't merge localStorage
+        if (typeof window !== 'undefined' && (window as any).__apiDataLoaded) {
+          console.log('[GameStore] API data was just loaded - skipping localStorage merge');
+          delete (window as any).__apiDataLoaded;
+          return currentState;
+        }
+        
+        // If no persisted state, use current state
+        if (!persistedState) {
+          console.log('[GameStore] No persisted state found - using current state');
+          return currentState;
+        }
+        
+        // CRITICAL: Don't merge if current state has API data (non-zero values)
+        // and persisted state would reset them to 0
+        const hasApiData = currentState.paperclips > 0 || currentState.money > 0 || 
+                          currentState.autoclippers > 0 || currentState.totalPaperclipsMade > 0;
+        const persistedWouldReset = persistedState.paperclips === 0 && persistedState.money === 0;
+        
+        if (hasApiData && persistedWouldReset) {
+          console.log('[GameStore] Current state has API data, persisted state would reset - keeping current');
+          return currentState;
+        }
+        
+        // If userId mismatch, use current state (prevents loading wrong user's data)
+        if (persistedState.userId && currentState.userId && persistedState.userId !== currentState.userId) {
+          console.log('[GameStore] User ID mismatch - using current state');
+          return currentState;
+        }
+        
+        // Merge persisted state with current state
+        // Persisted state takes precedence for saved values
         const merged = { ...currentState, ...persistedState };
         
-        // Never allow CPU/memory to be 0 during merge
-        if (merged.cpuLevel === 0 || !merged.cpuLevel) {
-          merged.cpuLevel = persistedState?.cpuLevel || currentState.cpuLevel || 1;
+        // Keep current state's loading flags and functions
+        merged.isLoading = currentState.isLoading;
+        merged.isAuthenticated = currentState.isAuthenticated;
+        
+        // Never allow critical values to be 0 during merge if current state has values
+        if (currentState.paperclips > 0 && merged.paperclips === 0) {
+          console.warn('[GameStore] Merge would reset paperclips - keeping current value');
+          merged.paperclips = currentState.paperclips;
         }
-        if (merged.memory === 0 || !merged.memory) {
-          merged.memory = persistedState?.memory || currentState.memory || 1;
+        if (currentState.money > 0 && merged.money === 0) {
+          console.warn('[GameStore] Merge would reset money - keeping current value');
+          merged.money = currentState.money;
         }
+        
+        console.log('[GameStore] Merge result:', {
+          paperclips: merged.paperclips,
+          money: merged.money,
+          wire: merged.wire,
+          decision: hasApiData && persistedWouldReset ? 'kept-current' : 'merged'
+        });
         
         return merged;
       },
-      onRehydrateStorage: () => (state, error) => {
+      onRehydrateStorage: () => (state: GameStore | undefined, error: any) => {
         if (error) {
           console.error('[GameStore] Hydration error:', error);
         } else if (state) {
-          console.log('[GameStore] Hydrated state - CPU/Memory:', {
+          console.log('[GameStore] Hydrated state - Critical values:', {
+            paperclips: state.paperclips,
+            money: state.money,
+            wire: state.wire,
+            userId: state.userId,
             cpuLevel: state.cpuLevel,
             cpuCost: state.cpuCost,
             memory: state.memory,

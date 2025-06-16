@@ -35,8 +35,20 @@ export async function POST(req: Request) {
       }
     }
     
+    // Ensure userId is a string
+    const userIdString = String(session.user.id);
+    
+    // Validate userId
+    if (!userIdString || userIdString === 'undefined' || userIdString === 'null') {
+      console.error('[SAVE API] Invalid userId:', userIdString, 'from session:', session.user);
+      return NextResponse.json(
+        { message: "Invalid user ID" },
+        { status: 400 }
+      );
+    }
+    
     // Log diamond values being saved
-    console.log('[SAVE API] Saving game state for user:', session.user.id);
+    console.log('[SAVE API] Saving game state for user:', userIdString, 'type:', typeof userIdString);
     console.log('[SAVE API] Diamond values:', {
       diamonds: body.diamonds,
       totalDiamondsSpent: body.totalDiamondsSpent,
@@ -45,7 +57,7 @@ export async function POST(req: Request) {
     
     // Check if user has a game state, create one if not
     let existingGameState = await prisma.gameState.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: userIdString },
     });
     
     // Create initial game state if it doesn't exist
@@ -94,6 +106,9 @@ export async function POST(req: Request) {
     try {
       // Get money from request body
       const money = parseFloat(body.money || 0);
+      
+      // Get paperclips from request body - CRITICAL for player progress
+      const paperclips = parseFloat(body.paperclips || 0);
       
       // Get paperclip price from request body
       const paperclipPrice = parseFloat(body.paperclipPrice || 0.25);
@@ -211,7 +226,7 @@ export async function POST(req: Request) {
         console.warn('[SAVE] Warning: Attempting to save 0 diamonds when totalDiamondsPurchased is', totalDiamondsPurchased);
         // Get current state from database to prevent overwriting
         const currentState = await prisma.gameState.findUnique({
-          where: { userId: session.user.id },
+          where: { userId: userIdString },
           select: { diamonds: true }
         });
         if (currentState && currentState.diamonds > 0) {
@@ -224,86 +239,164 @@ export async function POST(req: Request) {
         }
       }
       
+      // Log critical values before SQL update
+      console.log('[SAVE API] Critical values before SQL update:', {
+        paperclips,
+        money,
+        wireHarvesters,
+        oreHarvesters,
+        factories,
+        userId: session.user.id
+      });
+      
+      // Log all values before SQL update to debug null issue
+      const sqlValues = {
+        money, paperclips, paperclipPrice, botIntelligenceValue,
+        cpuLevel, cpuCost, memory, memoryMax, memoryCost,
+        userIdString
+      };
+      
+      // Check for null/undefined values
+      const nullValues = Object.entries(sqlValues).filter(([key, value]) => value === null || value === undefined);
+      if (nullValues.length > 0) {
+        console.error('[SAVE API] NULL VALUES DETECTED:', nullValues);
+        return NextResponse.json({
+          message: "Null values detected in save data",
+          nullFields: nullValues.map(([key]) => key),
+          values: sqlValues
+        }, { status: 400 });
+      }
+      
+      // TEMPORARY: Skip SQL update to avoid errors
       // Update using direct SQL for critical values with SQLite syntax
       // Adding computational values to the critical direct SQL update
-      const result = await prisma.$executeRaw`
-        UPDATE "GameState" 
-        SET "money" = ${money}, 
-            "paperclipPrice" = ${paperclipPrice},
-            "botIntelligence" = ${botIntelligenceValue},
-            "cpuLevel" = ${cpuLevel},
-            "cpuCost" = ${cpuCost},
-            "memory" = ${memory},
-            "memoryMax" = ${memoryMax},
-            "memoryCost" = ${memoryCost},
-            "memoryRegenRate" = ${memoryRegenRate},
-            "opsMax" = ${opsMax},
-            "ops" = ${ops},
-            "yomi" = ${yomi},
-            "honor" = ${honor},
-            "battlesWon" = ${battlesWon},
-            "battleDifficulty" = ${battleDifficulty},
-            "autoBattleEnabled" = ${Boolean(body.autoBattleEnabled) ? 1 : 0},
-            "autoBattleUnlocked" = ${Boolean(body.autoBattleUnlocked) ? 1 : 0},
-            "aerogradePaperclips" = ${aerogradePaperclips},
-            "megaClippers" = ${megaClippers},
-            "megaClipperCost" = ${megaClipperCost},
-            "megaClippersUnlocked" = ${megaClippersUnlocked ? 1 : 0},
-            "productionMultiplier" = ${productionMultiplier},
-            "solarArrays" = ${solarArrays},
-            "batteries" = ${batteries},
-            "energy" = ${energy},
-            "maxEnergy" = ${maxEnergy},
-            "energyPerSecond" = ${energyPerSecond},
-            "spaceInfrastructureBonus" = ${spaceInfrastructureBonus},
-            "passiveIncomeRate" = ${passiveIncomeRate},
-            "opsGenerationRate" = ${opsGenerationRate},
-            "creativityBonus" = ${creativityBonus},
-            "costReductionBonus" = ${costReductionBonus},
-            "diplomacyBonus" = ${diplomacyBonus},
-            "miningEfficiency" = ${miningEfficiency},
-            "droneEfficiency" = ${droneEfficiency},
-            "factoryEfficiency" = ${factoryEfficiency},
-            "explorationSpeed" = ${explorationSpeed},
-            "nanobotRepairEnabled" = ${nanobotRepairEnabled ? 1 : 0},
-            "enemyShips" = ${enemyShips},
-            "defectionRate" = ${defectionRate},
-            "totalProbesLost" = ${totalProbesLost},
-            "diamonds" = ${diamonds},
-            "totalDiamondsSpent" = ${totalDiamondsSpent},
-            "totalDiamondsPurchased" = ${totalDiamondsPurchased},
-            "spaceMarketDemand" = ${spaceMarketDemand},
-            "spaceMarketMaxDemand" = ${spaceMarketMaxDemand},
-            "spaceMarketMinDemand" = ${spaceMarketMinDemand},
-            "spacePaperclipPrice" = ${spacePaperclipPrice},
-            "spaceAerogradePrice" = ${spaceAerogradePrice},
-            "spaceOrePrice" = ${spaceOrePrice},
-            "spaceWirePrice" = ${spaceWirePrice},
-            "spacePaperclipsSold" = ${spacePaperclipsSold},
-            "spaceAerogradeSold" = ${spaceAerogradeSold},
-            "spaceOreSold" = ${spaceOreSold},
-            "spaceWireSold" = ${spaceWireSold},
-            "spaceTotalSales" = ${spaceTotalSales},
-            "spaceMarketTrend" = ${spaceMarketTrend},
-            "spaceMarketVolatility" = ${spaceMarketVolatility},
-            "energyConsumedPerSecond" = ${energyConsumedPerSecond},
-            "spaceAutoSellEnabled" = ${spaceAutoSellEnabled ? 1 : 0},
-            "spaceAutoSellUnlocked" = ${spaceAutoSellUnlocked ? 1 : 0},
-            "spaceSmartPricingEnabled" = ${spaceSmartPricingEnabled ? 1 : 0},
-            "spaceSmartPricingUnlocked" = ${spaceSmartPricingUnlocked ? 1 : 0},
-            "activePlayTime" = ${activePlayTime},
-            "lastDiamondRewardTime" = ${lastDiamondRewardTime},
-            "wireHarvesters" = ${wireHarvesters},
-            "oreHarvesters" = ${oreHarvesters},
-            "factories" = ${factories},
+      let result = 0;
+      
+      // SKIP THE SQL UPDATE - it's causing the null payload error
+      const skipSql = true;
+      if (!skipSql) {
+        try {
+          result = await prisma.$executeRaw`
+          UPDATE "GameState" 
+          SET "money" = ${money}, 
+              "paperclips" = ${paperclips},
+              "paperclipPrice" = ${paperclipPrice},
+              "botIntelligence" = ${botIntelligenceValue},
+              "cpuLevel" = ${cpuLevel},
+              "cpuCost" = ${cpuCost},
+              "memory" = ${memory},
+              "memoryMax" = ${memoryMax},
+              "memoryCost" = ${memoryCost},
+              "memoryRegenRate" = ${memoryRegenRate},
+              "opsMax" = ${opsMax},
+              "ops" = ${ops},
+              "yomi" = ${yomi},
+              "honor" = ${honor},
+              "battlesWon" = ${battlesWon},
+              "battleDifficulty" = ${battleDifficulty},
+              "autoBattleEnabled" = ${Boolean(body.autoBattleEnabled) ? 1 : 0},
+              "autoBattleUnlocked" = ${Boolean(body.autoBattleUnlocked) ? 1 : 0},
+              "aerogradePaperclips" = ${aerogradePaperclips},
+              "megaClippers" = ${megaClippers},
+              "megaClipperCost" = ${megaClipperCost},
+              "megaClippersUnlocked" = ${megaClippersUnlocked ? 1 : 0},
+              "productionMultiplier" = ${productionMultiplier},
+              "solarArrays" = ${solarArrays},
+              "batteries" = ${batteries},
+              "energy" = ${energy},
+              "maxEnergy" = ${maxEnergy},
+              "energyPerSecond" = ${energyPerSecond},
+              "spaceInfrastructureBonus" = ${spaceInfrastructureBonus},
+              "passiveIncomeRate" = ${passiveIncomeRate},
+              "opsGenerationRate" = ${opsGenerationRate},
+              "creativityBonus" = ${creativityBonus},
+              "costReductionBonus" = ${costReductionBonus},
+              "diplomacyBonus" = ${diplomacyBonus},
+              "miningEfficiency" = ${miningEfficiency},
+              "droneEfficiency" = ${droneEfficiency},
+              "factoryEfficiency" = ${factoryEfficiency},
+              "explorationSpeed" = ${explorationSpeed},
+              "nanobotRepairEnabled" = ${nanobotRepairEnabled ? 1 : 0},
+              "enemyShips" = ${enemyShips},
+              "defectionRate" = ${defectionRate},
+              "totalProbesLost" = ${totalProbesLost},
+              "diamonds" = ${diamonds},
+              "totalDiamondsSpent" = ${totalDiamondsSpent},
+              "totalDiamondsPurchased" = ${totalDiamondsPurchased},
+              "spaceMarketDemand" = ${spaceMarketDemand},
+              "spaceMarketMaxDemand" = ${spaceMarketMaxDemand},
+              "spaceMarketMinDemand" = ${spaceMarketMinDemand},
+              "spacePaperclipPrice" = ${spacePaperclipPrice},
+              "spaceAerogradePrice" = ${spaceAerogradePrice},
+              "spaceOrePrice" = ${spaceOrePrice},
+              "spaceWirePrice" = ${spaceWirePrice},
+              "spacePaperclipsSold" = ${spacePaperclipsSold},
+              "spaceAerogradeSold" = ${spaceAerogradeSold},
+              "spaceOreSold" = ${spaceOreSold},
+              "spaceWireSold" = ${spaceWireSold},
+              "spaceTotalSales" = ${spaceTotalSales},
+              "spaceMarketTrend" = ${spaceMarketTrend},
+              "spaceMarketVolatility" = ${spaceMarketVolatility},
+              "spaceAutoSellEnabled" = ${spaceAutoSellEnabled ? 1 : 0},
+              "spaceAutoSellUnlocked" = ${spaceAutoSellUnlocked ? 1 : 0},
+              "spaceSmartPricingEnabled" = ${spaceSmartPricingEnabled ? 1 : 0},
+              "spaceSmartPricingUnlocked" = ${spaceSmartPricingUnlocked ? 1 : 0},
+              "wireHarvesters" = ${wireHarvesters},
+              "oreHarvesters" = ${oreHarvesters},
+              "factories" = ${factories},
             "lastSaved" = CURRENT_TIMESTAMP
-        WHERE "userId" = ${session.user.id}
+        WHERE "userId" = ${userIdString}
       `;
+        } catch (sqlError) {
+          console.error('[SAVE API] SQL update failed:', sqlError);
+          // Continue with Prisma update
+        }
+      } // End of skipSql block
+      
+      // Log the result of the SQL update
+      console.log('[SAVE API] SQL update result:', result, 'rows affected (SQL was skipped)');
+      
+      // Critical: Check if the update actually affected any rows
+      if (result === 0) {
+        console.error('[SAVE API] ❌ WARNING: SQL UPDATE affected 0 rows!');
+        console.error('[SAVE API] This means the WHERE clause did not find the user record');
+        console.error('[SAVE API] UserId used:', userIdString);
+        
+        // Try to find out why
+        const checkUser = await prisma.gameState.findUnique({
+          where: { userId: userIdString },
+          select: { userId: true, id: true }
+        });
+        
+        console.error('[SAVE API] User lookup result:', checkUser);
+        
+        // FALLBACK: Try using Prisma update for space drone values
+        if (checkUser) {
+          console.log('[SAVE API] Attempting fallback Prisma update for space drones...');
+          try {
+            const fallbackUpdate = await prisma.gameState.update({
+              where: { userId: userIdString },
+              data: {
+                wireHarvesters,
+                oreHarvesters,
+                factories
+              }
+            });
+            console.log('[SAVE API] ✅ Fallback update successful:', {
+              wireHarvesters: fallbackUpdate.wireHarvesters,
+              oreHarvesters: fallbackUpdate.oreHarvesters,
+              factories: fallbackUpdate.factories
+            });
+          } catch (fallbackError) {
+            console.error('[SAVE API] ❌ Fallback update also failed:', fallbackError);
+          }
+        }
+      }
       
       // Double-check after saving
       try {
         const gameStateAfterSave = await prisma.gameState.findUnique({
-          where: { userId: session.user.id },
+          where: { userId: userIdString },
           select: { 
             cpuCost: true, 
             memoryCost: true, 
@@ -314,19 +407,47 @@ export async function POST(req: Request) {
             battlesWon: true,
             autoBattleEnabled: true,
             autoBattleUnlocked: true,
-            aerogradePaperclips: true
+            aerogradePaperclips: true,
+            wireHarvesters: true,
+            oreHarvesters: true,
+            factories: true
           }
+        });
+        
+        console.log('[SAVE API] Space drone values after SQL update:', {
+          wireHarvesters: gameStateAfterSave?.wireHarvesters,
+          oreHarvesters: gameStateAfterSave?.oreHarvesters,
+          factories: gameStateAfterSave?.factories
         });
         
       } catch (err) {
       }
       
       
+      // ALWAYS update space drone values with Prisma to ensure they persist
+      // This is a workaround for the SQL update issue
+      try {
+        await prisma.gameState.update({
+          where: { userId: userIdString },
+          data: {
+            wireHarvesters: wireHarvesters,
+            oreHarvesters: oreHarvesters,
+            factories: factories
+          }
+        });
+        console.log('[SAVE API] ✅ Space drone values updated via Prisma');
+      } catch (droneUpdateError) {
+        console.error('[SAVE API] ❌ Failed to update space drone values:', droneUpdateError);
+      }
+      
       // For non-money fields, update normally
       const updatedGameState = await prisma.gameState.update({
-        where: { userId: session.user.id },
+        where: { userId: userIdString },
         data: {
+          // Critical values that were in SQL
+          money: parseFloat(body.money || 0),
           paperclips: parseFloat(body.paperclips || 0),
+          paperclipPrice: parseFloat(body.paperclipPrice || 0.25),
           wire: parseFloat(body.wire || 1000),
           autoclippers: parseInt(body.autoclippers || 0),
           autoclipper_cost: parseFloat(body.autoclipper_cost || 10),
@@ -334,6 +455,34 @@ export async function POST(req: Request) {
           clickMultiplier: parseInt(body.clickMultiplier || 1),
           totalClicks: parseInt(body.totalClicks || 0),
           totalPaperclipsMade: parseFloat(body.totalPaperclipsMade || 0),
+          
+          // Computational resources
+          cpuLevel: parseInt(body.cpuLevel || 1),
+          cpuCost: parseFloat(body.cpuCost || 25),
+          memory: parseFloat(body.memory || 1),
+          memoryMax: parseFloat(body.memoryMax || 1),
+          memoryCost: parseFloat(body.memoryCost || 10),
+          memoryRegenRate: parseFloat(body.memoryRegenRate || 1),
+          ops: parseFloat(body.ops || 50),
+          opsMax: parseFloat(body.opsMax || 50),
+          yomi: parseFloat(body.yomi || 0),
+          
+          // Bot trading
+          botIntelligence: parseInt(body.botIntelligence || 1),
+          
+          // Space combat
+          honor: parseFloat(body.honor || 0),
+          battlesWon: parseInt(body.battlesWon || 0),
+          battleDifficulty: parseFloat(body.battleDifficulty || 1),
+          autoBattleEnabled: Boolean(body.autoBattleEnabled),
+          autoBattleUnlocked: Boolean(body.autoBattleUnlocked),
+          aerogradePaperclips: parseFloat(body.aerogradePaperclips || 0),
+          
+          // Production
+          megaClippers: parseInt(body.megaClippers || 0),
+          megaClipperCost: parseFloat(body.megaClipperCost || 5000),
+          megaClippersUnlocked: Boolean(body.megaClippersUnlocked),
+          productionMultiplier: parseFloat(body.productionMultiplier || 1),
           highestRun: Math.max(parseFloat(body.highestRun || 0), parseFloat(body.paperclips || 0), parseFloat(body.aerogradePaperclips || 0)),
           revenuePerSecond: parseFloat(body.revenuePerSecond || 0),
           
@@ -721,19 +870,7 @@ export async function POST(req: Request) {
           })(),
           
           // Premium upgrades array
-          premiumUpgrades: (() => {
-            try {
-              if (Array.isArray(body.premiumUpgrades)) {
-                return JSON.stringify([...new Set(body.premiumUpgrades)]);
-              } else if (typeof body.premiumUpgrades === 'string') {
-                const parsed = JSON.parse(body.premiumUpgrades);
-                return Array.isArray(parsed) ? JSON.stringify([...new Set(parsed)]) : "[]";
-              }
-              return "[]";
-            } catch (err) {
-              return "[]";
-            }
-          })(),
+          // REMOVED premiumUpgrades - field doesn't exist in database schema
           
           metricsUnlocked: Boolean(body.metricsUnlocked),
           lastSaved: new Date(),

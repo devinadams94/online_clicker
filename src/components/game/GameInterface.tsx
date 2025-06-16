@@ -310,7 +310,7 @@ export default function GameInterface() {
     (window as any).__pageLoadTime = Date.now();
   }, []);
   
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [phaserFailed, setPhaserFailed] = useState(false);
   const [_justUnlockedSpaceAge, setJustUnlockedSpaceAge] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -1232,35 +1232,71 @@ export default function GameInterface() {
   // Load game state on session change
   useEffect(() => {
     const loadGameState = async () => {
-      // Prevent multiple loads
-      if (hasLoaded) {
-        console.log('[GameInterface] Skipping duplicate load');
+      // CRITICAL: Wait for authentication to complete
+      if (status === 'loading') {
+        console.log('[GameInterface] Auth still loading, waiting...');
         return;
       }
+      
       if (!session || !session.user) {
         // User is not authenticated, clear state
         setAuthenticated(false);
         setUserId(null);
         setLoading(false);
+        setHasLoaded(false); // Reset hasLoaded when no session
         
         // Don't reset game state immediately - wait to see if this is just a loading state
         // The user might be authenticated but the session is still loading
-        console.log('[GameInterface] No session detected, but not resetting game yet');
+        console.log('[GameInterface] No session detected, user not authenticated');
+        return;
+      }
+      
+      // Prevent multiple loads for the same user
+      if (hasLoaded && useGameStore.getState().userId === session.user.id) {
+        console.log('[GameInterface] Already loaded for this user');
         return;
       }
       
       // Handle user change
       const currentUserId = useGameStore.getState().userId;
-      console.log('[GameInterface] User check - Current:', currentUserId, 'Session:', session.user.id);
+      const currentState = useGameStore.getState();
+      console.log('[GameInterface] Auth successful - User check');
+      console.log('[GameInterface] Current userId:', currentUserId, 'Session userId:', session.user.id);
+      console.log('[GameInterface] Current state values:', {
+        paperclips: currentState.paperclips,
+        money: currentState.money,
+        wire: currentState.wire
+      });
       
-      if (currentUserId && currentUserId !== session.user.id) {
+      // CRITICAL: Only reset if we have a real user ID change, not just null/guest -> real user
+      if (currentUserId && currentUserId !== 'guest' && currentUserId !== session.user.id) {
         // User has changed, reset the state first to avoid state mixing
         console.log('[GameInterface] User changed - resetting game state');
+        console.warn('[GameInterface] RESET TRIGGERED - This will clear all progress!');
         useGameStore.getState().resetGame();
       }
 
       setAuthenticated(true);
       setUserId(session.user.id);
+      
+      // CRITICAL: After setting userId, trigger rehydration to load correct localStorage data
+      const persist = (useGameStore as any).persist;
+      if (persist && persist.rehydrate) {
+        console.log('[GameInterface] Triggering rehydration with correct userId');
+        await persist.rehydrate();
+        
+        // Wait a bit for rehydration to complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Check if localStorage had data
+        const stateAfterRehydration = useGameStore.getState();
+        console.log('[GameInterface] State after rehydration:', {
+          paperclips: stateAfterRehydration.paperclips,
+          money: stateAfterRehydration.money,
+          wire: stateAfterRehydration.wire,
+          hasLocalData: stateAfterRehydration.paperclips > 0 || stateAfterRehydration.money > 0
+        });
+      }
 
       try {
         // Check current state before loading
@@ -1272,7 +1308,27 @@ export default function GameInterface() {
           memoryCost: stateBeforeLoad.memoryCost
         });
         
+        // CRITICAL FIX: Clear any localStorage data that was loaded with wrong userId
+        // The persist middleware loads from 'paperclip-game-storage-guest' before auth completes
+        const wrongStorageKey = `paperclip-game-storage-guest`;
+        const correctStorageKey = `paperclip-game-storage-${session.user.id}`;
+        
+        if (localStorage.getItem(wrongStorageKey)) {
+          console.log('[GameInterface] Removing incorrect guest storage data');
+          localStorage.removeItem(wrongStorageKey);
+        }
+        
+        // Check if we should load from API or use localStorage data
+        const currentState = useGameStore.getState();
+        const hasValidLocalData = currentState.paperclips > 0 || currentState.money > 0 || 
+                                 currentState.autoclippers > 0 || currentState.totalPaperclipsMade > 0;
+        
+        console.log('[GameInterface] Has valid local data:', hasValidLocalData);
+        
+        console.log('[GameInterface] Calling /api/game/load...');
         const response = await fetch('/api/game/load');
+        console.log('[GameInterface] Load response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
           console.log('[GameInterface] Loaded game data from API:', { 
@@ -1899,7 +1955,66 @@ export default function GameInterface() {
             gameData.memory = 1;
           }
           
+          // Log critical values before and after setGameState
+          console.log('[GameInterface] Before setGameState - critical values:', {
+            paperclips: gameData.paperclips,
+            money: gameData.money,
+            wire: gameData.wire,
+            wirePerSpool: gameData.wirePerSpool,
+            spoolSizeLevel: gameData.spoolSizeLevel,
+            wireHarvesters: gameData.wireHarvesters,
+            oreHarvesters: gameData.oreHarvesters,
+            factories: gameData.factories
+          });
+          
+          // CRITICAL: Set a flag to indicate we're setting from API
+          // This prevents any localStorage overwrites
+          useGameStore.setState({ isLoading: false });
+          
+          // IMPORTANT: Set a flag to prevent persist from overwriting our API data
+          (window as any).__apiDataLoaded = true;
+          
           setGameState(gameData as GameState);
+          
+          // CRITICAL: Force update key values that might be overwritten by persist
+          // This ensures the API data takes precedence over any localStorage data
+          setTimeout(() => {
+            console.log('[GameInterface] Force updating critical values to ensure they persist');
+            useGameStore.setState({
+              paperclips: gameData.paperclips,
+              money: gameData.money,
+              wire: gameData.wire,
+              wirePerSpool: gameData.wirePerSpool,
+              spoolSizeLevel: gameData.spoolSizeLevel,
+              spoolSizeUpgradeCost: gameData.spoolSizeUpgradeCost,
+              wireHarvesters: gameData.wireHarvesters,
+              oreHarvesters: gameData.oreHarvesters,
+              factories: gameData.factories,
+              // Add other critical values that are being reset
+              autoclippers: gameData.autoclippers,
+              autoclipper_cost: gameData.autoclipper_cost,
+              totalPaperclipsMade: gameData.totalPaperclipsMade,
+              productionMultiplier: gameData.productionMultiplier,
+              megaClippers: gameData.megaClippers,
+              researchPoints: gameData.researchPoints,
+              unlockedResearch: gameData.unlockedResearch
+            });
+          }, 50);
+          
+          // Check what was actually set
+          setTimeout(() => {
+            const afterState = useGameStore.getState();
+            console.log('[GameInterface] After setGameState - critical values:', {
+              paperclips: afterState.paperclips,
+              money: afterState.money,
+              wire: afterState.wire,
+              wirePerSpool: afterState.wirePerSpool,
+              spoolSizeLevel: afterState.spoolSizeLevel,
+              wireHarvesters: afterState.wireHarvesters,
+              oreHarvesters: afterState.oreHarvesters,
+              factories: afterState.factories
+            });
+          }, 100);
           
           // If space age is unlocked, ensure autoclippers are 0
           // NOTE: This might be causing issues - commenting out for now
@@ -1944,7 +2059,7 @@ export default function GameInterface() {
     }, 5000);
     
     return () => clearTimeout(failsafeTimeout);
-  }, [session, setAuthenticated, setUserId, setLoading, setGameState]);
+  }, [session, status, setAuthenticated, setUserId, setLoading, setGameState]);
 
   // Offline progress notification
   const [showOfflineProgress, setShowOfflineProgress] = useState(false);

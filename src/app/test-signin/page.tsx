@@ -2,8 +2,22 @@
 
 import { useState } from "react";
 
+interface TestResult {
+  status: number;
+  contentType: string | null;
+  data: any;
+}
+
+interface TestResults {
+  providers?: TestResult;
+  session?: TestResult;
+  signin?: TestResult;
+  csrf?: TestResult;
+  error?: string;
+}
+
 export default function TestSigninPage() {
-  const [results, setResults] = useState<any>({});
+  const [results, setResults] = useState<TestResults>({});
   const [loading, setLoading] = useState(false);
 
   const runTests = async () => {
@@ -47,11 +61,13 @@ export default function TestSigninPage() {
       const signinRes = await fetch("/api/auth/signin");
       const signinText = await signinRes.text();
       
-      setResults(prev => ({ ...prev, signin: { 
+      setResults((prev: TestResults) => ({ ...prev, signin: { 
         status: signinRes.status,
         contentType: signinRes.headers.get('content-type'),
-        isHtml: signinText.includes('<!DOCTYPE') || signinText.includes('<html'),
-        preview: signinText.substring(0, 200)
+        data: {
+          isHtml: signinText.includes('<!DOCTYPE') || signinText.includes('<html'),
+          preview: signinText.substring(0, 200)
+        }
       }}));
 
       // Test 4: Try calling signIn from next-auth/react
@@ -70,11 +86,11 @@ export default function TestSigninPage() {
           contentType: urlRes.headers.get('content-type'),
         }}));
       } catch (err) {
-        setResults(prev => ({ ...prev, signInError: err.toString() }));
+        setResults((prev: TestResults) => ({ ...prev, signInError: String(err) }));
       }
 
     } catch (error) {
-      setResults(prev => ({ ...prev, error: error.toString() }));
+      setResults((prev: TestResults) => ({ ...prev, error: String(error) }));
     } finally {
       setLoading(false);
     }

@@ -72,6 +72,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: NEXTAUTH_SECRET,
   pages: {
@@ -99,7 +100,7 @@ export const authOptions: NextAuthOptions = {
       }
       // Ensure token has all necessary fields
       if (!token.sub && token.id) {
-        token.sub = token.id;
+        token.sub = String(token.id);
       }
       console.log("[AUTH] JWT callback - token:", token);
       return token;
